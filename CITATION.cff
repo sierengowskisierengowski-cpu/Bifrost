@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "Bifrost Security Platform"
+message: "If you use this project, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: "Sierengowski"
+    given-names: "Joseph"
+    alias: "gowski-star"
+repository-code: "https://github.com/sierengowskisierengowski-cpu/Bifrost"
+license: "MIT"
+version: "0.1.0"
+date-released: "2026-05-28"
