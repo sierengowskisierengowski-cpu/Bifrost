@@ -45,6 +45,17 @@ METRICS = {
     "queue_full_count": 0,
 }
 
+COLLECTOR_LOG_RATE_LIMIT_SECONDS = 60.0
+
+
+def log_collector_error(log, rate_limits: dict, key: str, level: int,
+                        context: str, exc: Exception) -> None:
+    now = time.monotonic()
+    if now - rate_limits.get(key, 0.0) < COLLECTOR_LOG_RATE_LIMIT_SECONDS:
+        return
+    rate_limits[key] = now
+    log.log(level, f"{context}: {type(exc).__name__}: {exc}")
+
 
 def setup_logging():
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -199,6 +210,7 @@ class AuditdCollector(threading.Thread):
         super().__init__(daemon=True, name="collector.auditd")
         self.queue = queue
         self.log = log
+        self._log_rate_limits = {}
 
     def run(self):
         self.log.info("AuditdCollector started.")
@@ -237,8 +249,15 @@ class AuditdCollector(threading.Thread):
                         safe_enqueue(self.queue, event, "auditd", self.log)
         except OSError as e:
             self.log.error(f"AuditdCollector file error: {e}")
-        except Exception as e:
-            self.log.error(f"AuditdCollector unexpected error: {e}")
+        except (RuntimeError, ValueError) as e:
+            log_collector_error(
+                self.log,
+                self._log_rate_limits,
+                "auditd.run",
+                logging.ERROR,
+                f"AuditdCollector stopped while reading {self.AUDIT_LOG}",
+                e,
+            )
 
 
 class HoneypotLogCollector(threading.Thread):
@@ -250,6 +269,7 @@ class HoneypotLogCollector(threading.Thread):
         super().__init__(daemon=True, name="collector.cowrie")
         self.queue = queue
         self.log = log
+        self._log_rate_limits = {}
 
     def run(self):
         self.log.info("HoneypotLogCollector started.")
@@ -278,8 +298,15 @@ class HoneypotLogCollector(threading.Thread):
                         self.log.warning(f"Cowrie JSON parse error: {e}")
         except OSError as e:
             self.log.error(f"HoneypotLogCollector file error: {e}")
-        except Exception as e:
-            self.log.error(f"HoneypotLogCollector unexpected error: {e}")
+        except (RuntimeError, ValueError) as e:
+            log_collector_error(
+                self.log,
+                self._log_rate_limits,
+                "cowrie.run",
+                logging.ERROR,
+                f"HoneypotLogCollector stopped while reading {self.COWRIE_LOG}",
+                e,
+            )
 
 
 class ProcessWatcher(threading.Thread):
@@ -292,6 +319,7 @@ class ProcessWatcher(threading.Thread):
         self.queue = queue
         self.log = log
         self.seen_pids = set()
+        self._log_rate_limits = {}
 
     def run(self):
         self.log.info("ProcessWatcher started.")
@@ -372,8 +400,15 @@ class ProcessWatcher(threading.Thread):
 
                 SHUTDOWN.wait(self.POLL_INTERVAL)
 
-            except Exception as e:
-                self.log.error(f"ProcessWatcher loop error: {e}")
+            except (OSError, RuntimeError, ValueError) as e:
+                log_collector_error(
+                    self.log,
+                    self._log_rate_limits,
+                    "process.loop",
+                    logging.ERROR,
+                    "ProcessWatcher loop error while scanning /proc",
+                    e,
+                )
                 time.sleep(1)
 
 
@@ -387,14 +422,22 @@ class NetworkWatcher(threading.Thread):
         self.queue = queue
         self.log = log
         self.seen_connections = set()
+        self._log_rate_limits = {}
 
     def run(self):
         self.log.info("NetworkWatcher started.")
         while not SHUTDOWN.is_set():
             try:
                 self.scan_connections()
-            except Exception as e:
-                self.log.error(f"NetworkWatcher scan error: {e}")
+            except (OSError, RuntimeError, ValueError) as e:
+                log_collector_error(
+                    self.log,
+                    self._log_rate_limits,
+                    "network.scan",
+                    logging.ERROR,
+                    "NetworkWatcher scan error",
+                    e,
+                )
             time.sleep(self.POLL_INTERVAL)
 
     def hex_to_ip(self, hex_ip: str) -> str:
@@ -402,7 +445,15 @@ class NetworkWatcher(threading.Thread):
             addr = int(hex_ip, 16)
             return (f"{addr & 0xFF}.{(addr >> 8) & 0xFF}."
                     f"{(addr >> 16) & 0xFF}.{(addr >> 24) & 0xFF}")
-        except Exception:
+        except (TypeError, ValueError) as e:
+            log_collector_error(
+                self.log,
+                self._log_rate_limits,
+                "network.hex_to_ip",
+                logging.WARNING,
+                f"NetworkWatcher received invalid hex IP {hex_ip!r}",
+                e,
+            )
             return "0.0.0.0"
 
     def is_host_subnet(self, ip_str: str) -> bool:

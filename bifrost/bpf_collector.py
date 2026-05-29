@@ -16,9 +16,10 @@ import time
 import logging
 import threading
 from datetime import datetime, timezone
-from queue import Queue
+from queue import Full, Queue
 
 log = logging.getLogger("heimdall.bpf_collector")
+COLLECTOR_LOG_RATE_LIMIT_SECONDS = 60.0
 
 try:
     from bcc import BPF
@@ -42,6 +43,15 @@ class BPFCollector(threading.Thread):
         self.shutdown = shutdown_event
         self.log = log
         self.bpf = None
+        self._log_rate_limits = {}
+
+    def _log_rate_limited(self, key: str, level: int,
+                          context: str, exc: Exception) -> None:
+        now = time.monotonic()
+        if now - self._log_rate_limits.get(key, 0.0) < COLLECTOR_LOG_RATE_LIMIT_SECONDS:
+            return
+        self._log_rate_limits[key] = now
+        self.log.log(level, f"{context}: {type(exc).__name__}: {exc}")
         
     def load_program(self):
         """Load the eBPF program into the kernel."""
@@ -58,8 +68,13 @@ class BPFCollector(threading.Thread):
             self.bpf = BPF(src_file=self.BPF_PROGRAM)
             self.log.info("✅ eBPF program loaded into kernel")
             return True
-        except Exception as e:
-            self.log.error(f"Failed to load eBPF program: {e}")
+        except (OSError, RuntimeError, ValueError) as e:
+            self._log_rate_limited(
+                "load_program",
+                logging.ERROR,
+                f"Failed to load eBPF program {self.BPF_PROGRAM}",
+                e,
+            )
             return False
     
     def handle_event(self, cpu, data, size):
@@ -87,12 +102,22 @@ class BPFCollector(threading.Thread):
             # Send to Guardian's event queue
             try:
                 self.queue.put_nowait(guardian_event)
-            except Exception:
-                # Queue full - drop event (prevents blocking kernel)
-                pass
+            except Full as e:
+                self._log_rate_limited(
+                    "queue_full",
+                    logging.WARNING,
+                    f"Dropping eBPF event pid={event.pid}",
+                    e,
+                )
                 
-        except Exception as e:
-            self.log.warning(f"Event parsing error: {e}")
+        except (AttributeError, KeyError, TypeError, ValueError,
+                RuntimeError, UnicodeDecodeError) as e:
+            self._log_rate_limited(
+                "handle_event",
+                logging.WARNING,
+                "Event parsing error in BPFCollector.handle_event",
+                e,
+            )
     
     def _format_ip(self, ip: int) -> str:
         """Convert IP from integer to string."""
@@ -117,8 +142,13 @@ class BPFCollector(threading.Thread):
                 self.bpf.ring_buffer_poll(timeout=100)
             except KeyboardInterrupt:
                 break
-            except Exception as e:
-                self.log.error(f"Ring buffer poll error: {e}")
+            except (OSError, RuntimeError, ValueError) as e:
+                self._log_rate_limited(
+                    "ring_buffer_poll",
+                    logging.ERROR,
+                    "Ring buffer poll error",
+                    e,
+                )
                 time.sleep(1)
         
         self.log.info("BPFCollector shutting down...")
