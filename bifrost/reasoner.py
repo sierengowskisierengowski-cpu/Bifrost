@@ -20,6 +20,88 @@ import json
 import logging
 import sqlite3
 from datetime import datetime, timezone
+
+def _parse_ts(ts: str):
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def detect_cowrie_dns_pivot_chain(events: list) -> list:
+    """
+    Detect chain:
+      - cowrie.login.success
+      - cowrie.direct-tcpip.request (dst_port=53)
+      - same session + src_ip
+      - within <= 5 seconds
+
+    This is a confirmed automated C2 callback pattern.
+    Captured live from GowskiNet 2026-05-29: 87.251.64.176
+    """
+    by_session = {}
+    for e in events:
+        sid = e.get("session")
+        if not sid:
+            continue
+        by_session.setdefault(sid, []).append(e)
+
+    detections = []
+    for sid, sess_events in by_session.items():
+        sess_events.sort(key=lambda x: x.get("timestamp", ""))
+
+        login_evt = None
+        for e in sess_events:
+            if e.get("eventid") == "cowrie.login.success":
+                login_evt = e
+                break
+
+        if not login_evt:
+            continue
+
+        t_login = _parse_ts(login_evt.get("timestamp", ""))
+        src_ip = login_evt.get("src_ip")
+
+        for e in sess_events:
+            if e.get("eventid") != "cowrie.direct-tcpip.request":
+                continue
+            if e.get("src_ip") != src_ip:
+                continue
+            if int(e.get("dst_port", -1)) != 53:
+                continue
+            t_req = _parse_ts(e.get("timestamp", ""))
+            if not t_login or not t_req:
+                continue
+            delta = (t_req - t_login).total_seconds()
+            if 0 <= delta <= 5:
+                detections.append({
+                    "rule_id": "COWRIE_DNS_PIVOT_AFTER_LOGIN",
+                    "schema_version": "0.1.0",
+                    "incident_detected": True,
+                    "severity": "HIGH",
+                    "boundary": "HONEYPOT",
+                    "threat_class": "dns_tunnel_pivot",
+                    "confidence": 0.97,
+                    "action_required": "BLOCK",
+                    "target": src_ip,
+                    "gjallarhorn_tier": 2,
+                    "reasoning": (
+                        "SSH login success followed by direct-tcpip DNS "
+                        "forward within 5s. Confirmed automated C2 callback."
+                    ),
+                    "session": sid,
+                    "src_ip": src_ip,
+                    "dst_ip": e.get("dst_ip"),
+                    "dst_port": e.get("dst_port"),
+                    "evidence_count": 2,
+                    "extractor_model": "deterministic",
+                    "reasoner_model": "deterministic_rule",
+                    "hardware_tier": "TIER_4",
+                })
+                break
+
+    return detections
+
 from collections import deque
 from pathlib import Path
 from typing import Optional
