@@ -1,5 +1,11 @@
 # Bifrost Lab Attack Simulation Guide
 
+For phased, end-to-end validation with scorecards and gate criteria, use the
+companion playbook:
+
+- [live-fire-validation-playbook.md](./live-fire-validation-playbook.md)
+- [templates/live-fire-scorecard.csv](./templates/live-fire-scorecard.csv)
+
 **Authorized use only.** Follow this guide only on systems you own or have
 explicit written authorization to test. Unauthorized attack simulation is
 illegal in most jurisdictions.
