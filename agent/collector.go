@@ -47,8 +47,8 @@ func startCollector() {
 		log.Fatalf("[!] Cannot bind Unix socket %s: %v", socketPath, err)
 	}
 	defer listener.Close()
-	// 0660: owner+group read/write only — not world-accessible.
-	// Tetragon shipper and bifrost-agent must share the same group.
+	// 0660: owner+group read/write — not world-accessible.
+	// Tetragon shipper and bifrost-agent must share the same OS group.
 	if err := os.Chmod(socketPath, 0660); err != nil {
 		log.Fatalf("[!] Failed to set socket permissions on %s: %v", socketPath, err)
 	}

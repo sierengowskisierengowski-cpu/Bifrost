@@ -323,22 +323,26 @@ else:
             return self.action_required in SAFE_ACTIONS
 
         def to_dict(self):
+            def _enum_val(v):
+                """Return v.value if it is an enum, else v as-is (defensive fallback)."""
+                return v.value if hasattr(v, "value") else v
+
             return {
                 "schema_version":    self.schema_version,
                 "incident_detected": self.incident_detected,
-                "severity":          self.severity.value,
-                "boundary":          self.boundary.value,
+                "severity":          _enum_val(self.severity),
+                "boundary":          _enum_val(self.boundary),
                 "threat_class":      self.threat_class,
                 "confidence":        round(self.confidence, 3),
-                "action_required":   self.action_required.value,
+                "action_required":   _enum_val(self.action_required),
                 "target":            self.target,
                 "gjallarhorn_tier":  self.gjallarhorn_tier,
                 "reasoning":         self.reasoning,
                 "extractor_model":   self.extractor_model,
                 "reasoner_model":    self.reasoner_model,
                 "hardware_tier":     self.hardware_tier,
-                "action_effective":  self.action_effective.value
-                                     if self.action_effective else None,
+                "action_effective":  _enum_val(self.action_effective)
+                                     if self.action_effective is not None else None,
                 "policy_rationale":  self.policy_rationale,
                 "rollback_id":       self.rollback_id,
                 "event_id":          self.event_id,
