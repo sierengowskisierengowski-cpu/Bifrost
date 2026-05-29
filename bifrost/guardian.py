@@ -44,6 +44,7 @@ METRICS = {
     "fallbacks": 0,
     "queue_full_count": 0,
 }
+COMPRESSED_EVENT_NORMALIZE_DEPTH = 3
 
 
 def setup_logging():
@@ -165,7 +166,7 @@ def _normalize_compressed_event(value):
         return json.dumps(value)
 
     normalized = value
-    for _ in range(3):
+    for _ in range(COMPRESSED_EVENT_NORMALIZE_DEPTH):
         try:
             decoded = json.loads(normalized)
         except json.JSONDecodeError:
