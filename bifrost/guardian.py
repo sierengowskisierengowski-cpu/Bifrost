@@ -165,7 +165,7 @@ def _normalize_compressed_event(value):
         return json.dumps(value)
 
     normalized = value
-    while True:
+    for _ in range(3):
         try:
             decoded = json.loads(normalized)
         except json.JSONDecodeError:
@@ -182,6 +182,8 @@ def _normalize_compressed_event(value):
             return json.dumps(decoded)
 
         return normalized
+
+    return normalized
 
 
 def _normalize_compressed_event_rows(conn):

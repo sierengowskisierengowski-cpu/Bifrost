@@ -83,7 +83,7 @@ def test_store_event_normalizes_double_encoded_compressed_event(tmp_path, monkey
     conn.close()
     router.conn.close()
 
-    assert stored == '{"event_type": "process", "pid": 1234}'
+    assert json.loads(stored) == {"event_type": "process", "pid": 1234}
 
 
 def test_init_database_normalizes_existing_double_encoded_rows(tmp_path, monkeypatch):
@@ -114,4 +114,4 @@ def test_init_database_normalizes_existing_double_encoded_rows(tmp_path, monkeyp
     stored = conn.execute("SELECT compressed_event FROM events").fetchone()[0]
     conn.close()
 
-    assert stored == '{"event_type": "process", "pid": 5678}'
+    assert json.loads(stored) == {"event_type": "process", "pid": 5678}
