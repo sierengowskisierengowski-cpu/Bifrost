@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import time
+
+
+COLLECTOR_LOG_RATE_LIMIT_SECONDS = 60.0
+
+
+def log_collector_error(log, rate_limits: dict, key: str, level: int,
+                        context: str, exc: Exception) -> None:
+    now = time.monotonic()
+    if now - rate_limits.get(key, 0.0) < COLLECTOR_LOG_RATE_LIMIT_SECONDS:
+        return
+    rate_limits[key] = now
+    log.log(level, f"{context}: {type(exc).__name__}: {exc}")

@@ -27,6 +27,8 @@ from pathlib import Path
 from datetime import datetime, timezone
 from queue import Queue, Empty, Full
 
+from bifrost.collector_logging import log_collector_error
+
 BIFROST_VERSION = "0.1.1"
 CONFIG_PATH = Path("~/Projects/bifrost/heimdall_config.json").expanduser()
 DB_PATH = Path("~/Projects/bifrost/db/events.db").expanduser()
@@ -44,18 +46,6 @@ METRICS = {
     "fallbacks": 0,
     "queue_full_count": 0,
 }
-
-COLLECTOR_LOG_RATE_LIMIT_SECONDS = 60.0
-
-
-def log_collector_error(log, rate_limits: dict, key: str, level: int,
-                        context: str, exc: Exception) -> None:
-    now = time.monotonic()
-    if now - rate_limits.get(key, 0.0) < COLLECTOR_LOG_RATE_LIMIT_SECONDS:
-        return
-    rate_limits[key] = now
-    log.log(level, f"{context}: {type(exc).__name__}: {exc}")
-
 
 def setup_logging():
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)

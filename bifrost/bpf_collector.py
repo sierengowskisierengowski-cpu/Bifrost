@@ -18,8 +18,9 @@ import threading
 from datetime import datetime, timezone
 from queue import Full, Queue
 
+from bifrost.collector_logging import log_collector_error
+
 log = logging.getLogger("heimdall.bpf_collector")
-COLLECTOR_LOG_RATE_LIMIT_SECONDS = 60.0
 
 try:
     from bcc import BPF
@@ -44,14 +45,6 @@ class BPFCollector(threading.Thread):
         self.log = log
         self.bpf = None
         self._log_rate_limits = {}
-
-    def _log_rate_limited(self, key: str, level: int,
-                          context: str, exc: Exception) -> None:
-        now = time.monotonic()
-        if now - self._log_rate_limits.get(key, 0.0) < COLLECTOR_LOG_RATE_LIMIT_SECONDS:
-            return
-        self._log_rate_limits[key] = now
-        self.log.log(level, f"{context}: {type(exc).__name__}: {exc}")
         
     def load_program(self):
         """Load the eBPF program into the kernel."""
@@ -69,7 +62,9 @@ class BPFCollector(threading.Thread):
             self.log.info("✅ eBPF program loaded into kernel")
             return True
         except (OSError, RuntimeError, ValueError) as e:
-            self._log_rate_limited(
+            log_collector_error(
+                self.log,
+                self._log_rate_limits,
                 "load_program",
                 logging.ERROR,
                 f"Failed to load eBPF program {self.BPF_PROGRAM}",
@@ -103,7 +98,9 @@ class BPFCollector(threading.Thread):
             try:
                 self.queue.put_nowait(guardian_event)
             except Full as e:
-                self._log_rate_limited(
+                log_collector_error(
+                    self.log,
+                    self._log_rate_limits,
                     "queue_full",
                     logging.WARNING,
                     f"Dropping eBPF event pid={event.pid}",
@@ -112,7 +109,9 @@ class BPFCollector(threading.Thread):
                 
         except (AttributeError, KeyError, TypeError, ValueError,
                 RuntimeError, UnicodeDecodeError) as e:
-            self._log_rate_limited(
+            log_collector_error(
+                self.log,
+                self._log_rate_limits,
                 "handle_event",
                 logging.WARNING,
                 "Event parsing error in BPFCollector.handle_event",
@@ -143,7 +142,9 @@ class BPFCollector(threading.Thread):
             except KeyboardInterrupt:
                 break
             except (OSError, RuntimeError, ValueError) as e:
-                self._log_rate_limited(
+                log_collector_error(
+                    self.log,
+                    self._log_rate_limits,
                     "ring_buffer_poll",
                     logging.ERROR,
                     "Ring buffer poll error",
