@@ -10,9 +10,12 @@ Rule: Convert dict <-> model only at IO boundaries.
 """
 
 from __future__ import annotations
+import logging
 from enum import Enum
 from typing import Optional, Any
 from datetime import datetime, timezone
+
+_logger = logging.getLogger("heimdall.schema")
 
 SCHEMA_VERSION = "0.1.0"
 
@@ -209,8 +212,7 @@ if PYDANTIC_AVAILABLE:
             )
 
 else:
-    import logging as _logging
-    _logging.getLogger("heimdall.schema").warning(
+    _logger.warning(
         "Pydantic not available. Running in degraded mode. "
         "Full schema validation active; destructive actions blocked at policy gate."
     )
@@ -277,8 +279,6 @@ else:
         event_id:          Any            = None
 
         def __post_init__(self):
-            import logging
-            log = logging.getLogger("heimdall.schema")
             # Normalise confidence
             self.confidence = max(0.0, min(1.0, float(self.confidence)))
             # Truncate reasoning
@@ -304,6 +304,15 @@ else:
             if isinstance(self.action_effective, str):
                 v = self.action_effective.upper()
                 self.action_effective = ActionType(v) if v in _VALID_ACTIONS else None
+            # Validate hardware_tier
+            if isinstance(self.hardware_tier, str):
+                v = self.hardware_tier.upper()
+                if v not in _VALID_TIERS:
+                    raise ValueError(
+                        f"Invalid hardware_tier {v!r}. "
+                        f"Must be one of {sorted(_VALID_TIERS)!r}."
+                    )
+                self.hardware_tier = v
             # Lock schema_version
             self.schema_version = SCHEMA_VERSION
 
@@ -337,8 +346,6 @@ else:
 
         @classmethod
         def from_dict(cls, d):
-            import logging
-            log = logging.getLogger("heimdall.schema")
             allowed = {f.name for f in dataclasses.fields(cls)}
             # Reject unknown fields — mirrors Pydantic extra="forbid"
             extra = set(d.keys()) - allowed
@@ -348,7 +355,7 @@ else:
             decision = cls(**data)
             # Contradictory payload guard
             if not decision.incident_detected and decision.is_destructive():
-                log.warning(
+                _logger.warning(
                     f"Contradictory payload: incident_detected=False "
                     f"but action={decision.action_required.value}. "
                     f"Downgrading to ALERT."
@@ -372,12 +379,10 @@ else:
 
 
 def validate_decision_dict(d: dict) -> "Decision":
-    import logging
-    log = logging.getLogger("heimdall.schema")
     try:
         return Decision.from_dict(d)
     except Exception as e:
-        log.warning(f"Decision validation failed: {e}. Using safe fallback.")
+        _logger.warning(f"Decision validation failed: {e}. Using safe fallback.")
         return Decision.safe_fallback(str(e))
 
 

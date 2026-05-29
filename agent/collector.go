@@ -49,7 +49,9 @@ func startCollector() {
 	defer listener.Close()
 	// 0660: owner+group read/write only — not world-accessible.
 	// Tetragon shipper and bifrost-agent must share the same group.
-	_ = os.Chmod(socketPath, 0660)
+	if err := os.Chmod(socketPath, 0660); err != nil {
+		log.Fatalf("[!] Failed to set socket permissions on %s: %v", socketPath, err)
+	}
 
 	log.Printf("[+] Collector listening on %s", socketPath)
 	log.Printf("[+] Forwarding to %s", ingestURL)
