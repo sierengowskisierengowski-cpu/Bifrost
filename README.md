@@ -1,194 +1,193 @@
 # Bifrost Security Platform
 
-The Bridge Is Watched.
+**Local-first, AI-assisted security monitoring with safety-gated response.**  
+Bifrost helps defenders detect, triage, and safely respond to suspicious host and honeypot activity without handing full control to automation.
 
-An open source AI-powered Endpoint Detection and Response platform
-that runs on any hardware from a Raspberry Pi to a workstation.
+---
 
-## What Is Bifrost
+## Elevator Pitch
 
-Bifrost is a portable AI-powered security sentinel that watches
-your Linux system for threats and responds autonomously.
+Bifrost combines deterministic detection, AI reasoning, and strict policy guardrails to reduce alert noise and improve incident response speed — while keeping humans in control by default.
 
-It is not a pattern matcher. It reasons.
+---
 
-Every existing open source security tool matches events against
-rules someone wrote in advance. The moment an attacker does
-something outside those rules the tool misses it.
+## Why Bifrost?
 
-Bifrost uses AI to understand what a sequence of events means
-in context. A process reading /etc/passwd once is nothing.
-The same process then opening an outbound connection then
-calling execve is a confirmed credential theft attempt.
-Bifrost sees the chain. Bifrost acts on the chain.
+Traditional lightweight monitoring is often noisy, hard to tune, or cloud-dependent.  
+Bifrost is designed for operators who want:
 
-## The Mythology
+- stronger context than rules alone,
+- safer automation than raw AI decisions,
+- and local control over data and enforcement.
 
-| Component | Role | Mythology |
-|---|---|---|
-| Yggdrasil | Kernel layer | The world tree — root of everything |
-| Bifrost | Event pipeline | The bridge — all signal flows across it |
-| Heimdall | AI sentinel | The guardian — watches and acts |
-| Gjallarhorn | Alert system | The horn that wakes all realms |
+Bifrost gives you explainable decisions, safe defaults, and a practical path from observe-only mode to carefully controlled response.
 
-## What Makes Bifrost Different
+---
 
-| Feature | Bifrost | Falco | Wazuh | CrowdStrike |
-|---|---|---|---|---|
-| AI reasoning | Yes | No | No | Yes |
-| Fully local | Yes | Yes | Yes | No |
-| Any hardware | Yes | Partial | Partial | No |
-| Autonomous response | Yes | No | Partial | Yes |
-| Open source | Yes | Yes | Yes | No |
-| No cloud dependency | Yes | Yes | Yes | No |
-| Rollback support | Yes | No | No | No |
-| Portable installer | Yes | No | No | No |
+## What Bifrost Offers
 
-No existing open source EDR combines AI reasoning with
-autonomous response on any hardware. Bifrost does.
+- **Unified telemetry pipeline** for host + honeypot event streams
+- **Event normalization and schema validation** for consistent processing
+- **AI-assisted reasoning** to prioritize and explain threats
+- **Deterministic fallback rules** when model output is unavailable/unreliable
+- **Policy-gated actions** (unsafe actions automatically downgraded)
+- **Safe defaults enabled by default**
+  - `learning_mode=true`
+  - `dry_run=true`
+  - `autonomous_actions_enabled=false`
+- **Auditability**
+  - decision logs
+  - rationale tracking
+  - rollback context
+- **Operator visibility**
+  - local dashboard
+  - MQTT status/alert publishing
 
-## Architecture
+---
 
-KERNEL SPACE
-  Tetragon eBPF watches syscalls, process, filesystem, network.
-  Zero overhead. Unhackable from userspace.
+## AI in Bifrost: What It Does (and Doesn’t Do)
 
-USER SPACE — Go Agent
-  Telemetry multiplexer on Unix socket.
-  Ships clean events to Bifrost pipeline.
-  Executes autonomous actions from Heimdall decisions.
+### AI *does*
+- add context to suspicious behavior,
+- help classify likely threat intent,
+- propose candidate actions with confidence/reasoning.
 
-BIFROST PIPELINE — Python
-  Extractor strips noise and compresses events to dense JSON.
-  Anonymizer scrubs internal data before any external API call.
-  Reasoner routes to correct AI model based on hardware tier.
+### AI *does not*
+- bypass policy controls,
+- directly execute destructive actions by default,
+- replace operator judgment in safe mode.
 
-HEIMDALL — AI Sentinel
-  Sees attack chains not just individual events.
-  Rolling 10-event buffer per process and per IP.
-  Deterministic rule engine as fallback — never goes blind.
+> AI improves triage speed.  
+> Policy and safety gates enforce operational restraint.
 
-EXECUTOR — Go
-  UFW block on attacking IP.
-  Kill process by PID.
-  Quarantine suspicious file.
-  Full rollback support.
+---
 
-GJALLARHORN — Alert System
-  Tier 1: silent MQTT log to tablet.
-  Tier 2: MQTT plus audio plus push — breach detected.
+## Safety Model (Default Behavior)
 
-## Hardware Tiers
+Bifrost is built to be safe-first:
 
-Bifrost detects your hardware at install time and configures itself.
-Same decision quality on a Pi as on an RTX 3060.
+1. **Schema gate** — malformed decisions are rejected/fallbacked.
+2. **Policy gate** — destructive actions are downgraded when safety conditions are not met.
+3. **Mode gate** — learning/dry-run/autonomous flags control enforcement eligibility.
 
-| Tier | Hardware | Local Model | Fallback |
-|---|---|---|---|
-| TIER_1 | RTX 3060 / 32GB | Qwen 2.5 Coder 32B | Claude API |
-| TIER_2 | 16GB / mid GPU | Qwen 2.5 7B | Groq |
-| TIER_3 | 8GB / no GPU | Qwen 2.5 1.5B | Groq then Claude |
-| TIER_4 | Minimal / Pi | Rules only | Claude API |
+In default mode, Bifrost observes and simulates response only.
 
-Fallback chain: Local Ollama → Groq → Claude → Deterministic rules
+---
 
-## What Heimdall Watches
+## Benefits at a Glance
 
-Process layer — every execve, privilege escalation, masquerading.
-Filesystem layer — /etc/passwd, /etc/shadow, /tmp execution.
-Network layer — outbound connections, beaconing, namespace violations.
-Memory layer — memfd_create, fileless execution, process hollowing.
-Authentication layer — sudo failures, SSH attempts, PAM events.
-Container boundary — honeypot breakout detection.
+- Faster triage with contextual reasoning
+- Reduced analyst fatigue from noisy raw alerts
+- Better consistency via structured decisions
+- Lower risk through safe defaults and downgrade logic
+- Local-first deployment with optional anonymized external inference
+- Clear upgrade path from demo/lab to cautious live operation
 
-## Response Authority
+---
 
-Autonomous — no approval needed:
-  UFW block on attacking IP
-  Kill process by PID
-  Quarantine suspicious file
+## Who It’s For
 
-Requires approval — Gjallarhorn Tier 2:
-  Full system lockdown
-  Network isolation
-  User account suspension
+- Homelab defenders
+- Detection engineers
+- Security researchers
+- Honeypot operators
+- Edge security experiments and red/blue testing labs
 
-Every action is logged and reversible.
+## Not a Fit (Yet)
 
-## Learning Period
+- Enterprise-wide distributed SOC at scale
+- Fully autonomous, unsupervised response environments
+- High-assurance environments requiring formal verification
 
-Before active guardian mode Heimdall spends 7 days learning
-what normal looks like on your specific system.
+---
 
-During learning all events are logged but no autonomous action
-is taken. After learning anomaly detection is calibrated and
-Heimdall goes active.
+## Quickstart
 
-## Installation
+```bash
+cd ~/Projects/bifrost
+export PYTHONPATH="$PWD"
+python3 -m pytest tests/ -v
+python3 demo/demo.py --scenario examples/replay/mdrfckr_botnet.jsonl
+```
 
-Requirements: Linux, Python 3.8+, Go 1.21+, Ollama optional.
+Expected result: safe-mode simulation output with **no destructive enforcement**.
 
-    git clone https://github.com/sierengowskisierengowski-cpu/Bifrost
-    cd Bifrost
-    python setup.py
-    sudo bash install.sh
-    sudo bash kernel/tetragon/setup.sh
-    sudo systemctl start bifrost-guardian
-    sudo systemctl start bifrost-agent
+---
 
-Set API keys for cloud fallback:
+## Example Demo Output (Safe Mode)
 
-    export HEIMDALL_API_KEY=your_groq_key
-    export HEIMDALL_CLAUDE_KEY=your_claude_key
+- incidents detected and scored,
+- requested actions shown,
+- effective action downgraded per policy when needed,
+- audit records written for review.
 
-## Proven On Real Attacks
+---
 
-Bifrost was developed and tested against live attack data from
-GowskiNet — a fully operational home security research lab that
-has captured 4600 plus real attacks from threat actors in 47 countries.
+## High-Level Architecture
 
-Notable test case — mdrfckr botnet campaign May 26 2026:
-  Duration: 17 hours of live SSH botnet activity
-  Session data: 63853 lines
-  Credentials harvested: 50 plus unique pairs
-  Artifacts: backdoor RSA key captured
-  Countries: Russia, China, Netherlands, Canada, Azure cloud IPs
+```text
+Telemetry Sources (host, honeypot, eBPF, logs)
+        │
+        ▼
+Ingest/Collector  ──► Extractor ──► Anonymizer ──► Memory
+        │                                  │
+        └──────────────────────────────► Reasoner (AI + deterministic fallback)
+                                           │
+                                           ▼
+                                      Policy Gate
+                                           │
+                        ┌──────────────────┴──────────────────┐
+                        ▼                                     ▼
+                 Audit / Dashboard / MQTT             Executor (guarded)
+```
 
-This is not a simulated test. Real attack data. Real threat actors.
+---
 
-## File Structure
+## Hardware Tiers (Example Guidance)
 
-    bifrost/
-    setup.py                  hardware detection and installer
-    install.sh                systemd service installer
-    bifrost/
-        guardian.py           main runtime loop
-        ingest.py             HTTP endpoint for Go agent
-        extractor.py          noise stripping and compression
-        reasoner.py           Heimdall AI routing and decisions
-        anonymizer.py         privacy layer before external APIs
-        baseline.py           7 day learning period engine
-        feedback.py           false positive loop and rollback
-    gjallarhorn/
-        alerts.py             tier 1 and tier 2 alert routing
-    agent/
-        collector.go          Unix socket telemetry multiplexer
-        executor.go           autonomous action engine
-    kernel/tetragon/
-        policies/             eBPF tracing policies
-        setup.sh              Tetragon installer
+| Tier | Typical Hardware | Recommended Mode |
+|------|------------------|------------------|
+| TIER_1 | Modern laptop/workstation GPU | Local model + full pipeline |
+| TIER_2 | Mid desktop / strong CPU | Mixed local/remote reasoning |
+| TIER_3 | Low-power mini PC | Deterministic-heavy, selective AI |
+| TIER_4 | VM / constrained node | Safe-mode + fallback-first |
+
+---
 
 ## Roadmap
 
-v0.1.0 Current: Core pipeline complete. Python and Go connected.
-v0.2.0 Live testing against GowskiNet. Autonomous response hardening.
-v0.3.0 eBPF circuit breaker. Dynamic deception engine.
-v1.0.0 Federated threat intel. Attack replay. Public release.
+### v0.1.x
+- stabilize pipeline reliability
+- strengthen failover tests
+- improve docs and safety controls
+- monitor-only live validation on real telemetry
 
-## Creator
+### v0.2.0
+- stronger authn/authz on local ingest paths
+- richer metrics/health endpoints
+- improved resilience under burst load
+- policy tuning UX + operator workflows
 
-Joseph Sierengowski (gowski-star)
-Self-taught developer and security researcher.
-Operator of GowskiNet — 4600 plus real captured attacks.
+---
 
-The bridge is watched. Heimdall never sleeps.
+## Contributing
+
+Contributions are welcome for:
+- detection rules
+- replay scenarios
+- policy hardening
+- docs and incident playbooks
+- reliability and observability improvements
+
+Please open an issue with:
+1. problem statement,
+2. proposed change,
+3. safety impact,
+4. test evidence.
+
+---
+
+## Responsible Use
+
+Bifrost is a defensive security tool.  
+Do not deploy autonomous enforcement without controlled testing, rollback plans, and explicit operator approval.
