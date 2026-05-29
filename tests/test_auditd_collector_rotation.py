@@ -38,10 +38,12 @@ def test_auditd_collector_reopens_after_rotation(tmp_path, monkeypatch):
         audit_log.rename(rotated)
         audit_log.write_text("")
         time.sleep(0.2)
-        _append_line(audit_log, 'type=SYSCALL msg=audit(1.1:2): comm="curl"')
+        second_line = 'type=SYSCALL msg=audit(1.1:2): comm="curl"'
+        _append_line(audit_log, second_line)
 
         second = q.get(timeout=2)
-        assert second["raw"].endswith('comm="curl"')
+        assert second["raw"] == second_line
+        assert q.empty()
     finally:
         SHUTDOWN.set()
         collector.join(timeout=2)
