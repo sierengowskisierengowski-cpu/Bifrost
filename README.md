@@ -5,6 +5,16 @@ The Bridge Is Watched.
 An open source AI-powered Endpoint Detection and Response platform
 that runs on any hardware from a Raspberry Pi to a workstation.
 
+> **⚠️ AUTHORIZED USE ONLY**
+> Bifrost is a defensive security tool. Deploy and operate it **only on systems
+> you own or have explicit written authorization to monitor and protect.**
+> Unauthorized use against systems you do not own may violate the Computer
+> Fraud and Abuse Act (CFAA), the UK Computer Misuse Act, and equivalent laws
+> in your jurisdiction. The authors accept no liability for unauthorized use.
+> See [SECURITY.md](SECURITY.md) for the vulnerability disclosure policy and
+> [docs/lab-attack-simulation.md](docs/lab-attack-simulation.md) for safe
+> authorized testing guidance.
+
 ## What Is Bifrost
 
 Bifrost is a portable AI-powered security sentinel that watches

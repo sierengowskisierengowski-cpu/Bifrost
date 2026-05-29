@@ -1,6 +1,46 @@
+# Test / coverage
 .coverage
 htmlcov/
+.pytest_cache/
 .mypy_cache/
+
+# Config and secrets (generated at runtime)
 heimdall_config.json
 heimdall_config.sha256
+bifrost_tokens.env
+/etc/heimdall/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Log and audit files
+*.log
+*.jsonl
+logs/
+db/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Temporary / editor files
+PYEOF~
+*.orig
+*.bak
+*.swp
+*~
+
+# Go build output
+agent/bifrost-agent
+
+# Node / misc
+node_modules/
+.env
+
+# Test attack framework (local lab only)
 tests/attack_framework/

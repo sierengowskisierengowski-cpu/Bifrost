@@ -47,7 +47,9 @@ func startCollector() {
 		log.Fatalf("[!] Cannot bind Unix socket %s: %v", socketPath, err)
 	}
 	defer listener.Close()
-	_ = os.Chmod(socketPath, 0666)
+	// 0660: owner+group read/write only — not world-accessible.
+	// Tetragon shipper and bifrost-agent must share the same group.
+	_ = os.Chmod(socketPath, 0660)
 
 	log.Printf("[+] Collector listening on %s", socketPath)
 	log.Printf("[+] Forwarding to %s", ingestURL)

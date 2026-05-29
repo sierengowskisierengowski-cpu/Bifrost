@@ -42,12 +42,24 @@ if ! command -v kubectl &> /dev/null; then
             ARCH="arm64"
         fi
 
-        wget -q -O /tmp/tetragon.tar.gz \
-            "https://github.com/cilium/tetragon/releases/download/${TETRAGON_VERSION}/tetragon-linux-${ARCH}.tar.gz"
+        TARBALL_URL="https://github.com/cilium/tetragon/releases/download/${TETRAGON_VERSION}/tetragon-linux-${ARCH}.tar.gz"
+        CHECKSUM_URL="https://github.com/cilium/tetragon/releases/download/${TETRAGON_VERSION}/tetragon-linux-${ARCH}.tar.gz.sha256sum"
+
+        wget -q -O /tmp/tetragon.tar.gz "${TARBALL_URL}"
+        wget -q -O /tmp/tetragon.tar.gz.sha256sum "${CHECKSUM_URL}"
+
+        echo "[*] Verifying Tetragon checksum..."
+        (cd /tmp && sha256sum --check tetragon.tar.gz.sha256sum) || {
+            echo "[!] Checksum verification FAILED. Aborting installation."
+            rm -f /tmp/tetragon.tar.gz /tmp/tetragon.tar.gz.sha256sum
+            exit 1
+        }
+        echo "[+] Checksum verified."
 
         tar -xzf /tmp/tetragon.tar.gz -C /tmp/
         mv /tmp/tetragon /usr/local/bin/tetragon
         chmod +x /usr/local/bin/tetragon
+        rm -f /tmp/tetragon.tar.gz /tmp/tetragon.tar.gz.sha256sum
         echo "[+] Tetragon installed."
     else
         echo "[+] Tetragon already installed."
@@ -55,11 +67,23 @@ if ! command -v kubectl &> /dev/null; then
 
     # Install tetra CLI tool
     if ! command -v tetra &> /dev/null; then
-        wget -q -O /tmp/tetra.tar.gz \
-            "https://github.com/cilium/tetragon/releases/download/${TETRAGON_VERSION}/tetra-linux-${ARCH}.tar.gz"
+        TETRA_TARBALL_URL="https://github.com/cilium/tetragon/releases/download/${TETRAGON_VERSION}/tetra-linux-${ARCH}.tar.gz"
+        TETRA_CHECKSUM_URL="https://github.com/cilium/tetragon/releases/download/${TETRAGON_VERSION}/tetra-linux-${ARCH}.tar.gz.sha256sum"
+        wget -q -O /tmp/tetra.tar.gz "${TETRA_TARBALL_URL}"
+        wget -q -O /tmp/tetra.tar.gz.sha256sum "${TETRA_CHECKSUM_URL}"
+
+        echo "[*] Verifying tetra CLI checksum..."
+        (cd /tmp && sha256sum --check tetra.tar.gz.sha256sum) || {
+            echo "[!] tetra CLI checksum verification FAILED. Aborting."
+            rm -f /tmp/tetra.tar.gz /tmp/tetra.tar.gz.sha256sum
+            exit 1
+        }
+        echo "[+] tetra CLI checksum verified."
+
         tar -xzf /tmp/tetra.tar.gz -C /tmp/
         mv /tmp/tetra /usr/local/bin/tetra
         chmod +x /usr/local/bin/tetra
+        rm -f /tmp/tetra.tar.gz /tmp/tetra.tar.gz.sha256sum
         echo "[+] tetra CLI installed."
     fi
 
@@ -162,7 +186,7 @@ else
     # Apply tracing policies
     for policy in "$POLICY_DIR"/*.yaml; do
         kubectl apply -f "$policy"
-        echo "[+] Applied: $(basename $policy)"
+        echo "[+] Applied: $(basename "$policy")"
     done
 fi
 
