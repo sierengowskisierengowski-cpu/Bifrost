@@ -24,6 +24,7 @@ class IngestHandler(BaseHTTPRequestHandler):
 
     # Injected by IngestServer before starting
     event_queue: Queue = None
+    ingest_token: str = None
 
     def log_message(self, format, *args):
         # Suppress default HTTP server logs
@@ -52,6 +53,18 @@ class IngestHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
             return
+
+        # HMAC token authentication
+        # Prevents local malware from injecting spoofed events
+        if self.ingest_token:
+            provided = self.headers.get("X-Bifrost-Token", "")
+            import hmac as _hmac
+            if not _hmac.compare_digest(provided, self.ingest_token):
+                self.send_response(401)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"error":"unauthorized"}')
+                return
 
         try:
             length = int(self.headers.get("Content-Length", 0))

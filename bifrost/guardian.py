@@ -69,15 +69,21 @@ def load_config():
         config = json.load(f)
 
     checksum_path = CONFIG_PATH.with_suffix(".sha256")
-    if checksum_path.exists():
-        import hashlib
-        actual = hashlib.sha256(CONFIG_PATH.read_bytes()).hexdigest()
-        expected = checksum_path.read_text().strip()
-        if actual != expected:
-            print("[!] CRITICAL: Config checksum mismatch.")
-            print("[!] heimdall_config.json may have been tampered with.")
-            sys.exit(1)
-        print("[+] Config integrity verified.")
+    if not checksum_path.exists():
+        print("[!] CRITICAL: Config checksum file missing.")
+        print("[!] heimdall_config.sha256 not found.")
+        print("[!] Run python setup.py to regenerate config and checksum.")
+        print("[!] This is required to prevent tampered config from loading.")
+        sys.exit(1)
+    import hashlib
+    actual = hashlib.sha256(CONFIG_PATH.read_bytes()).hexdigest()
+    expected = checksum_path.read_text().strip()
+    if actual != expected:
+        print("[!] CRITICAL: Config checksum mismatch.")
+        print("[!] heimdall_config.json may have been tampered with.")
+        print("[!] Run python setup.py to regenerate.")
+        sys.exit(1)
+    print("[+] Config integrity verified.")
 
     return config
 
