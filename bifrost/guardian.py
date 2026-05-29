@@ -31,14 +31,23 @@ from bifrost.event_queue import METRICS, METRICS_LOCK, safe_enqueue
 from bifrost.inference import CircuitBreaker, execute_with_retry, get_request_timeout
 from bifrost import paths as bifrost_paths
 from bifrost.resilience import (
-    FailoverLoggingHandler,
     configure_sqlite_connection,
     execute_with_db_retry,
     validate_event_envelope,
     verify_config_integrity,
     verify_database_integrity,
 )
+from logging.handlers import RotatingFileHandler
+
 from bifrost.db_maintenance import WALCheckpointThread
+from bifrost.security import (
+    TELEMETRY_TRUST_PREAMBLE,
+    get_required_token,
+    is_production_mode,
+    redact_for_storage,
+    safe_json_dumps,
+    sanitize_telemetry_for_llm,
+)
 
 BIFROST_VERSION = "0.1.1"
 
@@ -76,12 +85,40 @@ def setup_logging():
     formatter = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
     )
-    file_handler = FailoverLoggingHandler(LOG_PATH)
+    file_handler = RotatingFileHandler(
+        LOG_PATH,
+        maxBytes=50 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",
+    )
     file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setFormatter(formatter)
+
+    class _FailoverRotatingHandler(logging.Handler):
+        """Rotate logs; fall back to stderr if disk is full."""
+
+        def __init__(self, path):
+            super().__init__()
+            self._primary = file_handler
+            self._fallback = logging.StreamHandler(sys.stderr)
+            self._stderr_only = False
+
+        def emit(self, record):
+            target = self._fallback if self._stderr_only else self._primary
+            try:
+                target.emit(record)
+            except Exception:
+                self._stderr_only = True
+                self._fallback.emit(record)
+
+        def close(self):
+            self._primary.close()
+            self._fallback.close()
+            super().close()
+
     root.handlers.clear()
-    root.addHandler(file_handler)
+    root.addHandler(_FailoverRotatingHandler(LOG_PATH))
     root.addHandler(stream_handler)
     return logging.getLogger("heimdall.guardian")
 
@@ -657,11 +694,13 @@ class EventRouter(threading.Thread):
 
     def compress_event(self, event: dict) -> str:
         if not self.extractor_client:
-            raw = json.dumps(event.get("raw", {}))
-            return raw[:500]
+            raw = safe_json_dumps(event.get("raw", {}))
+            return sanitize_telemetry_for_llm(raw)[:500]
 
         try:
-            raw = json.dumps(event.get("raw", {}))
+            raw = sanitize_telemetry_for_llm(
+                safe_json_dumps(event.get("raw", {}))
+            )
             response, error = execute_with_retry(
                 lambda: self.extractor_client.chat.completions.create(
                     model=self.extractor_model,
@@ -692,20 +731,29 @@ class EventRouter(threading.Thread):
                 self.log.warning("Extractor degraded mode: %s", reason)
                 with METRICS_LOCK:
                     METRICS["llm_errors"] += 1
-                return json.dumps(event.get("raw", {}))[:500]
-            return response.choices[0].message.content.strip()
+                return sanitize_telemetry_for_llm(
+                    safe_json_dumps(event.get("raw", {}))
+                )[:500]
+            return sanitize_telemetry_for_llm(
+                response.choices[0].message.content.strip()
+            )
         except Exception as e:
             self.log.warning(f"Extractor error: {e}. Using raw fallback.")
             with METRICS_LOCK:
                 METRICS["llm_errors"] += 1
-            return json.dumps(event.get("raw", {}))[:500]
+            return sanitize_telemetry_for_llm(
+                safe_json_dumps(event.get("raw", {}))
+            )[:500]
 
     def route_to_heimdall(self, compressed: str) -> dict:
         if not self.analyst_client:
             return self._safe_fallback("no_analyst_client")
 
         try:
-            baseline = self.config.get("system_baseline", "")
+            baseline = TELEMETRY_TRUST_PREAMBLE + self.config.get(
+                "system_baseline", ""
+            )
+            sanitized = sanitize_telemetry_for_llm(compressed)
             response, error = execute_with_retry(
                 lambda: self.analyst_client.chat.completions.create(
                     model=self.analyst_model,
@@ -715,7 +763,8 @@ class EventRouter(threading.Thread):
                         {
                             "role": "user",
                             "content": (
-                                f"Analyze this security event as JSON:\n{compressed}"
+                                "Analyze this security event as JSON:\n"
+                                f"{sanitized}"
                             ),
                         },
                     ],
@@ -1024,10 +1073,11 @@ class EventRouter(threading.Thread):
             self.log.error("DB store skipped: database marked unhealthy")
             return -1
 
-        boundary = event.get("boundary", "UNKNOWN")
-        source = event.get("source", "unknown")
-        raw = json.dumps(event.get("raw", {}))
-        timestamp = event.get(
+        stored_event = redact_for_storage(event)
+        boundary = stored_event.get("boundary", "UNKNOWN")
+        source = stored_event.get("source", "unknown")
+        raw = safe_json_dumps(stored_event.get("raw", {}))
+        timestamp = stored_event.get(
             "timestamp", datetime.now(timezone.utc).isoformat()
         )
         action = None
@@ -1193,6 +1243,14 @@ def main():
 
     config = load_config()
     refresh_runtime_paths(config)
+
+    if is_production_mode() and not get_required_token("BIFROST_INGEST_TOKEN"):
+        log.critical(
+            "BIFROST_INGEST_TOKEN is required in production mode. "
+            "Set it before starting guardian."
+        )
+        sys.exit(1)
+
     banner(config)
 
     db_path = init_database()
@@ -1205,7 +1263,9 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     from bifrost.ingest import IngestServer
-    ingest_server = IngestServer(EVENT_QUEUE)
+
+    ingest_token = os.getenv("BIFROST_INGEST_TOKEN", "").strip()
+    ingest_server = IngestServer(EVENT_QUEUE, ingest_token=ingest_token)
     ingest_server.start()
     log.info("Ingest server started on http://127.0.0.1:8765/ingest")
 

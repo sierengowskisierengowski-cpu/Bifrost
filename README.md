@@ -124,6 +124,54 @@ During learning all events are logged but no autonomous action
 is taken. After learning anomaly detection is calibrated and
 Heimdall goes active.
 
+## Security and Safe Defaults
+
+Bifrost ships in **learning mode + dry-run** by default. Autonomous actions
+(KILL, BLOCK, QUARANTINE) are blocked by the Python policy gate until you
+explicitly disable all three safeguards in `heimdall_config.json`:
+
+- `learning_mode: false`
+- `dry_run: false`
+- `autonomous_actions_enabled: true`
+
+**Do not enable autonomous mode on production systems until you have completed
+the 7-day learning period and reviewed false positive rates.**
+
+### Service tokens (required in production)
+
+After `python setup.py`, source the generated token file:
+
+    source /etc/heimdall/bifrost_tokens.env   # or your config directory
+
+| Token | Purpose |
+|---|---|
+| `BIFROST_INGEST_TOKEN` | Authenticates Go collector → Python ingest |
+| `BIFROST_EXECUTOR_TOKEN` | Authenticates Python → Go executor |
+| `BIFROST_DASHBOARD_TOKEN` | Authenticates dashboard/API access |
+
+Set `HEIMDALL_ENV=production` (default) to enforce token requirements.
+
+### API keys
+
+Store API keys in environment variables only — never in config files or logs:
+
+    export HEIMDALL_API_KEY=your_groq_key
+    export HEIMDALL_CLAUDE_KEY=your_claude_key
+
+### Privileges
+
+The Go agent requires `sudo` for UFW block/unblock only. Guardian runs as an
+unprivileged user. Quarantined files are chmod 000 in a mode-700 directory.
+
+### Uninstall
+
+    sudo systemctl stop bifrost-guardian bifrost-agent
+    sudo systemctl disable bifrost-guardian bifrost-agent
+    sudo rm /etc/systemd/system/bifrost-*.service
+    sudo systemctl daemon-reload
+    # Optional — removes all data:
+    # sudo rm -rf /var/lib/heimdall /var/log/heimdall /etc/heimdall
+
 ## Installation
 
 Requirements: Linux, Python 3.8+, Go 1.21+, Ollama optional.

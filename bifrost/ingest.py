@@ -12,6 +12,7 @@ This is the bridge between the Go agent and Python.
 
 import json
 import logging
+import os
 import threading
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -22,6 +23,7 @@ from bifrost.resilience import (
     MAX_INGEST_BODY_BYTES,
     validate_event_envelope,
 )
+from bifrost.security import compare_token, is_production_mode
 
 log = logging.getLogger("heimdall.ingest")
 
@@ -60,17 +62,27 @@ class IngestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        # HMAC token authentication
-        # Prevents local malware from injecting spoofed events
+        # Token authentication — required in production
+        if is_production_mode() and not self.ingest_token:
+            self.send_response(503)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"error":"ingest_not_configured"}')
+            log.critical("Ingest rejected: BIFROST_INGEST_TOKEN not configured")
+            return
+
         if self.ingest_token:
             provided = self.headers.get("X-Bifrost-Token", "")
-            import hmac as _hmac
-            if not _hmac.compare_digest(provided, self.ingest_token):
+            if not compare_token(provided, self.ingest_token):
                 self.send_response(401)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(b'{"error":"unauthorized"}')
                 return
+        elif not is_production_mode():
+            log.warning(
+                "Ingest accepting unauthenticated requests (development mode only)"
+            )
 
         try:
             length = int(self.headers.get("Content-Length", 0))
@@ -186,13 +198,14 @@ class IngestServer(threading.Thread):
     HOST = "127.0.0.1"
     PORT = 8765
 
-    def __init__(self, event_queue: Queue):
+    def __init__(self, event_queue: Queue, ingest_token: str | None = None):
         super().__init__(daemon=True, name="bifrost.ingest")
         self.event_queue = event_queue
         self.server = None
+        self.ingest_token = (ingest_token or os.getenv("BIFROST_INGEST_TOKEN", "")).strip()
 
-        # Inject queue into handler class
         IngestHandler.event_queue = event_queue
+        IngestHandler.ingest_token = self.ingest_token or None
 
     def run(self):
         try:

@@ -298,7 +298,8 @@ def format_for_heimdall(compressed_events: list) -> str:
             f"command={command} alert={alert}"
         )
 
-    return "\n".join(lines)
+    from bifrost.security import sanitize_telemetry_for_llm
+    return sanitize_telemetry_for_llm("\n".join(lines))
 
 
 if __name__ == "__main__":

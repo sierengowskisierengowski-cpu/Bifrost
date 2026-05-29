@@ -38,6 +38,12 @@ fi
 echo "[*] Installing systemd services..."
 cd "$BIFROST_DIR"
 
+if [[ ! -f /etc/heimdall/bifrost_tokens.env ]]; then
+    echo "[!] Token file missing. Run 'python setup.py' first, then:"
+    echo "    sudo cp /etc/heimdall/bifrost_tokens.env /etc/heimdall/ 2>/dev/null || true"
+    echo "    (setup.py writes tokens to your config directory)"
+fi
+
 # Update service files with correct user and paths
 sed -i "s|User=nyx|User=$USER|g" bifrost-guardian.service
 sed -i "s|Group=nyx|Group=$USER|g" bifrost-guardian.service
@@ -57,6 +63,10 @@ mkdir -p /etc/heimdall
 chown -R "$USER:$USER" /var/log/heimdall
 chown -R "$USER:$USER" /var/lib/heimdall
 chown -R "$USER:$USER" /etc/heimdall
+chmod 750 /var/log/heimdall
+chmod 700 /var/lib/heimdall
+chmod 700 /var/lib/heimdall/quarantine
+chmod 750 /etc/heimdall
 
 echo "[*] Reloading systemd..."
 systemctl daemon-reload

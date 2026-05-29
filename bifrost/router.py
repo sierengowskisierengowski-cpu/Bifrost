@@ -66,8 +66,18 @@ def execute_decision(
     }
 
     headers = {"Content-Type": "application/json"}
-    token = os.getenv("BIFROST_EXECUTOR_TOKEN", "")
-    if token:
+    token = os.getenv("BIFROST_EXECUTOR_TOKEN", "").strip()
+    if not token:
+        from bifrost.security import is_production_mode
+        if is_production_mode():
+            log_ref.error(
+                "Router: BIFROST_EXECUTOR_TOKEN unset — refusing dispatch."
+            )
+            return False
+        log_ref.warning(
+            "Router: BIFROST_EXECUTOR_TOKEN unset — executor will reject."
+        )
+    else:
         headers["X-Bifrost-Token"] = token
 
     try:
@@ -106,8 +116,15 @@ def rollback_last_action(action_id: int, log_ref) -> bool:
         return False
 
     headers = {"Content-Type": "application/json"}
-    token = os.getenv("BIFROST_EXECUTOR_TOKEN", "")
-    if token:
+    token = os.getenv("BIFROST_EXECUTOR_TOKEN", "").strip()
+    if not token:
+        from bifrost.security import is_production_mode
+        if is_production_mode():
+            log_ref.error(
+                "Router: BIFROST_EXECUTOR_TOKEN unset — refusing rollback."
+            )
+            return False
+    else:
         headers["X-Bifrost-Token"] = token
 
     try:

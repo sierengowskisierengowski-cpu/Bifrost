@@ -120,7 +120,30 @@ def test_private_ip_blocked_for_block_action():
     assert r.downgraded_action == ActionType.ALERT
 
 
-def test_allowed_action_passes_all_checks():
+def test_confidence_at_threshold_passes():
+    d = mk_decision(action=ActionType.KILL, confidence=0.85, evidence_count=3, pid=9999)
+    r = evaluate_policy(
+        d,
+        learning_mode=False,
+        dry_run=False,
+        autonomous_enabled=True,
+        confidence_threshold=0.85,
+        protected_pids_max=100,
+    )
+    assert r.allowed is True
+    assert r.downgraded_action == ActionType.KILL
+
+
+def test_confidence_just_below_threshold_blocks():
+    d = mk_decision(action=ActionType.KILL, confidence=0.849, evidence_count=3)
+    r = evaluate_policy(
+        d,
+        learning_mode=False,
+        dry_run=False,
+        autonomous_enabled=True,
+        confidence_threshold=0.85,
+    )
+    assert r.allowed is False
     d = mk_decision(
         action=ActionType.BLOCK,
         confidence=0.95,

@@ -97,32 +97,21 @@ def rollback_action(
     Rolls back an autonomous action taken by Heimdall.
     Calls the Go executor rollback endpoint.
     """
-    import urllib.request
-    import urllib.error
+    from bifrost.router import rollback_last_action
 
-    try:
-        payload = json.dumps({"action_id": action_id}).encode()
-        req = urllib.request.Request(
-            "http://127.0.0.1:8766/rollback",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST"
+    if rollback_last_action(action_id, log):
+        log.info(
+            f"Rollback executed: action_id={action_id} "
+            f"type={action_type}"
         )
-        with urllib.request.urlopen(req, timeout=5) as response:
-            result = json.loads(response.read())
-            log.info(
-                f"Rollback executed: action_id={action_id} "
-                f"type={action_type} result={result}"
-            )
-            return True
+        return True
 
-    except Exception as e:
-        log.warning(
-            f"Executor rollback failed: {e}. "
-            f"Manual rollback may be required. "
-            f"Data: {rollback_data}"
-        )
-        return False
+    log.warning(
+        f"Executor rollback failed for action_id={action_id}. "
+        f"Manual rollback may be required. "
+        f"Data: {rollback_data}"
+    )
+    return False
 
 
 def get_false_positives(limit: int = 50) -> list:

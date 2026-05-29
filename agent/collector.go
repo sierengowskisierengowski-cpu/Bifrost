@@ -118,6 +118,7 @@ func dispatchWorker(queue <-chan TelemetryEnvelope, id int, ingestURL string) {
 	client := &http.Client{
 		Timeout: 3 * time.Second,
 	}
+	ingestToken := os.Getenv("BIFROST_INGEST_TOKEN")
 
 	for envelope := range queue {
 		payload, err := json.Marshal(envelope)
@@ -126,11 +127,17 @@ func dispatchWorker(queue <-chan TelemetryEnvelope, id int, ingestURL string) {
 			continue
 		}
 
-		resp, err := client.Post(
-			ingestURL,
-			"application/json",
-			bytes.NewBuffer(payload),
-		)
+		req, err := http.NewRequest("POST", ingestURL, bytes.NewBuffer(payload))
+		if err != nil {
+			log.Printf("[!] Worker %d: request build error: %v", id, err)
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if ingestToken != "" {
+			req.Header.Set("X-Bifrost-Token", ingestToken)
+		}
+
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("[!] Worker %d: ingest POST failed: %v", id, err)
 			continue

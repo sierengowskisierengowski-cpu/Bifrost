@@ -315,23 +315,47 @@ def generate_config(tier, analyst_model, extractor_model, ollama_ok, paths):
             "full_lockdown",
             "network_isolation",
             "suspend_user"
-        ]
+        ],
+        "learning_mode": True,
+        "dry_run": True,
+        "autonomous_actions_enabled": False,
+        "confidence_threshold": 0.85,
+        "min_evidence_count": 2,
+        "never_block_rfc1918": True,
+        "protected_pids_max": 100,
     }
 
     from bifrost.paths import config_checksum_path, config_path
+    from bifrost.security import generate_token
 
     cfg = config_path()
     cfg.parent.mkdir(parents=True, exist_ok=True)
     with open(cfg, "w") as f:
         json.dump(config, f, indent=2)
+    os.chmod(cfg, 0o600)
 
     checksum = hashlib.sha256(cfg.read_bytes()).hexdigest()
 
     checksum_file = config_checksum_path()
     with open(checksum_file, "w") as f:
         f.write(checksum)
+    os.chmod(checksum_file, 0o600)
+
+    tokens_path = cfg.parent / "bifrost_tokens.env"
+    ingest_token = generate_token()
+    executor_token = generate_token()
+    dashboard_token = generate_token()
+    with open(tokens_path, "w") as f:
+        f.write("# Bifrost service tokens — keep secret, chmod 600\n")
+        f.write(f"BIFROST_INGEST_TOKEN={ingest_token}\n")
+        f.write(f"BIFROST_EXECUTOR_TOKEN={executor_token}\n")
+        f.write(f"BIFROST_DASHBOARD_TOKEN={dashboard_token}\n")
+    os.chmod(tokens_path, 0o600)
 
     print(f"[+] heimdall_config.json written to {cfg}.")
+    print(f"[+] Service tokens written to {tokens_path} (mode 600).")
+    print("[+] Source this file before starting services:")
+    print(f"    source {tokens_path}")
     print(f"[+] Integrity hash: {checksum[:16]}...")
 
 

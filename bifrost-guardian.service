@@ -1,0 +1,24 @@
+[Unit]
+Description=Bifrost Heimdall Guardian (Python pipeline)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nyx
+Group=nyx
+WorkingDirectory=/home/nyx/Projects/bifrost
+Environment=HEIMDALL_ENV=production
+EnvironmentFile=-/etc/heimdall/bifrost_tokens.env
+EnvironmentFile=-/etc/heimdall/heimdall.env
+ExecStart=/usr/bin/python3 -m bifrost.guardian
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/heimdall /var/log/heimdall /etc/heimdall
+
+[Install]
+WantedBy=multi-user.target

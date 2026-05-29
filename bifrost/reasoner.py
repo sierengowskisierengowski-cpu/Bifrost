@@ -107,6 +107,7 @@ from pathlib import Path
 from typing import Optional
 
 from bifrost.extractor import format_for_heimdall
+from bifrost.security import TELEMETRY_TRUST_PREAMBLE, sanitize_telemetry_for_llm
 from bifrost.inference import (
     CircuitBreaker,
     execute_with_retry,
@@ -122,10 +123,7 @@ INFERENCE_CIRCUIT_BREAKERS = {
     "claude": CircuitBreaker(),
 }
 
-# Rolling event buffer per source IP and per process
-# Heimdall sees attack chains not just individual events
-IP_BUFFER: dict[str, deque] = {}
-PROCESS_BUFFER: dict[str, deque] = {}
+# Rolling event buffer — delegated to heimdall.memory (capped + TTL)
 BUFFER_SIZE = 10
 
 # Deterministic rule engine — the floor
@@ -282,22 +280,8 @@ def update_event_buffer(compressed: dict) -> list:
     per source IP and per process. Returns the current
     buffer context for Heimdall to reason over as a chain.
     """
-    ip = compressed.get("ip")
-    process = compressed.get("process")
-
-    if ip:
-        if ip not in IP_BUFFER:
-            IP_BUFFER[ip] = deque(maxlen=BUFFER_SIZE)
-        IP_BUFFER[ip].append(compressed)
-        return list(IP_BUFFER[ip])
-
-    if process:
-        if process not in PROCESS_BUFFER:
-            PROCESS_BUFFER[process] = deque(maxlen=BUFFER_SIZE)
-        PROCESS_BUFFER[process].append(compressed)
-        return list(PROCESS_BUFFER[process])
-
-    return [compressed]
+    from heimdall.memory import update_buffer
+    return update_buffer(compressed)
 
 
 def load_false_positives() -> list:
@@ -338,12 +322,13 @@ def build_heimdall_prompt(
     Includes the attack chain context and any known
     false positive patterns to reduce noise over time.
     """
-    chain_text = format_for_heimdall(event_chain)
+    chain_text = sanitize_telemetry_for_llm(format_for_heimdall(event_chain))
 
     fp_text = ""
     if false_positives:
         fp_lines = [
-            f"- {fp['threat_class']}: {fp['pattern']}"
+            f"- {sanitize_telemetry_for_llm(fp['threat_class'])}: "
+            f"{sanitize_telemetry_for_llm(fp['pattern'])}"
             for fp in false_positives
         ]
         fp_text = (
@@ -571,7 +556,7 @@ def route_to_heimdall(compressed: dict, config: dict) -> Optional[dict]:
     Returns a validated Heimdall decision dict or None.
     """
     tier = config.get("hardware_tier", "TIER_4")
-    system_baseline = config.get("system_baseline", "")
+    system_baseline = TELEMETRY_TRUST_PREAMBLE + config.get("system_baseline", "")
 
     # Build attack chain context
     event_chain = update_event_buffer(compressed)

@@ -133,6 +133,11 @@ func dispatchMitigation(v HeimdallVerdict) {
 		return
 	}
 
+	if !isAllowedAction(v.ActionRequired) {
+		log.Printf("[!] SAFETY BLOCK: Unknown action %q", v.ActionRequired)
+		return
+	}
+
 	log.Printf(
 		"[!!!] AUTONOMOUS ACTION: %s targeting %s — %s",
 		v.ActionRequired, v.Target, v.Reasoning,
@@ -172,9 +177,10 @@ func killProcess(v HeimdallVerdict) ActionResult {
 		return result
 	}
 
-	// Safety guard — never kill init or kernel threads
-	if pid <= 2 {
-		log.Printf("[!] SAFETY BLOCK: Refused to kill PID %d", pid)
+	// Safety guard — refuse low PIDs and protected system range
+	minPid := protectedPidMin()
+	if pid <= 2 || pid < minPid {
+		log.Printf("[!] SAFETY BLOCK: Refused to kill PID %d (min allowed %d)", pid, minPid)
 		result.Success = false
 		return result
 	}
@@ -221,6 +227,12 @@ func blockIP(v HeimdallVerdict) ActionResult {
 		return result
 	}
 
+	if !allowBlockPrivate() && isPrivateOrLoopbackIP(v.Target) {
+		log.Printf("[!] SAFETY BLOCK: Refused RFC1918/loopback target %s", v.Target)
+		result.Success = false
+		return result
+	}
+
 	result.RollbackData = fmt.Sprintf(
 		`{"ip":"%s","action":"ufw_deny","rollback":"ufw delete deny from %s"}`,
 		v.Target, v.Target,
@@ -243,6 +255,12 @@ func quarantineFile(v HeimdallVerdict) ActionResult {
 		ActionType: "QUARANTINE",
 		Target:     v.Target,
 		ExecutedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+
+	if !validateQuarantineTarget(v.Target) {
+		log.Printf("[!] SAFETY BLOCK: Invalid quarantine path: %s", v.Target)
+		result.Success = false
+		return result
 	}
 
 	if err := os.MkdirAll(quarantineZone(), 0700); err != nil {
@@ -269,7 +287,7 @@ func quarantineFile(v HeimdallVerdict) ActionResult {
 		return result
 	}
 
-	// Strip all permissions
+	// Strip all permissions — quarantined files must not be executable
 	_ = exec.Command("chmod", "000", destPath).Run()
 
 	log.Printf("[+] Quarantined: %s → %s", v.Target, destPath)
@@ -326,8 +344,13 @@ func rollbackAction(actionID int64) error {
 			IP string `json:"ip"`
 		}
 		if err := json.Unmarshal([]byte(rollbackData), &data); err == nil {
-			exec.Command("sudo", "ufw", "delete", "deny", "from", data.IP).Run()
+			if err := exec.Command("sudo", "ufw", "delete", "deny", "from", data.IP).Run(); err != nil {
+				log.Printf("[!] Rollback failed for BLOCK on %s: %v", data.IP, err)
+				return fmt.Errorf("rollback failed: %w", err)
+			}
 			log.Printf("[+] Rollback: Removed UFW block on %s", data.IP)
+		} else {
+			return fmt.Errorf("invalid rollback data for BLOCK")
 		}
 	case "QUARANTINE":
 		var data struct {
@@ -335,8 +358,13 @@ func rollbackAction(actionID int64) error {
 			Quarantined string `json:"quarantined"`
 		}
 		if err := json.Unmarshal([]byte(rollbackData), &data); err == nil {
-			exec.Command("mv", data.Quarantined, data.Original).Run()
+			if err := exec.Command("mv", data.Quarantined, data.Original).Run(); err != nil {
+				log.Printf("[!] Rollback failed for QUARANTINE %s: %v", data.Original, err)
+				return fmt.Errorf("rollback failed: %w", err)
+			}
 			log.Printf("[+] Rollback: Restored %s", data.Original)
+		} else {
+			return fmt.Errorf("invalid rollback data for QUARANTINE")
 		}
 	case "KILL":
 		log.Printf("[*] Cannot roll back process kill — process is gone.")

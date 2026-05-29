@@ -9,14 +9,17 @@ Pure Python stdlib. XSS-safe. Clean DB handling.
 
 from __future__ import annotations
 import html
+import hmac
 import json
 import logging
+import os
 import sqlite3
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from bifrost.paths import db_path as resolve_db_path
+from bifrost.security import compare_token, is_production_mode
 
 log = logging.getLogger("heimdall.dashboard")
 DASHBOARD_HOST = "127.0.0.1"
@@ -167,20 +170,27 @@ class DashboardHandler(BaseHTTPRequestHandler):
         pass
 
     def _check_token(self) -> bool:
-        if not self.api_token:
+        token = self.api_token or os.getenv("BIFROST_DASHBOARD_TOKEN", "").strip()
+        if is_production_mode() and not token:
+            log.critical("Dashboard access denied: BIFROST_DASHBOARD_TOKEN not set")
+            return False
+        if not token:
             return True
-        token = self.headers.get("X-Bifrost-Token", "")
-        return token == self.api_token
+        provided = self.headers.get("X-Bifrost-Token", "")
+        return compare_token(provided, token)
 
     def do_GET(self):
-        if self.path.startswith("/api/"):
-            if not self._check_token():
-                self.send_response(401)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self._set_common_headers()
-                self.end_headers()
-                self.wfile.write(b'{"error":"unauthorized"}')
-                return
+        if self.path == "/health":
+            self._json({"status": "ok", "component": "bifrost_dashboard"})
+            return
+
+        if not self._check_token():
+            self.send_response(401)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self._set_common_headers()
+            self.end_headers()
+            self.wfile.write(b'{"error":"unauthorized"}')
+            return
 
         if self.path == "/api/stats":
             self._json(get_stats())
@@ -190,9 +200,6 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/actions":
             self._json(get_actions())
-            return
-        if self.path == "/health":
-            self._json({"status": "ok", "component": "bifrost_dashboard"})
             return
 
         self._serve_html()
@@ -294,11 +301,15 @@ class DashboardServer(threading.Thread):
         self.config = config
         self.server = None
         DashboardHandler.brain_ref = brain_ref
-        DashboardHandler.api_token = config.get("dashboard_api_token")
+        token = (
+            config.get("dashboard_api_token")
+            or os.getenv("BIFROST_DASHBOARD_TOKEN", "").strip()
+        )
+        DashboardHandler.api_token = token or None
 
     def run(self):
         try:
-            self.server = ThreadingThreadingHTTPServer(
+            self.server = ThreadingHTTPServer(
                 (DASHBOARD_HOST, DASHBOARD_PORT),
                 DashboardHandler
             )

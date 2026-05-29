@@ -37,6 +37,14 @@ class WALCheckpointThread(threading.Thread):
             try:
                 conn = sqlite3.connect(self.db_path, timeout=5.0)
                 conn.execute("PRAGMA wal_checkpoint(PASSIVE)")
+                # Retain 30 days of events; older rows are pruned
+                conn.execute(
+                    "DELETE FROM events WHERE created_at < datetime('now', '-30 days')"
+                )
+                conn.execute(
+                    "DELETE FROM actions WHERE executed_at < datetime('now', '-30 days')"
+                )
+                conn.commit()
                 conn.close()
             except sqlite3.Error as exc:
-                log.warning("Periodic WAL checkpoint failed: %s", exc)
+                log.warning("Periodic DB maintenance failed: %s", exc)
