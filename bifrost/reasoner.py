@@ -122,7 +122,7 @@ def build_schema(
     extractor_model: str,
     reasoner_model: str,
     hardware_tier: str,
-    schema_version: str = "1.0.0"
+    schema_version: str = "0.1.0"
 ) -> dict:
     """
     Builds a validated Heimdall decision that conforms
@@ -429,7 +429,7 @@ def validate_and_normalize(
         extractor_model=extractor_model,
         reasoner_model=reasoner_model,
         hardware_tier=tier,
-        schema_version=decision.get("schema_version", "1.0.0")
+        schema_version=decision.get("schema_version", "0.1.0")
     )
 
 
