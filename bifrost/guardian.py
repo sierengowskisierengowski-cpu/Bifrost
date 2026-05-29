@@ -45,6 +45,7 @@ METRICS = {
     "queue_full_count": 0,
 }
 COMPRESSED_EVENT_NORMALIZE_DEPTH = 3
+COMPRESSED_EVENT_BACKFILL_BATCH_SIZE = 500
 
 
 def setup_logging():
@@ -197,7 +198,7 @@ def _normalize_compressed_event_rows(conn):
     update_cursor = conn.cursor()
 
     while True:
-        rows = read_cursor.fetchmany(500)
+        rows = read_cursor.fetchmany(COMPRESSED_EVENT_BACKFILL_BATCH_SIZE)
         if not rows:
             return
 
