@@ -1,0 +1,22 @@
+2026-05-29 16:02:54,668 [INFO] Starting: target=192.168.0.100 duration=48.0h types=58
+2026-05-29 16:18:01,992 [INFO] Starting: target=192.168.0.100 duration=48.0h types=58
+2026-05-29 16:18:05,772 [INFO] [credential][ssh_common_password] ok | root:admin
+2026-05-29 16:18:44,094 [INFO] Starting: target=192.168.0.100 duration=48.0h types=58
+2026-05-29 16:18:44,516 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-05-29 16:19:32,022 [INFO] [ransomware_sim][ransom_note] ok | ransom note creation
+2026-05-29 16:20:58,088 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-05-29 16:21:00,843 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-05-29 16:21:05,226 [INFO] [persistence][profile] ok | .profile persistence
+2026-05-29 16:21:43,893 [INFO] Stopped.
+2026-05-29 16:21:47,746 [INFO] Starting: target=192.168.0.100 duration=48.0h types=58
+2026-05-29 16:22:05,861 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-05-29 16:22:10,414 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-05-29 16:22:54,073 [INFO] [ai_manipulation][schema_confusion] ok | 2 schema attacks
+2026-05-29 16:23:03,679 [INFO] [advanced][kernel_module] ok | modprobe attempt
+2026-05-29 16:23:06,052 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-05-29 16:23:26,321 [INFO] [cryptomining][mining_pool_connect] ok | pool connection probe
+2026-05-29 16:24:22,583 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-05-29 16:24:27,112 [INFO] [advanced][ebpf_probe] ok | bpf enumeration
+2026-05-29 16:24:55,495 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-05-29 16:25:34,799 [INFO] [execution][memfd_fileless] ok | memfd_create probe
+2026-05-29 16:25:51,677 [INFO] [lateral][network_recon] ok | full network recon
