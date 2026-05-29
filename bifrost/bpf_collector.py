@@ -107,8 +107,14 @@ class BPFCollector(threading.Thread):
                     e,
                 )
                 
-        except (AttributeError, KeyError, TypeError, ValueError,
-                RuntimeError, UnicodeDecodeError) as e:
+        except (
+            AttributeError,
+            KeyError,
+            TypeError,
+            ValueError,
+            RuntimeError,
+            UnicodeDecodeError,
+        ) as e:
             # Event decoding can fail on missing ring-buffer fields, malformed
             # bytes, or unexpected callback payloads from the BPF map wrapper.
             log_collector_error(
