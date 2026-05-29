@@ -298,7 +298,7 @@ class DashboardServer(threading.Thread):
 
     def run(self):
         try:
-            self.server = ThreadingHTTPServer(
+            self.server = ThreadingThreadingHTTPServer(
                 (DASHBOARD_HOST, DASHBOARD_PORT),
                 DashboardHandler
             )
