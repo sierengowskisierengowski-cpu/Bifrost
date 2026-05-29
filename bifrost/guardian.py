@@ -34,6 +34,7 @@ LOG_PATH = Path("~/Projects/bifrost/db/guardian.log").expanduser()
 
 EVENT_QUEUE = Queue(maxsize=10000)
 SHUTDOWN = threading.Event()
+ROUTER_STOP = threading.Event()
 
 METRICS_LOCK = threading.Lock()
 METRICS = {
@@ -665,11 +666,21 @@ class EventRouter(threading.Thread):
             self.log.error(f"DB store error: {e}")
             return -1
 
+    def flush_state(self):
+        if not self.conn:
+            return
+        try:
+            self.conn.commit()
+            self.conn.execute("PRAGMA wal_checkpoint(FULL)")
+            self.log.info("SQLite flush complete for events and action records.")
+        except sqlite3.Error as e:
+            self.log.error(f"DB flush error: {e}")
+
     def run(self):
         self.log.info("EventRouter started. Bifrost pipeline active.")
-        while not SHUTDOWN.is_set():
+        while not ROUTER_STOP.is_set() or not self.queue.empty():
             try:
-                event = self.queue.get(timeout=1.0)
+                event = self.queue.get(timeout=0.2)
                 boundary = event.get("boundary", "UNKNOWN")
                 source = event.get("source", "unknown")
 
@@ -723,12 +734,16 @@ class EventRouter(threading.Thread):
                 self.queue.task_done()
 
             except Empty:
+                if ROUTER_STOP.is_set():
+                    break
                 continue
             except Exception as e:
                 self.log.error(f"EventRouter error: {e}")
 
+        self.flush_state()
         if self.conn:
             self.conn.close()
+            self.conn = None
 
 
 def signal_handler(sig, frame):
@@ -736,7 +751,27 @@ def signal_handler(sig, frame):
     SHUTDOWN.set()
 
 
+def wait_for_queue_drain(queue: Queue, timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if getattr(queue, "unfinished_tasks", 0) == 0:
+            return True
+        time.sleep(0.1)
+    return getattr(queue, "unfinished_tasks", 0) == 0
+
+
+def log_shutdown_summary(log, processed: int, dropped: int, remaining: int):
+    log.info(
+        "Shutdown summary: processed=%d dropped=%d remaining=%d",
+        processed,
+        dropped,
+        remaining,
+    )
+
+
 def main():
+    SHUTDOWN.clear()
+    ROUTER_STOP.clear()
     log = setup_logging()
     log.info("=" * 60)
     log.info(f"Heimdall Guardian v{BIFROST_VERSION} starting.")
@@ -775,29 +810,32 @@ def main():
     while not SHUTDOWN.is_set():
         time.sleep(1.0)
 
-    # Graceful shutdown — drain queue first
-    log.info("Stopping collectors...")
+    log.info("Stopping collectors and ingest...")
+    ingest_server.stop()
     for collector in collectors:
         collector.join(timeout=2.0)
+        if collector.is_alive():
+            log.warning(f"Collector still alive after shutdown timeout: {collector.name}")
 
     log.info("Draining event queue...")
-    drain_timeout = 10.0
-    drain_start = time.time()
-    while not EVENT_QUEUE.empty():
-        if time.time() - drain_start > drain_timeout:
-            log.warning("Queue drain timeout. Exiting.")
-            break
-        time.sleep(0.1)
+    if not wait_for_queue_drain(EVENT_QUEUE, timeout=10.0):
+        remaining = getattr(EVENT_QUEUE, "unfinished_tasks", EVENT_QUEUE.qsize())
+        log.warning(f"Queue drain timeout. Remaining events={remaining}.")
+
+    ROUTER_STOP.set()
 
     log.info("Stopping router...")
     router.join(timeout=5.0)
     if router.is_alive():
         log.warning("Router still alive after shutdown timeout.")
-
-    ingest_server.stop()
+    router.flush_state()
 
     with METRICS_LOCK:
+        processed = router.event_count
+        dropped = METRICS["events_dropped"]
         log.info(f"Final metrics: {json.dumps(METRICS)}")
+    remaining = getattr(EVENT_QUEUE, "unfinished_tasks", EVENT_QUEUE.qsize())
+    log_shutdown_summary(log, processed, dropped, remaining)
 
     log.info("Heimdall shutdown complete.")
     sys.exit(0)
