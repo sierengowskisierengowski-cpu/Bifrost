@@ -44,6 +44,8 @@ METRICS = {
     "fallbacks": 0,
     "queue_full_count": 0,
 }
+COMPRESSED_EVENT_NORMALIZE_DEPTH = 3
+COMPRESSED_EVENT_BACKFILL_BATCH_SIZE = 500
 
 
 def setup_logging():
@@ -150,9 +152,68 @@ def init_database():
             ON actions(event_id);
     """)
 
+    _normalize_compressed_event_rows(conn)
+
     conn.commit()
     conn.close()
     return str(DB_PATH)
+
+
+def _normalize_compressed_event(value):
+    if value is None:
+        return None
+
+    if not isinstance(value, str):
+        return json.dumps(value)
+
+    normalized = value
+    for _ in range(COMPRESSED_EVENT_NORMALIZE_DEPTH):
+        try:
+            decoded = json.loads(normalized)
+        except json.JSONDecodeError:
+            return normalized
+
+        if isinstance(decoded, str):
+            stripped = decoded.strip()
+            if stripped.startswith("{") or stripped.startswith("["):
+                normalized = stripped
+                continue
+            return normalized
+
+        if isinstance(decoded, (dict, list)):
+            return json.dumps(decoded)
+
+        return normalized
+
+    return normalized
+
+
+def _normalize_compressed_event_rows(conn):
+    read_cursor = conn.cursor()
+    read_cursor.execute("""
+        SELECT id, compressed_event
+        FROM events
+        WHERE compressed_event IS NOT NULL
+    """)
+    update_cursor = conn.cursor()
+
+    while True:
+        rows = read_cursor.fetchmany(COMPRESSED_EVENT_BACKFILL_BATCH_SIZE)
+        if not rows:
+            return
+
+        updates = []
+        for event_id, compressed_event in rows:
+            normalized = _normalize_compressed_event(compressed_event)
+            if normalized != compressed_event:
+                updates.append((normalized, event_id))
+
+        if updates:
+            update_cursor.executemany("""
+                UPDATE events
+                SET compressed_event = ?
+                WHERE id = ?
+            """, updates)
 
 
 def banner(config):
@@ -655,7 +716,7 @@ class EventRouter(threading.Thread):
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 timestamp, source, boundary, raw,
-                compressed if isinstance(compressed, str) else json.dumps(compressed),
+                _normalize_compressed_event(compressed),
                 json.dumps(decision) if decision else None,
                 action
             ))
