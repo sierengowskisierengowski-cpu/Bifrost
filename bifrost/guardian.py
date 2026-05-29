@@ -62,6 +62,9 @@ def setup_logging():
 
 
 def load_config():
+    log = logging.getLogger("heimdall.guardian")
+    production_mode = os.getenv("HEIMDALL_ENV", "production").strip().lower() == "production"
+
     if not CONFIG_PATH.exists():
         print("[!] heimdall_config.json not found.")
         print("[!] Run python setup.py first.")
@@ -71,15 +74,22 @@ def load_config():
         config = json.load(f)
 
     checksum_path = CONFIG_PATH.with_suffix(".sha256")
-    if checksum_path.exists():
-        import hashlib
-        actual = hashlib.sha256(CONFIG_PATH.read_bytes()).hexdigest()
-        expected = checksum_path.read_text().strip()
-        if actual != expected:
-            print("[!] CRITICAL: Config checksum mismatch.")
-            print("[!] heimdall_config.json may have been tampered with.")
+    if not checksum_path.exists():
+        if production_mode:
+            log.critical("CRITICAL: Config checksum file missing: %s", checksum_path)
+            log.critical("Refusing startup in production mode without config integrity verification.")
             sys.exit(1)
-        print("[+] Config integrity verified.")
+        log.warning("Config checksum file missing; skipping integrity verification in non-production mode.")
+        return config
+
+    import hashlib
+    actual = hashlib.sha256(CONFIG_PATH.read_bytes()).hexdigest()
+    expected = checksum_path.read_text().strip()
+    if actual != expected:
+        log.critical("CRITICAL: Config checksum mismatch.")
+        log.critical("heimdall_config.json may have been tampered with.")
+        sys.exit(1)
+    log.info("Config integrity verified.")
 
     return config
 
@@ -196,6 +206,7 @@ def safe_enqueue(queue: Queue, event: dict, source: str, log) -> bool:
 
 class AuditdCollector(threading.Thread):
     AUDIT_LOG = Path("/var/log/audit/audit.log")
+    RETRY_INTERVAL = 0.5
 
     def __init__(self, queue, log):
         super().__init__(daemon=True, name="collector.auditd")
@@ -205,50 +216,63 @@ class AuditdCollector(threading.Thread):
 
     def run(self):
         self.log.info("AuditdCollector started.")
-        if not self.AUDIT_LOG.exists():
-            self.log.warning("auditd log not found. Is auditd running?")
-            return
+        warned_missing = False
 
-        try:
-            with open(self.AUDIT_LOG, "r") as f:
-                f.seek(0, 2)
-                inode = os.stat(self.AUDIT_LOG).st_ino
-                while not SHUTDOWN.is_set():
-                    try:
-                        # Detect log rotation
-                        current_inode = os.stat(self.AUDIT_LOG).st_ino
-                        if current_inode != inode:
-                            self.log.info("auditd log rotated. Reopening.")
+        while not SHUTDOWN.is_set():
+            if not self.AUDIT_LOG.exists():
+                if not warned_missing:
+                    self.log.warning("auditd log not found. Is auditd running?")
+                    warned_missing = True
+                time.sleep(self.RETRY_INTERVAL)
+                continue
+
+            warned_missing = False
+            try:
+                with open(self.AUDIT_LOG, "r") as f:
+                    f.seek(0, 2)
+                    inode = os.fstat(f.fileno()).st_ino
+
+                    while not SHUTDOWN.is_set():
+                        try:
+                            current_inode = os.stat(self.AUDIT_LOG).st_ino
+                            if current_inode != inode:
+                                self.log.info("auditd log rotated. Reopening.")
+                                break
+                        except OSError:
+                            self.log.info("auditd log unavailable. Reopening.")
                             break
-                    except OSError:
-                        break
 
-                    line = f.readline()
-                    if not line:
-                        time.sleep(0.1)
-                        continue
-                    if any(key in line for key in [
-                        "execve", "EXECVE", "USER_AUTH",
-                        "USER_LOGIN", "SYSCALL", "key=exec"
-                    ]):
-                        event = {
-                            "source": "auditd",
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "boundary": "HOST",
-                            "raw": line.strip()
-                        }
-                        safe_enqueue(self.queue, event, "auditd", self.log)
-        except OSError as e:
-            self.log.error(f"AuditdCollector file error: {e}")
-        except (RuntimeError, ValueError) as e:
-            log_collector_error(
-                self.log,
-                self._log_rate_limits,
-                "auditd.run",
-                logging.ERROR,
-                f"AuditdCollector stopped while reading {self.AUDIT_LOG}",
-                e,
-            )
+                        line = f.readline()
+                        if not line:
+                            time.sleep(0.1)
+                            continue
+
+                        if any(key in line for key in [
+                            "execve", "EXECVE", "USER_AUTH",
+                            "USER_LOGIN", "SYSCALL", "key=exec"
+                        ]):
+                            event = {
+                                "source": "auditd",
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "boundary": "HOST",
+                                "raw": line.strip()
+                            }
+                            safe_enqueue(self.queue, event, "auditd", self.log)
+            except OSError as e:
+                if SHUTDOWN.is_set():
+                    break
+                self.log.error(f"AuditdCollector file error: {e}")
+                time.sleep(self.RETRY_INTERVAL)
+            except (RuntimeError, ValueError) as e:
+                log_collector_error(
+                    self.log,
+                    self._log_rate_limits,
+                    "auditd.run",
+                    logging.ERROR,
+                    f"AuditdCollector stopped while reading {self.AUDIT_LOG}",
+                    e,
+                )
+                time.sleep(self.RETRY_INTERVAL)
 
 
 class HoneypotLogCollector(threading.Thread):
