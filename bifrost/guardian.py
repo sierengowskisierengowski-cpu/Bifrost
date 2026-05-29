@@ -175,7 +175,7 @@ def _normalize_compressed_event(value):
         if isinstance(decoded, str):
             stripped = decoded.strip()
             if stripped.startswith("{") or stripped.startswith("["):
-                normalized = decoded
+                normalized = stripped
                 continue
             return normalized
 
@@ -188,25 +188,31 @@ def _normalize_compressed_event(value):
 
 
 def _normalize_compressed_event_rows(conn):
-    cursor = conn.cursor()
-    cursor.execute("""
+    read_cursor = conn.cursor()
+    read_cursor.execute("""
         SELECT id, compressed_event
         FROM events
         WHERE compressed_event IS NOT NULL
     """)
+    update_cursor = conn.cursor()
 
-    updates = []
-    for event_id, compressed_event in cursor.fetchall():
-        normalized = _normalize_compressed_event(compressed_event)
-        if normalized != compressed_event:
-            updates.append((normalized, event_id))
+    while True:
+        rows = read_cursor.fetchmany(500)
+        if not rows:
+            return
 
-    if updates:
-        cursor.executemany("""
-            UPDATE events
-            SET compressed_event = ?
-            WHERE id = ?
-        """, updates)
+        updates = []
+        for event_id, compressed_event in rows:
+            normalized = _normalize_compressed_event(compressed_event)
+            if normalized != compressed_event:
+                updates.append((normalized, event_id))
+
+        if updates:
+            update_cursor.executemany("""
+                UPDATE events
+                SET compressed_event = ?
+                WHERE id = ?
+            """, updates)
 
 
 def banner(config):
