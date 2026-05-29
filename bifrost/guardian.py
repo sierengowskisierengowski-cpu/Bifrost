@@ -68,9 +68,6 @@ def load_config():
         print("[!] Run python setup.py first.")
         sys.exit(1)
 
-    with open(CONFIG_PATH) as f:
-        config = json.load(f)
-
     checksum_path = CONFIG_PATH.with_suffix(".sha256")
     if not checksum_path.exists():
         if production_mode:
@@ -88,6 +85,9 @@ def load_config():
         log.critical("heimdall_config.json may have been tampered with.")
         sys.exit(1)
     log.info("Config integrity verified.")
+
+    with open(CONFIG_PATH) as f:
+        config = json.load(f)
 
     return config
 

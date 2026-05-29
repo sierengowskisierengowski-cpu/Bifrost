@@ -26,6 +26,19 @@ def test_load_config_fails_when_checksum_missing_in_production(tmp_path, monkeyp
     assert "checksum file missing" in caplog.text.lower()
 
 
+def test_load_config_checks_checksum_before_parsing_in_production(tmp_path, monkeypatch, caplog):
+    config_path = tmp_path / "heimdall_config.json"
+    config_path.write_text("{")
+    monkeypatch.setattr(guardian, "CONFIG_PATH", config_path)
+    monkeypatch.setenv("HEIMDALL_ENV", "production")
+
+    with pytest.raises(SystemExit) as excinfo:
+        guardian.load_config()
+
+    assert excinfo.value.code == 1
+    assert "checksum file missing" in caplog.text.lower()
+
+
 def test_load_config_allows_missing_checksum_in_non_production(tmp_path, monkeypatch):
     expected = {"learning_mode": True, "k": "v"}
     config_path = _write_config(tmp_path, expected)
