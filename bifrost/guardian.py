@@ -30,6 +30,15 @@ from queue import Queue, Empty
 from bifrost.event_queue import METRICS, METRICS_LOCK, safe_enqueue
 from bifrost.inference import CircuitBreaker, execute_with_retry, get_request_timeout
 from bifrost import paths as bifrost_paths
+from bifrost.resilience import (
+    FailoverLoggingHandler,
+    configure_sqlite_connection,
+    execute_with_db_retry,
+    validate_event_envelope,
+    verify_config_integrity,
+    verify_database_integrity,
+)
+from bifrost.db_maintenance import WALCheckpointThread
 
 BIFROST_VERSION = "0.1.1"
 
@@ -53,6 +62,8 @@ METRICS.setdefault("llm_errors", 0)
 METRICS.setdefault("fallbacks", 0)
 METRICS.setdefault("policy_blocks", 0)
 METRICS.setdefault("actions_dispatched", 0)
+METRICS.setdefault("invalid_events", 0)
+METRICS.setdefault("config_integrity_failures", 0)
 
 COMPRESSED_EVENT_NORMALIZE_DEPTH = 3
 COMPRESSED_EVENT_BACKFILL_BATCH_SIZE = 500
@@ -60,14 +71,18 @@ COMPRESSED_EVENT_BACKFILL_BATCH_SIZE = 500
 
 def setup_logging():
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
-        handlers=[
-            logging.FileHandler(LOG_PATH),
-            logging.StreamHandler(sys.stdout)
-        ]
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
     )
+    file_handler = FailoverLoggingHandler(LOG_PATH)
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    root.handlers.clear()
+    root.addHandler(file_handler)
+    root.addHandler(stream_handler)
     return logging.getLogger("heimdall.guardian")
 
 
@@ -114,12 +129,16 @@ def load_config():
 def init_database():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
+    configure_sqlite_connection(conn)
     cursor = conn.cursor()
 
-    # WAL mode for durability and concurrency
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA synchronous=NORMAL")
-    cursor.execute("PRAGMA busy_timeout=5000")
+    ok, detail = verify_database_integrity(conn)
+    if not ok:
+        conn.close()
+        log = logging.getLogger("heimdall.guardian")
+        log.critical("Database integrity check failed: %s", detail)
+        log.critical("Refusing startup with corrupted database at %s", DB_PATH)
+        sys.exit(1)
 
     cursor.executescript("""
         CREATE TABLE IF NOT EXISTS events (
@@ -321,6 +340,7 @@ class AuditdCollector(threading.Thread):
 
 
 class HoneypotLogCollector(threading.Thread):
+    RETRY_INTERVAL = 0.5
 
     def __init__(self, queue, log, cowrie_log=None):
         super().__init__(daemon=True, name="collector.cowrie")
@@ -330,34 +350,67 @@ class HoneypotLogCollector(threading.Thread):
 
     def run(self):
         self.log.info("HoneypotLogCollector started.")
-        if not self.cowrie_log.exists():
-            self.log.warning(f"Cowrie log not found at {self.cowrie_log}")
-            return
+        warned_missing = False
 
-        try:
-            with open(self.cowrie_log, "r") as f:
-                f.seek(0, 2)
-                while not COLLECTOR_STOP.is_set():
-                    line = f.readline()
-                    if not line:
-                        if COLLECTOR_STOP.wait(0.1):
+        while not COLLECTOR_STOP.is_set():
+            if not self.cowrie_log.exists():
+                if not warned_missing:
+                    self.log.warning(
+                        "Cowrie log not found at %s. Retrying.", self.cowrie_log
+                    )
+                    warned_missing = True
+                if COLLECTOR_STOP.wait(self.RETRY_INTERVAL):
+                    break
+                continue
+
+            warned_missing = False
+            try:
+                with open(self.cowrie_log, "r") as f:
+                    f.seek(0, 2)
+                    inode = os.fstat(f.fileno()).st_ino
+
+                    while not COLLECTOR_STOP.is_set():
+                        try:
+                            if not self.cowrie_log.exists():
+                                self.log.info(
+                                    "Cowrie log deleted. Reopening when available."
+                                )
+                                break
+                            current_inode = os.stat(self.cowrie_log).st_ino
+                            if current_inode != inode:
+                                self.log.info("Cowrie log rotated. Reopening.")
+                                break
+                        except OSError:
+                            self.log.info("Cowrie log unavailable. Reopening.")
                             break
-                        continue
-                    try:
-                        entry = json.loads(line.strip())
-                        event = {
-                            "source": "cowrie",
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "boundary": "HONEYPOT",
-                            "raw": entry
-                        }
-                        safe_enqueue(self.queue, event, "cowrie", self.log)
-                    except json.JSONDecodeError as e:
-                        self.log.warning(f"Cowrie JSON parse error: {e}")
-        except OSError as e:
-            self.log.error(f"HoneypotLogCollector file error: {e}")
-        except Exception as e:
-            self.log.error(f"HoneypotLogCollector unexpected error: {e}")
+
+                        line = f.readline()
+                        if not line:
+                            if COLLECTOR_STOP.wait(0.1):
+                                break
+                            continue
+
+                        try:
+                            entry = json.loads(line.strip())
+                            event = {
+                                "source": "cowrie",
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "boundary": "HONEYPOT",
+                                "raw": entry,
+                            }
+                            safe_enqueue(self.queue, event, "cowrie", self.log)
+                        except json.JSONDecodeError as e:
+                            self.log.warning(f"Cowrie JSON parse error: {e}")
+            except OSError as e:
+                if COLLECTOR_STOP.is_set():
+                    break
+                self.log.error(f"HoneypotLogCollector file error: {e}")
+                if COLLECTOR_STOP.wait(self.RETRY_INTERVAL):
+                    break
+            except Exception as e:
+                self.log.error(f"HoneypotLogCollector unexpected error: {e}")
+                if COLLECTOR_STOP.wait(self.RETRY_INTERVAL):
+                    break
 
 
 class ProcessWatcher(threading.Thread):
@@ -546,6 +599,8 @@ class EventRouter(threading.Thread):
         self.log = log
         self.event_count = 0
         self.conn = None
+        self.db_healthy = True
+        self.config_integrity_ok = True
         self.extractor_breaker = CircuitBreaker("guardian_extractor")
         self.analyst_breaker = CircuitBreaker("guardian_analyst")
         self.setup_inference_clients()
@@ -553,9 +608,11 @@ class EventRouter(threading.Thread):
 
     def setup_db(self):
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.conn.execute("PRAGMA journal_mode=WAL")
-        self.conn.execute("PRAGMA synchronous=NORMAL")
-        self.conn.execute("PRAGMA busy_timeout=5000")
+        configure_sqlite_connection(self.conn)
+        ok, detail = verify_database_integrity(self.conn)
+        if not ok:
+            self.log.critical("Router DB integrity check failed: %s", detail)
+            self.db_healthy = False
 
     def flush_db(self):
         if not self.conn:
@@ -740,6 +797,42 @@ class EventRouter(threading.Thread):
             "hardware_tier": self.config.get("hardware_tier", "TIER_4")
         }
 
+    def check_runtime_integrity(self) -> bool:
+        """Fail closed if config or DB integrity is compromised at runtime."""
+        ok, reason = verify_config_integrity(CONFIG_PATH)
+        if not ok:
+            if self.config_integrity_ok:
+                self.log.critical(
+                    "Runtime config integrity failure: %s. "
+                    "Blocking all executor dispatch.",
+                    reason,
+                )
+                with METRICS_LOCK:
+                    METRICS["config_integrity_failures"] += 1
+            self.config_integrity_ok = False
+            return False
+
+        self.config_integrity_ok = True
+        if not self.db_healthy:
+            return False
+
+        try:
+            ok, detail = verify_database_integrity(self.conn)
+            if not ok:
+                self.log.critical(
+                    "Runtime DB integrity failure: %s. "
+                    "Blocking all executor dispatch.",
+                    detail,
+                )
+                self.db_healthy = False
+                return False
+        except sqlite3.Error as exc:
+            self.log.critical("Runtime DB check failed: %s", exc)
+            self.db_healthy = False
+            return False
+
+        return True
+
     def apply_policy_gate(self, decision: dict, event: dict) -> dict:
         """Run destructive actions through the policy gate before dispatch."""
         from bifrost.policy import (
@@ -765,82 +858,91 @@ class EventRouter(threading.Thread):
             decision["policy_allowed"] = True
             return decision
 
-        target = decision.get("target") or ""
-        pid = None
-        dest_ip = None
-        process_name = None
+        try:
+            target = decision.get("target") or ""
+            pid = None
+            dest_ip = None
+            process_name = None
 
-        if isinstance(target, int):
-            pid = target
-        elif isinstance(target, str) and target:
-            if target.isdigit():
-                pid = int(target)
-            elif target.startswith("pid:"):
+            if isinstance(target, int):
+                pid = target
+            elif isinstance(target, str) and target:
+                if target.isdigit():
+                    pid = int(target)
+                elif target.startswith("pid:"):
+                    try:
+                        pid = int(target.split(":")[1])
+                    except (ValueError, IndexError) as err:
+                        self.log.debug("Policy: unparsable pid target: %s", err)
+                elif "/" not in target and "." in target:
+                    dest_ip = target
+                elif "/" in target:
+                    process_name = Path(target).name
+
+            raw = event.get("raw", {})
+            if pid is None and isinstance(raw, dict) and raw.get("pid") is not None:
                 try:
-                    pid = int(target.split(":")[1])
-                except (ValueError, IndexError) as err:
-                    self.log.debug("Policy: unparsable pid target: %s", err)
-            elif "/" not in target and "." in target:
-                dest_ip = target
-            elif "/" in target:
-                process_name = Path(target).name
+                    pid = int(raw["pid"])
+                except (TypeError, ValueError) as err:
+                    self.log.debug("Policy: unparsable raw pid: %s", err)
 
-        raw = event.get("raw", {})
-        if pid is None and isinstance(raw, dict) and raw.get("pid") is not None:
-            try:
-                pid = int(raw["pid"])
-            except (TypeError, ValueError) as err:
-                self.log.debug("Policy: unparsable raw pid: %s", err)
-
-        learning_mode = self.config.get(
-            "learning_mode", SAFE_DEFAULTS["learning_mode"]
-        )
-        dry_run = self.config.get("dry_run", SAFE_DEFAULTS["dry_run"])
-        autonomous_enabled = self.config.get(
-            "autonomous_actions_enabled",
-            self.config.get(
-                "autonomous_enabled", SAFE_DEFAULTS["autonomous_enabled"]
-            ),
-        )
-
-        result = evaluate_policy(
-            PolicyDecision(
-                action=action_type,
-                confidence=float(decision.get("confidence", 0.0)),
-                reason=str(decision.get("reasoning", "")),
-                pid=pid,
-                process_name=process_name,
-                destination_ip=dest_ip,
-                is_system_process=False,
-                evidence_count=int(decision.get("evidence_count", 2) or 2),
-                event_window_seconds=int(
-                    decision.get("event_window_seconds", 60)
+            learning_mode = self.config.get(
+                "learning_mode", SAFE_DEFAULTS["learning_mode"]
+            )
+            dry_run = self.config.get("dry_run", SAFE_DEFAULTS["dry_run"])
+            autonomous_enabled = self.config.get(
+                "autonomous_actions_enabled",
+                self.config.get(
+                    "autonomous_enabled", SAFE_DEFAULTS["autonomous_enabled"]
                 ),
-            ),
-            learning_mode=learning_mode,
-            dry_run=dry_run,
-            autonomous_enabled=autonomous_enabled,
-            confidence_threshold=float(
-                self.config.get(
-                    "confidence_threshold",
-                    SAFE_DEFAULTS["confidence_threshold"],
-                )
-            ),
-            min_repeated_evidence_for_destructive=int(
-                self.config.get(
-                    "min_evidence_count",
-                    SAFE_DEFAULTS["min_repeated_evidence_for_destructive"],
-                )
-            ),
-            never_block_rfc1918=self.config.get(
-                "never_block_rfc1918", SAFE_DEFAULTS["never_block_rfc1918"]
-            ),
-            protected_pids_max=int(
-                self.config.get(
-                    "protected_pids_max", SAFE_DEFAULTS["protected_pids_max"]
-                )
-            ),
-        )
+            )
+
+            result = evaluate_policy(
+                PolicyDecision(
+                    action=action_type,
+                    confidence=float(decision.get("confidence", 0.0)),
+                    reason=str(decision.get("reasoning", "")),
+                    pid=pid,
+                    process_name=process_name,
+                    destination_ip=dest_ip,
+                    is_system_process=False,
+                    evidence_count=int(decision.get("evidence_count", 2) or 2),
+                    event_window_seconds=int(
+                        decision.get("event_window_seconds", 60)
+                    ),
+                ),
+                learning_mode=learning_mode,
+                dry_run=dry_run,
+                autonomous_enabled=autonomous_enabled,
+                confidence_threshold=float(
+                    self.config.get(
+                        "confidence_threshold",
+                        SAFE_DEFAULTS["confidence_threshold"],
+                    )
+                ),
+                min_repeated_evidence_for_destructive=int(
+                    self.config.get(
+                        "min_evidence_count",
+                        SAFE_DEFAULTS["min_repeated_evidence_for_destructive"],
+                    )
+                ),
+                never_block_rfc1918=self.config.get(
+                    "never_block_rfc1918", SAFE_DEFAULTS["never_block_rfc1918"]
+                ),
+                protected_pids_max=int(
+                    self.config.get(
+                        "protected_pids_max", SAFE_DEFAULTS["protected_pids_max"]
+                    )
+                ),
+            )
+        except Exception as exc:
+            self.log.error("Policy gate error: %s. Failing closed to ALERT.", exc)
+            decision["action_effective"] = "ALERT"
+            decision["policy_allowed"] = False
+            decision["policy_rationale"] = f"Policy gate error: {exc}"
+            with METRICS_LOCK:
+                METRICS["policy_blocks"] += 1
+            return decision
 
         decision["action_effective"] = result.downgraded_action.value
         decision["policy_allowed"] = result.allowed
@@ -866,7 +968,24 @@ class EventRouter(threading.Thread):
 
     def maybe_dispatch_to_executor(self, decision: dict, event_id: int) -> None:
         """Send policy-approved destructive actions to the Go executor."""
-        if event_id < 0:
+        if event_id < 1:
+            self.log.error(
+                "Executor dispatch blocked: event not persisted (event_id=%s)",
+                event_id,
+            )
+            return
+        if not self.db_healthy:
+            self.log.error(
+                "Executor dispatch blocked: database unhealthy (event_id=%d)",
+                event_id,
+            )
+            return
+        if not self.check_runtime_integrity():
+            self.log.error(
+                "Executor dispatch blocked: runtime integrity check failed "
+                "(event_id=%d)",
+                event_id,
+            )
             return
         if not decision.get("policy_allowed"):
             return
@@ -901,6 +1020,10 @@ class EventRouter(threading.Thread):
             )
 
     def store_event(self, event: dict, compressed=None, decision=None) -> int:
+        if not self.db_healthy:
+            self.log.error("DB store skipped: database marked unhealthy")
+            return -1
+
         boundary = event.get("boundary", "UNKNOWN")
         source = event.get("source", "unknown")
         raw = json.dumps(event.get("raw", {}))
@@ -914,23 +1037,38 @@ class EventRouter(threading.Thread):
                 or decision.get("action_required", "NONE")
             )
 
-        try:
-            cursor = self.conn.cursor()
+        params = (
+            timestamp, source, boundary, raw,
+            _normalize_compressed_event(compressed),
+            json.dumps(decision) if decision else None,
+            action,
+        )
+
+        def _insert(conn):
+            cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO events
                 (timestamp, source, boundary, raw_event,
                  compressed_event, heimdall_decision, action_taken)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                timestamp, source, boundary, raw,
-                _normalize_compressed_event(compressed),
-                json.dumps(decision) if decision else None,
-                action
-            ))
-            self.conn.commit()
+            """, params)
+            conn.commit()
             return cursor.lastrowid
-        except sqlite3.Error as e:
-            self.log.error(f"DB store error: {e}")
+
+        try:
+            row_id, self.conn = execute_with_db_retry(
+                self.conn,
+                self.db_path,
+                _insert,
+                self.log,
+            )
+            return row_id
+        except sqlite3.DatabaseError as exc:
+            self.log.critical("DB store failed permanently: %s", exc)
+            self.db_healthy = False
+            return -1
+        except sqlite3.Error as exc:
+            self.log.error("DB store error: %s", exc)
             return -1
 
     def run(self):
@@ -939,6 +1077,18 @@ class EventRouter(threading.Thread):
             event = None
             try:
                 event = self.queue.get(timeout=1.0)
+
+                ok, err = validate_event_envelope(event)
+                if not ok:
+                    with METRICS_LOCK:
+                        METRICS["invalid_events"] += 1
+                    self.log.warning(
+                        "Invalid event dropped: %s source=%s",
+                        err,
+                        event.get("source", "unknown"),
+                    )
+                    continue
+
                 boundary = event.get("boundary", "UNKNOWN")
                 source = event.get("source", "unknown")
 
@@ -1002,7 +1152,10 @@ class EventRouter(threading.Thread):
             except Empty:
                 continue
             except Exception as e:
-                self.log.error(f"EventRouter error: {e}")
+                self.log.error(f"EventRouter error: {e}", exc_info=True)
+                with METRICS_LOCK:
+                    METRICS.setdefault("pipeline_errors", 0)
+                    METRICS["pipeline_errors"] += 1
             finally:
                 if event is not None:
                     self.queue.task_done()
@@ -1044,6 +1197,9 @@ def main():
 
     db_path = init_database()
     log.info(f"Database initialized: {db_path}")
+
+    wal_thread = WALCheckpointThread(db_path, SHUTDOWN)
+    wal_thread.start()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)

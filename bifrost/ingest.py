@@ -18,6 +18,10 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from queue import Queue
 
 from bifrost.event_queue import safe_enqueue
+from bifrost.resilience import (
+    MAX_INGEST_BODY_BYTES,
+    validate_event_envelope,
+)
 
 log = logging.getLogger("heimdall.ingest")
 
@@ -76,10 +80,35 @@ class IngestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error":"empty body"}')
                 return
 
+            if length > MAX_INGEST_BODY_BYTES:
+                self.send_response(413)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(
+                    json.dumps({
+                        "error": f"body exceeds {MAX_INGEST_BODY_BYTES} bytes"
+                    }).encode()
+                )
+                log.warning(
+                    "Ingest rejected oversize body: %d bytes", length
+                )
+                return
+
             body = self.rfile.read(length)
             envelope = json.loads(body.decode())
 
-            # Validate required fields
+            ok, err = validate_event_envelope(envelope)
+            if not ok:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(
+                    json.dumps({"error": err}).encode()
+                )
+                log.warning("Ingest rejected invalid envelope: %s", err)
+                return
+
+            # Validate required fields (legacy check — envelope validator covers these)
             required = ["source", "timestamp", "boundary", "raw"]
             missing = [f for f in required if f not in envelope]
             if missing:

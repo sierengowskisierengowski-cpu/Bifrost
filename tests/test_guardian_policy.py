@@ -43,6 +43,9 @@ def _make_router(config_overrides=None):
     router.config = config
     router.log = logging.getLogger("test.guardian.policy")
     router.db_path = "/tmp/test-events.db"
+    router.db_healthy = True
+    router.config_integrity_ok = True
+    router.check_runtime_integrity = lambda: True
     return router
 
 
@@ -85,6 +88,25 @@ def test_policy_gate_allows_kill_when_all_gates_pass():
 
     assert result["policy_allowed"] is True
     assert result["action_effective"] == "KILL"
+
+
+def test_maybe_dispatch_skips_executor_when_event_not_persisted(monkeypatch):
+    router = _make_router()
+    event = {"raw": {"pid": 5678}}
+    decision = router.apply_policy_gate(_make_kill_decision(), event)
+    decision["policy_allowed"] = True
+    decision["action_effective"] = "KILL"
+
+    calls = []
+    monkeypatch.setattr(
+        "bifrost.router.execute_decision",
+        lambda *args, **kwargs: calls.append(args) or True,
+    )
+
+    router.maybe_dispatch_to_executor(decision, event_id=-1)
+    router.maybe_dispatch_to_executor(decision, event_id=0)
+
+    assert calls == []
 
 
 def test_maybe_dispatch_skips_executor_when_policy_blocks(monkeypatch):
