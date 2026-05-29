@@ -2,12 +2,13 @@
 
 import logging
 import time
+from typing import Dict
 
 
 COLLECTOR_LOG_RATE_LIMIT_SECONDS = 60.0
 
 
-def log_collector_error(log: logging.Logger, rate_limits: dict[str, float],
+def log_collector_error(log: logging.Logger, rate_limits: Dict[str, float],
                         key: str, level: int,
                         context: str, exc: Exception) -> None:
     """Log a collector failure once per key within the throttle window.
