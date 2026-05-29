@@ -485,6 +485,7 @@ class NetworkWatcher(threading.Thread):
 
 class EventRouter(threading.Thread):
     LLM_TIMEOUT = 30.0
+    QUEUE_POLL_INTERVAL = 0.2
 
     def __init__(self, queue, config, db_path, log):
         super().__init__(daemon=True, name="bifrost.router")
@@ -678,18 +679,21 @@ class EventRouter(threading.Thread):
 
     def run(self):
         self.log.info("EventRouter started. Bifrost pipeline active.")
+        # Keep routing queued work until an explicit router stop is requested
+        # and the backlog has been drained.
         while not ROUTER_STOP.is_set() or not self.queue.empty():
             try:
-                event = self.queue.get(timeout=0.2)
+                event = self.queue.get(timeout=self.QUEUE_POLL_INTERVAL)
                 boundary = event.get("boundary", "UNKNOWN")
                 source = event.get("source", "unknown")
 
-                self.event_count += 1
-                if self.event_count % 100 == 0:
-                    with METRICS_LOCK:
-                        self.log.info(
-                            f"Bifrost metrics: {json.dumps(METRICS)}"
-                        )
+                metrics_snapshot = None
+                with METRICS_LOCK:
+                    self.event_count += 1
+                    if self.event_count % 100 == 0:
+                        metrics_snapshot = json.dumps(METRICS)
+                if metrics_snapshot:
+                    self.log.info(f"Bifrost metrics: {metrics_snapshot}")
 
                 raw_data = event.get("raw", {})
                 is_breakout = (
