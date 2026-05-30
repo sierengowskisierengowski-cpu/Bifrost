@@ -10,9 +10,12 @@ Rule: Convert dict <-> model only at IO boundaries.
 """
 
 from __future__ import annotations
+import logging
 from enum import Enum
 from typing import Optional, Any
 from datetime import datetime, timezone
+
+_logger = logging.getLogger("heimdall.schema")
 
 SCHEMA_VERSION = "0.1.0"
 
@@ -209,87 +212,160 @@ if PYDANTIC_AVAILABLE:
             )
 
 else:
-    import logging as _logging
-    _logging.getLogger("heimdall.schema").warning(
+    _logger.warning(
         "Pydantic not available. Running in degraded mode. "
-        "Destructive actions will be disabled."
+        "Full schema validation active; destructive actions blocked at policy gate."
     )
     import dataclasses
+
+    _VALID_BOUNDARIES   = {"HOST", "HONEYPOT", "NETWORK", "UNKNOWN"}
+    _VALID_SEVERITIES   = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
+    _VALID_ACTIONS      = {"KILL", "BLOCK", "QUARANTINE", "ALERT", "LOG", "NONE"}
+    _VALID_TIERS        = {"TIER_1", "TIER_2", "TIER_3", "TIER_4"}
 
     @dataclasses.dataclass
     class RawEvent:
         source:    str
         timestamp: str
-        boundary:  str
+        boundary:  Boundary           # stored as Boundary enum in degraded mode too
         raw:       Any
 
         def to_dict(self) -> dict:
-            return dataclasses.asdict(self)
+            return {
+                "source":    self.source,
+                "timestamp": self.timestamp,
+                "boundary":  self.boundary.value,
+                "raw":       self.raw,
+            }
 
         @classmethod
         def from_dict(cls, d: dict):
+            # Reject unknown fields — mirrors Pydantic extra="forbid"
+            allowed = {"source", "timestamp", "boundary", "raw"}
+            extra = set(d.keys()) - allowed
+            if extra:
+                raise ValueError(f"unknown fields: {extra!r}")
+
             src = str(d.get("source", "")).strip()
             if not src:
                 raise ValueError("source cannot be empty")
             ts = _normalize_iso8601(str(d.get("timestamp", "")))
-            b = str(d.get("boundary", "UNKNOWN"))
-            if b not in {"HOST", "HONEYPOT", "NETWORK", "UNKNOWN"}:
-                b = "UNKNOWN"
+            b_raw = str(d.get("boundary", "UNKNOWN"))
+            if b_raw not in _VALID_BOUNDARIES:
+                raise ValueError(f"invalid boundary: {b_raw!r}")
             return cls(
                 source=src, timestamp=ts,
-                boundary=b, raw=d.get("raw", {})
+                boundary=Boundary(b_raw), raw=d.get("raw", {})
             )
 
     @dataclasses.dataclass
     class Decision:
-        schema_version:    str   = SCHEMA_VERSION
-        incident_detected: bool  = False
-        severity:          str   = "INFO"
-        boundary:          str   = "UNKNOWN"
-        threat_class:      str   = "unknown"
-        confidence:        float = 0.0
-        action_required:   str   = "NONE"
-        target:            Any   = None
-        gjallarhorn_tier:  int   = 1
-        reasoning:         str   = ""
-        extractor_model:   str   = "unknown"
-        reasoner_model:    str   = "unknown"
-        hardware_tier:     str   = "TIER_4"
-        action_effective:  Any   = None
-        policy_rationale:  Any   = None
-        rollback_id:       Any   = None
-        event_id:          Any   = None
+        schema_version:    str            = SCHEMA_VERSION
+        incident_detected: bool           = False
+        severity:          Severity       = Severity.INFO
+        boundary:          Boundary       = Boundary.UNKNOWN
+        threat_class:      str            = "unknown"
+        confidence:        float          = 0.0
+        action_required:   ActionType     = ActionType.NONE
+        target:            Any            = None
+        gjallarhorn_tier:  int            = 1
+        reasoning:         str            = ""
+        extractor_model:   str            = "unknown"
+        reasoner_model:    str            = "unknown"
+        hardware_tier:     str            = "TIER_4"
+        action_effective:  Any            = None
+        policy_rationale:  Any            = None
+        rollback_id:       Any            = None
+        event_id:          Any            = None
 
         def __post_init__(self):
+            # Normalise confidence
             self.confidence = max(0.0, min(1.0, float(self.confidence)))
+            # Truncate reasoning
             self.reasoning = str(self.reasoning)[:200]
-            self.gjallarhorn_tier = (
-                self.gjallarhorn_tier
-                if self.gjallarhorn_tier in (1, 2) else 2
-            )
-            # Degraded mode — force safe actions only
-            if self.action_required in ("KILL", "BLOCK", "QUARANTINE"):
-                import logging
-                logging.getLogger("heimdall.schema").warning(
-                    f"Degraded mode: downgrading {self.action_required} "
-                    f"to ALERT — Pydantic not available."
-                )
-                self.action_required = "ALERT"
+            # Clamp gjallarhorn tier
+            if self.gjallarhorn_tier not in (1, 2):
+                self.gjallarhorn_tier = 2
+            # Coerce enum fields when passed as strings
+            if isinstance(self.severity, str):
+                v = self.severity.upper()
+                self.severity = Severity(v) if v in _VALID_SEVERITIES else Severity.INFO
+            if isinstance(self.boundary, str):
+                v = self.boundary.upper()
+                self.boundary = Boundary(v) if v in _VALID_BOUNDARIES else Boundary.UNKNOWN
+            if isinstance(self.action_required, str):
+                v = self.action_required.upper()
+                if v not in _VALID_ACTIONS:
+                    raise ValueError(
+                        f"Invalid action_required {v!r}. "
+                        f"Must be one of {sorted(_VALID_ACTIONS)!r}."
+                    )
+                self.action_required = ActionType(v)
+            if isinstance(self.action_effective, str):
+                v = self.action_effective.upper()
+                self.action_effective = ActionType(v) if v in _VALID_ACTIONS else None
+            # Validate hardware_tier
+            if isinstance(self.hardware_tier, str):
+                v = self.hardware_tier.upper()
+                if v not in _VALID_TIERS:
+                    raise ValueError(
+                        f"Invalid hardware_tier {v!r}. "
+                        f"Must be one of {sorted(_VALID_TIERS)!r}."
+                    )
+                self.hardware_tier = v
+            # Lock schema_version
+            self.schema_version = SCHEMA_VERSION
 
         def is_destructive(self):
-            return self.action_required in ("KILL", "BLOCK", "QUARANTINE")
+            return self.action_required in DESTRUCTIVE_ACTIONS
 
         def is_safe(self):
-            return self.action_required in ("ALERT", "LOG", "NONE")
+            return self.action_required in SAFE_ACTIONS
 
         def to_dict(self):
-            return dataclasses.asdict(self)
+            def _enum_val(v):
+                """Return v.value if it is an enum, else v as-is (defensive fallback)."""
+                return v.value if hasattr(v, "value") else v
+
+            return {
+                "schema_version":    self.schema_version,
+                "incident_detected": self.incident_detected,
+                "severity":          _enum_val(self.severity),
+                "boundary":          _enum_val(self.boundary),
+                "threat_class":      self.threat_class,
+                "confidence":        round(self.confidence, 3),
+                "action_required":   _enum_val(self.action_required),
+                "target":            self.target,
+                "gjallarhorn_tier":  self.gjallarhorn_tier,
+                "reasoning":         self.reasoning,
+                "extractor_model":   self.extractor_model,
+                "reasoner_model":    self.reasoner_model,
+                "hardware_tier":     self.hardware_tier,
+                "action_effective":  _enum_val(self.action_effective)
+                                     if self.action_effective is not None else None,
+                "policy_rationale":  self.policy_rationale,
+                "rollback_id":       self.rollback_id,
+                "event_id":          self.event_id,
+            }
 
         @classmethod
         def from_dict(cls, d):
             allowed = {f.name for f in dataclasses.fields(cls)}
+            # Reject unknown fields — mirrors Pydantic extra="forbid"
+            extra = set(d.keys()) - allowed
+            if extra:
+                raise ValueError(f"unknown fields: {extra!r}")
             data = {k: v for k, v in d.items() if k in allowed}
-            return cls(**data)
+            decision = cls(**data)
+            # Contradictory payload guard
+            if not decision.incident_detected and decision.is_destructive():
+                _logger.warning(
+                    f"Contradictory payload: incident_detected=False "
+                    f"but action={decision.action_required.value}. "
+                    f"Downgrading to ALERT."
+                )
+                decision.action_required = ActionType.ALERT
+            return decision
 
         @classmethod
         def safe_fallback(cls, reason="parser_error"):
@@ -307,12 +383,10 @@ else:
 
 
 def validate_decision_dict(d: dict) -> "Decision":
-    import logging
-    log = logging.getLogger("heimdall.schema")
     try:
         return Decision.from_dict(d)
     except Exception as e:
-        log.warning(f"Decision validation failed: {e}. Using safe fallback.")
+        _logger.warning(f"Decision validation failed: {e}. Using safe fallback.")
         return Decision.safe_fallback(str(e))
 
 
