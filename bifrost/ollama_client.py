@@ -69,15 +69,15 @@ def parse_json_object(text: str) -> Optional[dict]:
     except Exception:
         pass
 
-    for idx, char in enumerate(candidate):
-        if char != "{":
-            continue
+    idx = candidate.find("{")
+    while idx != -1:
         try:
             parsed, _ = decoder.raw_decode(candidate[idx:])
             if isinstance(parsed, dict):
                 return parsed
         except Exception:
-            continue
+            pass
+        idx = candidate.find("{", idx + 1)
     return None
 
 
@@ -163,7 +163,18 @@ def ollama_chat(
         )
         raise RuntimeError("ollama_invalid_json") from exc
 
-    message = (parsed.get("message") or {}).get("content")
+    message_payload = parsed.get("message")
+    if not isinstance(message_payload, dict):
+        logger.error(
+            "Ollama response has unexpected message payload type=%s url=%s model=%s body=%s",
+            type(message_payload).__name__,
+            url,
+            model,
+            truncate_for_log(body),
+        )
+        raise RuntimeError("ollama_invalid_message_payload")
+
+    message = message_payload.get("content")
     if not isinstance(message, str) or not message.strip():
         logger.error(
             "Ollama response missing message content url=%s model=%s body=%s",

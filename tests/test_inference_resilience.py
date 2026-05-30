@@ -215,17 +215,16 @@ def test_route_to_ollama_parses_fenced_json(monkeypatch):
 
 
 def test_event_router_prewarm_ollama_is_non_fatal(monkeypatch):
+    def _raise_boom(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
     router = guardian.EventRouter.__new__(guardian.EventRouter)
     router.config = {"use_local_llm": True}
     router.analyst_model = "qwen2.5:1.5b-instruct"
     router.log = logging.getLogger("tests.guardian.prewarm")
     router._record_ollama_timing = lambda _response: None
 
-    monkeypatch.setattr(
-        router,
-        "_call_ollama_chat",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
-    )
+    monkeypatch.setattr(router, "_call_ollama_chat", _raise_boom)
 
     before = guardian.METRICS.get("ollama_failures", 0)
     router.prewarm_ollama()

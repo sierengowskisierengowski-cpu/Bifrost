@@ -936,10 +936,11 @@ class EventRouter(threading.Thread):
             )
 
     def compress_event(self, event: dict) -> str:
-        if self.config.get("use_local_llm") and not self.extractor_model:
+        extractor_model = str(self.extractor_model or "").strip()
+        if self.config.get("use_local_llm") and not extractor_model:
             self._last_extractor_call_meta = {
                 "provider": "guardian_extractor",
-                "model": self.extractor_model,
+                "model": None,
                 "latency_ms": 0.0,
                 "timeout_seconds": float(get_request_timeout(self.config)),
                 "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
@@ -981,9 +982,9 @@ class EventRouter(threading.Thread):
             if self.config.get("use_local_llm"):
                 response, error = execute_with_retry(
                     lambda: self._call_ollama_chat(
-                        self.extractor_model,
+                        extractor_model,
                         messages,
-                        temperature=float(self.config.get("llm_temperature", 0.0)),
+                        temperature=self.config.get("llm_temperature", 0.0),
                     ),
                     provider="guardian_extractor",
                     config=self.config,
@@ -1011,7 +1012,7 @@ class EventRouter(threading.Thread):
                 )
                 self._last_extractor_call_meta = {
                     "provider": "guardian_extractor",
-                    "model": self.extractor_model,
+                    "model": extractor_model or self.extractor_model,
                     "latency_ms": round(latency_ms, 2),
                     "timeout_seconds": float(get_request_timeout(self.config)),
                     "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
@@ -1034,7 +1035,7 @@ class EventRouter(threading.Thread):
                 content = response.choices[0].message.content.strip()
             self._last_extractor_call_meta = {
                 "provider": "guardian_extractor",
-                "model": self.extractor_model,
+                "model": extractor_model or self.extractor_model,
                 "latency_ms": round(latency_ms, 2),
                 "timeout_seconds": float(get_request_timeout(self.config)),
                 "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
@@ -1049,7 +1050,7 @@ class EventRouter(threading.Thread):
         except Exception as e:
             self._last_extractor_call_meta = {
                 "provider": "guardian_extractor",
-                "model": self.extractor_model,
+                "model": extractor_model or self.extractor_model,
                 "latency_ms": 0.0,
                 "timeout_seconds": float(get_request_timeout(self.config)),
                 "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
@@ -1066,10 +1067,11 @@ class EventRouter(threading.Thread):
             )[:500]
 
     def route_to_heimdall(self, compressed: str) -> dict:
-        if self.config.get("use_local_llm") and not self.analyst_model:
+        analyst_model = str(self.analyst_model or "").strip()
+        if self.config.get("use_local_llm") and not analyst_model:
             self._last_analyst_call_meta = {
                 "provider": "guardian_analyst",
-                "model": self.analyst_model,
+                "model": None,
                 "latency_ms": 0.0,
                 "timeout_seconds": float(get_request_timeout(self.config)),
                 "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
@@ -1109,9 +1111,9 @@ class EventRouter(threading.Thread):
             if self.config.get("use_local_llm"):
                 response, error = execute_with_retry(
                     lambda: self._call_ollama_chat(
-                        self.analyst_model,
+                        analyst_model,
                         messages,
-                        temperature=float(self.config.get("llm_temperature", 0.0)),
+                        temperature=self.config.get("llm_temperature", 0.0),
                     ),
                     provider="guardian_analyst",
                     config=self.config,
