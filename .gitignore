@@ -42,6 +42,7 @@ agent/bifrost-agent
 # Node / misc
 node_modules/
 .env
+.venv/
 
 # Test attack framework (local lab only)
 tests/attack_framework/

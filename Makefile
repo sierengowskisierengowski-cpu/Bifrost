@@ -49,9 +49,10 @@ demo-all-attacks:
 	python3 -m bifrost.demo --scenario examples/replay/suid_binary.jsonl
 
 test:
-	@python3 -c "import pytest" >/dev/null 2>&1 || \
-		(python3 -m pip install --break-system-packages --quiet pytest && echo "[+] Installed pytest")
-	python3 -m pytest tests/ -v
+	@test -x .venv/bin/python3 || python3 -m venv .venv
+	@.venv/bin/python3 -c "import pytest" >/dev/null 2>&1 || \
+		(.venv/bin/python3 -m pip install --quiet pytest && echo "[+] Installed pytest in .venv")
+	.venv/bin/python3 -m pytest tests/ -v
 
 lab-validate:
 	python3 -m lab.validate
