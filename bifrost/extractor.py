@@ -23,9 +23,8 @@ from datetime import datetime, timezone
 from bifrost.inference import (
     CircuitBreaker,
     execute_with_retry,
-    get_client_timeout,
-    get_request_timeout,
 )
+from bifrost.ollama_client import ollama_chat, parse_json_object, truncate_for_log
 
 log = logging.getLogger("heimdall.extractor")
 
@@ -167,7 +166,7 @@ def extract_key_fields(event: dict) -> dict:
     return extracted
 
 
-def compress_event_with_model(event: dict, client, model: str, config: dict) -> dict:
+def compress_event_with_model(event: dict, model: str, config: dict) -> dict:
     """
     Uses the 1.5B extractor model to compress the event.
     Falls back to deterministic extraction if model fails.
@@ -177,13 +176,15 @@ def compress_event_with_model(event: dict, client, model: str, config: dict) -> 
         pre_stripped = strip_noise_deterministic(raw_text)
 
         response, _ = execute_with_retry(
-            lambda: client.chat.completions.create(
+            lambda: ollama_chat(
+                config=config,
                 model=model,
-                temperature=0.0,
                 messages=[
                     {"role": "system", "content": EXTRACTOR_SYSTEM_PROMPT},
-                    {"role": "user", "content": pre_stripped}
-                ]
+                    {"role": "user", "content": pre_stripped},
+                ],
+                logger=log,
+                temperature=float(config.get("llm_temperature", 0.0)),
             ),
             provider="extractor",
             config=config,
@@ -193,23 +194,22 @@ def compress_event_with_model(event: dict, client, model: str, config: dict) -> 
         if not response:
             return compress_event_deterministic(event, model)
 
-        content = response.choices[0].message.content.strip()
+        content = response["content"]
 
-        try:
-            parsed = json.loads(content)
-            deterministic = extract_key_fields(event)
-            for key, val in deterministic.items():
-                if key not in parsed or parsed[key] is None:
-                    parsed[key] = val
-            parsed["extraction_method"] = "model"
-            parsed["extractor_model"] = model
-            return parsed
-        except json.JSONDecodeError:
+        parsed = parse_json_object(content)
+        if not parsed:
             log.warning(
                 f"Extractor model returned non-JSON. "
-                f"Falling back. Content: {content[:80]}"
+                f"Falling back. Content: {truncate_for_log(content, max_len=120)}"
             )
             return compress_event_deterministic(event, model)
+        deterministic = extract_key_fields(event)
+        for key, val in deterministic.items():
+            if key not in parsed or parsed[key] is None:
+                parsed[key] = val
+        parsed["extraction_method"] = "model"
+        parsed["extractor_model"] = model
+        return parsed
 
     except Exception as e:
         log.warning(f"Extractor model error: {e}. Using deterministic fallback.")
@@ -254,21 +254,8 @@ def compress_event(event: dict, config: dict) -> dict:
         )
         return compress_event_deterministic(event)
 
-    try:
-        from openai import OpenAI
-        client = OpenAI(
-            base_url=config.get(
-                "local_url", "http://localhost:11434/v1"
-            ),
-            api_key="ollama",
-            timeout=get_client_timeout(config)
-        )
-        log.debug(f"Model extraction: model={extractor_model}")
-        return compress_event_with_model(event, client, extractor_model, config)
-
-    except Exception as e:
-        log.warning(f"Model client init failed: {e}. Deterministic fallback.")
-        return compress_event_deterministic(event)
+    log.debug(f"Model extraction: model={extractor_model}")
+    return compress_event_with_model(event, extractor_model, config)
 
 
 def batch_compress(events: list, config: dict) -> list:

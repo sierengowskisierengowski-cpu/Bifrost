@@ -136,18 +136,14 @@ def test_guardian_analyst_circuit_breaker_uses_safe_fallback():
 
 
 def test_extractor_circuit_breaker_falls_back_to_deterministic(monkeypatch):
-    create_calls = []
-    init_kwargs = []
-    outcomes = [TimeoutError("timed out")]
-
-    class _OpenAI:
-        def __init__(self, **kwargs):
-            init_kwargs.append(kwargs)
-            self._client = _FakeClient(outcomes, create_calls)
-            self.chat = self._client.chat
-
     _reset_breaker(extractor.EXTRACTOR_CIRCUIT_BREAKER)
-    monkeypatch.setitem(sys.modules, "openai", types.SimpleNamespace(OpenAI=_OpenAI))
+    calls = []
+
+    def _fake_ollama_chat(**kwargs):
+        calls.append(kwargs)
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(extractor, "ollama_chat", _fake_ollama_chat)
 
     event = {
         "source": "process.watcher",
@@ -171,8 +167,10 @@ def test_extractor_circuit_breaker_falls_back_to_deterministic(monkeypatch):
     assert first["extraction_method"] == "deterministic"
     assert second["extraction_method"] == "deterministic"
     assert first["extractor_model"] == "extractor-test"
-    assert len(create_calls) == 1
-    assert init_kwargs[0]["timeout"] == 2.0
+    assert len(calls) == 1
+    payload = calls[0]
+    assert payload["messages"][1]["content"]
+    assert payload["model"] == "extractor-test"
 
 
 def test_get_client_timeout_uses_scalar_without_split():
@@ -190,3 +188,45 @@ def test_get_client_timeout_uses_split_values():
     )
     assert getattr(timeout, "connect", None) == 10.0
     assert getattr(timeout, "read", None) == 120.0
+
+
+def test_route_to_ollama_parses_fenced_json(monkeypatch):
+    _reset_breaker(reasoner.INFERENCE_CIRCUIT_BREAKERS["ollama"])
+    monkeypatch.setattr(
+        reasoner,
+        "ollama_chat",
+        lambda **_: {
+            "content": "```json\n{\"incident_detected\": false, \"severity\": \"LOW\"}\n```",
+            "timings": {},
+            "duration_ms": 1.0,
+        },
+    )
+
+    parsed = reasoner.route_to_ollama(
+        "prompt",
+        "baseline",
+        {
+            "analyst_model": "qwen2.5:1.5b-instruct",
+            "llm_retry_attempts": 0,
+        },
+    )
+
+    assert parsed == {"incident_detected": False, "severity": "LOW"}
+
+
+def test_event_router_prewarm_ollama_is_non_fatal(monkeypatch):
+    router = guardian.EventRouter.__new__(guardian.EventRouter)
+    router.config = {"use_local_llm": True}
+    router.analyst_model = "qwen2.5:1.5b-instruct"
+    router.log = logging.getLogger("tests.guardian.prewarm")
+    router._record_ollama_timing = lambda _response: None
+
+    monkeypatch.setattr(
+        router,
+        "_call_ollama_chat",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+
+    before = guardian.METRICS.get("ollama_failures", 0)
+    router.prewarm_ollama()
+    assert guardian.METRICS.get("ollama_failures", 0) == before + 1

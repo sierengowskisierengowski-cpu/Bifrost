@@ -36,7 +36,12 @@ def test_load_config_allows_missing_checksum_in_non_production(tmp_path, monkeyp
 
     actual = guardian.load_config()
 
-    assert actual == expected
+    assert actual["learning_mode"] is True
+    assert actual["k"] == "v"
+    assert actual["llm_num_ctx"] == 1024
+    assert actual["llm_num_predict"] == 64
+    assert actual["llm_num_gpu"] == 0
+    assert actual["llm_temperature"] == 0.0
 
 
 def test_load_config_fails_on_checksum_mismatch(tmp_path, monkeypatch, caplog):
@@ -134,6 +139,9 @@ def test_load_config_applies_vm_profile_in_test_mode(tmp_path, monkeypatch):
     assert loaded["llm_connect_timeout_seconds"] == 10.0
     assert loaded["llm_read_timeout_seconds"] == 120.0
     assert loaded["llm_num_ctx"] == 1024
+    assert loaded["llm_num_predict"] == 64
+    assert loaded["llm_num_gpu"] == 0
+    assert loaded["llm_temperature"] == 0.0
     assert loaded["local_url"] == "http://127.0.0.1:11434/v1"
 
 
@@ -151,6 +159,9 @@ def test_load_config_env_overrides_vm_profile_and_default(tmp_path, monkeypatch)
     monkeypatch.setenv("HEIMDALL_LLM_CONNECT_TIMEOUT_SECONDS", "11")
     monkeypatch.setenv("HEIMDALL_LLM_READ_TIMEOUT_SECONDS", "99")
     monkeypatch.setenv("HEIMDALL_LLM_NUM_CTX", "1536")
+    monkeypatch.setenv("HEIMDALL_LLM_NUM_PREDICT", "72")
+    monkeypatch.setenv("HEIMDALL_LLM_NUM_GPU", "0")
+    monkeypatch.setenv("HEIMDALL_LLM_TEMPERATURE", "0.2")
 
     loaded = guardian.load_config()
 
@@ -159,3 +170,6 @@ def test_load_config_env_overrides_vm_profile_and_default(tmp_path, monkeypatch)
     assert loaded["llm_connect_timeout_seconds"] == 11.0
     assert loaded["llm_read_timeout_seconds"] == 99.0
     assert loaded["llm_num_ctx"] == 1536
+    assert loaded["llm_num_predict"] == 72
+    assert loaded["llm_num_gpu"] == 0
+    assert loaded["llm_temperature"] == 0.2

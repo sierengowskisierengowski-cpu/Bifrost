@@ -35,6 +35,7 @@ from bifrost.inference import (
     get_client_timeout,
     get_request_timeout,
 )
+from bifrost.ollama_client import ollama_chat, parse_json_object, truncate_for_log
 from bifrost import paths as bifrost_paths
 from bifrost.resilience import (
     configure_sqlite_connection,
@@ -65,6 +66,9 @@ VM_TEST_PROFILE_DEFAULTS = {
     "llm_connect_timeout_seconds": 10.0,
     "llm_read_timeout_seconds": 120.0,
     "llm_num_ctx": 1024,
+    "llm_num_predict": 64,
+    "llm_num_gpu": 0,
+    "llm_temperature": 0.0,
     "ollama_num_parallel": 1,
     "test_mode_enabled": True,
 }
@@ -91,6 +95,10 @@ METRICS.setdefault("policy_blocks", 0)
 METRICS.setdefault("actions_dispatched", 0)
 METRICS.setdefault("invalid_events", 0)
 METRICS.setdefault("config_integrity_failures", 0)
+METRICS.setdefault("ollama_requests", 0)
+METRICS.setdefault("ollama_failures", 0)
+METRICS.setdefault("ollama_last_total_duration_ns", 0)
+METRICS.setdefault("ollama_last_load_duration_ns", 0)
 
 COMPRESSED_EVENT_NORMALIZE_DEPTH = 3
 COMPRESSED_EVENT_BACKFILL_BATCH_SIZE = 500
@@ -254,6 +262,30 @@ def load_config():
         if num_ctx_val is not None:
             merged["llm_num_ctx"] = int(num_ctx_val)
 
+        num_predict_val = _parse_number_env(
+            "HEIMDALL_LLM_NUM_PREDICT",
+            "BIFROST_LLM_NUM_PREDICT",
+            cast=int,
+        )
+        if num_predict_val is not None:
+            merged["llm_num_predict"] = int(num_predict_val)
+
+        num_gpu_val = _parse_number_env(
+            "HEIMDALL_LLM_NUM_GPU",
+            "BIFROST_LLM_NUM_GPU",
+            cast=int,
+        )
+        if num_gpu_val is not None:
+            merged["llm_num_gpu"] = int(num_gpu_val)
+
+        temp_val = _parse_number_env(
+            "HEIMDALL_LLM_TEMPERATURE",
+            "BIFROST_LLM_TEMPERATURE",
+            cast=float,
+        )
+        if temp_val is not None:
+            merged["llm_temperature"] = float(temp_val)
+
         parallel_val = _parse_number_env(
             "OLLAMA_NUM_PARALLEL",
             "HEIMDALL_OLLAMA_NUM_PARALLEL",
@@ -284,6 +316,10 @@ def load_config():
             merged = _apply_vm_profile(merged)
             merged["config_profile"] = "vm-test"
         merged = _apply_env_overrides(merged)
+        merged.setdefault("llm_num_ctx", 1024)
+        merged.setdefault("llm_num_predict", 64)
+        merged.setdefault("llm_num_gpu", 0)
+        merged.setdefault("llm_temperature", 0.0)
         return merged
 
     if not CONFIG_PATH.exists():
@@ -829,22 +865,14 @@ class EventRouter(threading.Thread):
 
     def setup_inference_clients(self):
         try:
-            from openai import OpenAI
-            timeout = get_client_timeout(self.config)
             if self.config.get("use_local_llm"):
-                self.analyst_client = OpenAI(
-                    base_url=self.config["local_url"],
-                    api_key="ollama",
-                    timeout=timeout,
-                )
+                self.analyst_client = None
                 self.analyst_model = self.config["analyst_model"]
-                self.extractor_client = OpenAI(
-                    base_url=self.config["local_url"],
-                    api_key="ollama",
-                    timeout=timeout,
-                )
+                self.extractor_client = None
                 self.extractor_model = self.config["extractor_model"]
             else:
+                from openai import OpenAI
+                timeout = get_client_timeout(self.config)
                 api_key = os.getenv("HEIMDALL_API_KEY", "")
                 self.analyst_client = OpenAI(
                     base_url=self.config.get("groq_url", ""),
@@ -859,8 +887,69 @@ class EventRouter(threading.Thread):
             self.analyst_client = None
             self.extractor_client = None
 
+    def _call_ollama_chat(self, model: str, messages: list[dict], *, temperature: float = 0.0):
+        return ollama_chat(
+            config=self.config,
+            model=model,
+            messages=messages,
+            logger=self.log,
+            temperature=temperature,
+        )
+
+    def _record_ollama_timing(self, response: dict) -> None:
+        timings = response.get("timings", {})
+        with METRICS_LOCK:
+            METRICS["ollama_requests"] += 1
+            METRICS["ollama_last_total_duration_ns"] = (
+                timings.get("total_duration") or 0
+            )
+            METRICS["ollama_last_load_duration_ns"] = (
+                timings.get("load_duration") or 0
+            )
+
+    def prewarm_ollama(self) -> None:
+        if not self.config.get("use_local_llm"):
+            return
+        model = self.analyst_model or self.config.get("analyst_model")
+        if not model:
+            self.log.warning("Skipping Ollama prewarm: analyst model is not configured.")
+            return
+        try:
+            response = self._call_ollama_chat(
+                model,
+                [{"role": "user", "content": "Reply with OK"}],
+                temperature=0.0,
+            )
+            self._record_ollama_timing(response)
+            self.log.info(
+                "Ollama prewarm succeeded model=%s duration_ms=%s",
+                model,
+                response.get("duration_ms"),
+            )
+        except Exception as exc:
+            with METRICS_LOCK:
+                METRICS["ollama_failures"] += 1
+            self.log.warning(
+                "Ollama prewarm failed (non-fatal) model=%s error=%s",
+                model,
+                exc,
+            )
+
     def compress_event(self, event: dict) -> str:
-        if not self.extractor_client:
+        if self.config.get("use_local_llm") and not self.extractor_model:
+            self._last_extractor_call_meta = {
+                "provider": "guardian_extractor",
+                "model": self.extractor_model,
+                "latency_ms": 0.0,
+                "timeout_seconds": float(get_request_timeout(self.config)),
+                "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
+                "success": False,
+                "failure_reason": "no_extractor_model",
+            }
+            raw = safe_json_dumps(event.get("raw", {}))
+            return sanitize_telemetry_for_llm(raw)[:500]
+
+        if not self.config.get("use_local_llm") and not self.extractor_client:
             self._last_extractor_call_meta = {
                 "provider": "guardian_extractor",
                 "model": self.extractor_model,
@@ -878,32 +967,41 @@ class EventRouter(threading.Thread):
             raw = sanitize_telemetry_for_llm(
                 safe_json_dumps(event.get("raw", {}))
             )
-            num_ctx = int(self.config.get("llm_num_ctx", 0) or 0)
-            options = {"num_ctx": num_ctx} if num_ctx > 0 else None
-            completion_kwargs = {
-                "model": self.extractor_model,
-                "temperature": 0.0,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a security event compressor. "
-                            "Strip hex addresses and register states. "
-                            "Return compact JSON only. No explanation."
-                        ),
-                    },
-                    {"role": "user", "content": raw},
-                ],
-            }
-            if options:
-                completion_kwargs["extra_body"] = {"options": options}
-            response, error = execute_with_retry(
-                lambda: self.extractor_client.chat.completions.create(**completion_kwargs),
-                provider="guardian_extractor",
-                config=self.config,
-                logger=self.log,
-                circuit_breaker=self.extractor_breaker,
-            )
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a security event compressor. "
+                        "Strip hex addresses and register states. "
+                        "Return compact JSON only. No explanation."
+                    ),
+                },
+                {"role": "user", "content": raw},
+            ]
+            if self.config.get("use_local_llm"):
+                response, error = execute_with_retry(
+                    lambda: self._call_ollama_chat(
+                        self.extractor_model,
+                        messages,
+                        temperature=float(self.config.get("llm_temperature", 0.0)),
+                    ),
+                    provider="guardian_extractor",
+                    config=self.config,
+                    logger=self.log,
+                    circuit_breaker=self.extractor_breaker,
+                )
+            else:
+                response, error = execute_with_retry(
+                    lambda: self.extractor_client.chat.completions.create(
+                        model=self.extractor_model,
+                        temperature=0.0,
+                        messages=messages,
+                    ),
+                    provider="guardian_extractor",
+                    config=self.config,
+                    logger=self.log,
+                    circuit_breaker=self.extractor_breaker,
+                )
             latency_ms = (time.monotonic() - start) * 1000.0
             if not response:
                 reason = (
@@ -923,9 +1021,17 @@ class EventRouter(threading.Thread):
                 self.log.warning("Extractor degraded mode: %s", reason)
                 with METRICS_LOCK:
                     METRICS["llm_errors"] += 1
+                    if self.config.get("use_local_llm"):
+                        METRICS["ollama_failures"] += 1
                 return sanitize_telemetry_for_llm(
                     safe_json_dumps(event.get("raw", {}))
                 )[:500]
+
+            if self.config.get("use_local_llm"):
+                self._record_ollama_timing(response)
+                content = response["content"]
+            else:
+                content = response.choices[0].message.content.strip()
             self._last_extractor_call_meta = {
                 "provider": "guardian_extractor",
                 "model": self.extractor_model,
@@ -935,8 +1041,10 @@ class EventRouter(threading.Thread):
                 "success": True,
                 "failure_reason": None,
             }
+            if self.config.get("use_local_llm"):
+                self._last_extractor_call_meta["ollama_timing"] = response.get("timings", {})
             return sanitize_telemetry_for_llm(
-                response.choices[0].message.content.strip()
+                content
             )
         except Exception as e:
             self._last_extractor_call_meta = {
@@ -951,12 +1059,26 @@ class EventRouter(threading.Thread):
             self.log.warning(f"Extractor error: {e}. Using raw fallback.")
             with METRICS_LOCK:
                 METRICS["llm_errors"] += 1
+                if self.config.get("use_local_llm"):
+                    METRICS["ollama_failures"] += 1
             return sanitize_telemetry_for_llm(
                 safe_json_dumps(event.get("raw", {}))
             )[:500]
 
     def route_to_heimdall(self, compressed: str) -> dict:
-        if not self.analyst_client:
+        if self.config.get("use_local_llm") and not self.analyst_model:
+            self._last_analyst_call_meta = {
+                "provider": "guardian_analyst",
+                "model": self.analyst_model,
+                "latency_ms": 0.0,
+                "timeout_seconds": float(get_request_timeout(self.config)),
+                "retry_attempts": int(self.config.get("llm_retry_attempts", 2)),
+                "success": False,
+                "failure_reason": "no_analyst_model",
+            }
+            return self._safe_fallback("no_analyst_model")
+
+        if not self.config.get("use_local_llm") and not self.analyst_client:
             self._last_analyst_call_meta = {
                 "provider": "guardian_analyst",
                 "model": self.analyst_model,
@@ -974,31 +1096,40 @@ class EventRouter(threading.Thread):
             )
             sanitized = sanitize_telemetry_for_llm(compressed)
             start = time.monotonic()
-            num_ctx = int(self.config.get("llm_num_ctx", 0) or 0)
-            options = {"num_ctx": num_ctx} if num_ctx > 0 else None
-            completion_kwargs = {
-                "model": self.analyst_model,
-                "temperature": 0.0,
-                "messages": [
-                    {"role": "system", "content": baseline},
-                    {
-                        "role": "user",
-                        "content": (
-                            "Analyze this security event as JSON:\n"
-                            f"{sanitized}"
-                        ),
-                    },
-                ],
-            }
-            if options:
-                completion_kwargs["extra_body"] = {"options": options}
-            response, error = execute_with_retry(
-                lambda: self.analyst_client.chat.completions.create(**completion_kwargs),
-                provider="guardian_analyst",
-                config=self.config,
-                logger=self.log,
-                circuit_breaker=self.analyst_breaker,
-            )
+            messages = [
+                {"role": "system", "content": baseline},
+                {
+                    "role": "user",
+                    "content": (
+                        "Analyze this security event as JSON:\n"
+                        f"{sanitized}"
+                    ),
+                },
+            ]
+            if self.config.get("use_local_llm"):
+                response, error = execute_with_retry(
+                    lambda: self._call_ollama_chat(
+                        self.analyst_model,
+                        messages,
+                        temperature=float(self.config.get("llm_temperature", 0.0)),
+                    ),
+                    provider="guardian_analyst",
+                    config=self.config,
+                    logger=self.log,
+                    circuit_breaker=self.analyst_breaker,
+                )
+            else:
+                response, error = execute_with_retry(
+                    lambda: self.analyst_client.chat.completions.create(
+                        model=self.analyst_model,
+                        temperature=0.0,
+                        messages=messages,
+                    ),
+                    provider="guardian_analyst",
+                    config=self.config,
+                    logger=self.log,
+                    circuit_breaker=self.analyst_breaker,
+                )
             latency_ms = (time.monotonic() - start) * 1000.0
             if not response:
                 self._last_analyst_call_meta = {
@@ -1012,18 +1143,26 @@ class EventRouter(threading.Thread):
                 }
                 with METRICS_LOCK:
                     METRICS["llm_errors"] += 1
+                    if self.config.get("use_local_llm"):
+                        METRICS["ollama_failures"] += 1
                 if error == "circuit_open":
                     return self._safe_fallback("analyst_circuit_open")
                 return self._safe_fallback("llm_error")
 
-            raw_decision = response.choices[0].message.content.strip()
+            if self.config.get("use_local_llm"):
+                self._record_ollama_timing(response)
+                raw_decision = response["content"]
+            else:
+                raw_decision = response.choices[0].message.content.strip()
 
-            # Strip markdown fences if present
-            if raw_decision.startswith("```"):
-                raw_decision = raw_decision.strip("`")
-                raw_decision = raw_decision.replace("json\n", "", 1).strip()
-
-            decision = json.loads(raw_decision)
+            decision = parse_json_object(raw_decision)
+            if not decision:
+                self.log.warning(
+                    "LLM decision parse failed model=%s preview=%s",
+                    self.analyst_model,
+                    truncate_for_log(raw_decision),
+                )
+                return self._safe_fallback("json_decode_error")
 
             required = [
                 "severity", "action_required", "confidence", "reasoning",
@@ -1057,6 +1196,8 @@ class EventRouter(threading.Thread):
                 "success": True,
                 "failure_reason": None,
             }
+            if self.config.get("use_local_llm"):
+                self._last_analyst_call_meta["ollama_timing"] = response.get("timings", {})
 
             return decision
 
@@ -1073,6 +1214,8 @@ class EventRouter(threading.Thread):
             self.log.error(f"LLM returned invalid JSON: {e}")
             with METRICS_LOCK:
                 METRICS["llm_errors"] += 1
+                if self.config.get("use_local_llm"):
+                    METRICS["ollama_failures"] += 1
             return self._safe_fallback("json_decode_error")
         except Exception as e:
             self._last_analyst_call_meta = {
@@ -1087,6 +1230,8 @@ class EventRouter(threading.Thread):
             self.log.error(f"Heimdall reasoning error: {e}")
             with METRICS_LOCK:
                 METRICS["llm_errors"] += 1
+                if self.config.get("use_local_llm"):
+                    METRICS["ollama_failures"] += 1
             return self._safe_fallback("llm_error")
 
     def _safe_fallback(self, reason: str) -> dict:
@@ -1695,6 +1840,7 @@ def main(argv=None):
         log.info(f"Collector started: {collector.name}")
 
     router = EventRouter(EVENT_QUEUE, config, db_path, log)
+    router.prewarm_ollama()
     router.start()
     log.info("Bifrost pipeline active.")
     log.info("Heimdall is online. The bridge is watched.")

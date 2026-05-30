@@ -192,10 +192,12 @@ python -m bifrost.guardian --live-monitor-json /tmp/live-monitor.jsonl
 Use VM testing mode for CPU-only Ollama runs (for example VirtualBox + 8GB RAM):
 
 - config precedence is now `environment > vm_test_profile > default config`
+- local Ollama calls now use native `POST /api/chat` with `stream=false`
 - when testing mode/profile is enabled, Guardian applies VM-safe defaults:
-  - Ollama host `http://127.0.0.1:11434`
+  - Ollama host `http://127.0.0.1:11434` (`/api/chat` is used internally)
   - connect timeout `10s`, read/overall timeout `120s`
-  - context size `llm_num_ctx=1024`
+  - inference options: `llm_num_ctx=1024`, `llm_num_predict=64`, `llm_num_gpu=0`
+  - deterministic temperature default `llm_temperature=0.0`
   - recommended Ollama parallelism `OLLAMA_NUM_PARALLEL=1`
 
 Enable with environment variables:
@@ -208,6 +210,9 @@ export HEIMDALL_LLM_CONNECT_TIMEOUT_SECONDS=10
 export HEIMDALL_LLM_READ_TIMEOUT_SECONDS=120
 export HEIMDALL_LLM_TIMEOUT_SECONDS=120
 export HEIMDALL_LLM_NUM_CTX=1024
+export HEIMDALL_LLM_NUM_PREDICT=64
+export HEIMDALL_LLM_NUM_GPU=0
+export HEIMDALL_LLM_TEMPERATURE=0.0
 export OLLAMA_NUM_PARALLEL=1
 ```
 
@@ -223,6 +228,9 @@ Environment="HEIMDALL_LLM_CONNECT_TIMEOUT_SECONDS=10"
 Environment="HEIMDALL_LLM_READ_TIMEOUT_SECONDS=120"
 Environment="HEIMDALL_LLM_TIMEOUT_SECONDS=120"
 Environment="HEIMDALL_LLM_NUM_CTX=1024"
+Environment="HEIMDALL_LLM_NUM_PREDICT=64"
+Environment="HEIMDALL_LLM_NUM_GPU=0"
+Environment="HEIMDALL_LLM_TEMPERATURE=0.0"
 Environment="OLLAMA_NUM_PARALLEL=1"
 ```
 
@@ -232,6 +240,25 @@ Then reload:
 sudo systemctl daemon-reload
 sudo systemctl restart bifrost-guardian
 ```
+
+Quick preflight check for CPU-only Ollama:
+
+```bash
+curl -sS http://127.0.0.1:11434/api/chat -d '{
+  "model":"qwen2.5:1.5b-instruct",
+  "messages":[{"role":"user","content":"Reply with OK"}],
+  "stream":false,
+  "options":{"num_ctx":1024,"num_predict":64,"num_gpu":0}
+}'
+```
+
+Expected Guardian logs during healthy local inference:
+
+- `Ollama prewarm succeeded model=...`
+- `Ollama inference model=... duration_ms=... total_ns=... load_ns=...`
+
+If Ollama returns non-200, Guardian now logs status, URL, model, and a safely
+truncated response body to speed up triage.
 
 During testing mode:
 

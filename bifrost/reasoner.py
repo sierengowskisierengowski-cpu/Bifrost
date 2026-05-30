@@ -114,6 +114,7 @@ from bifrost.inference import (
     get_client_timeout,
     get_request_timeout,
 )
+from bifrost.ollama_client import ollama_chat, parse_json_object, truncate_for_log
 
 log = logging.getLogger("heimdall.reasoner")
 
@@ -359,30 +360,20 @@ def route_to_ollama(
     Fastest for high-end hardware. Fully air gapped.
     """
     try:
-        from openai import OpenAI
-        client = OpenAI(
-            base_url=config.get("local_url", "http://localhost:11434/v1"),
-            api_key="ollama",
-            timeout=get_client_timeout(config)
-        )
         model = config.get("analyst_model")
         if not model:
             return None
 
-        num_ctx = int(config.get("llm_num_ctx", 0) or 0)
-        completion_kwargs = {
-            "model": model,
-            "temperature": 0.0,
-            "messages": [
-                {"role": "system", "content": system_baseline},
-                {"role": "user", "content": prompt}
-            ],
-        }
-        if num_ctx > 0:
-            completion_kwargs["extra_body"] = {"options": {"num_ctx": num_ctx}}
-
         response, _ = execute_with_retry(
-            lambda: client.chat.completions.create(**completion_kwargs),
+            lambda: ollama_chat(
+                config=config,
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_baseline},
+                    {"role": "user", "content": prompt},
+                ],
+                logger=log,
+            ),
             provider="ollama",
             config=config,
             logger=log,
@@ -391,8 +382,15 @@ def route_to_ollama(
         if not response:
             return None
 
-        content = response.choices[0].message.content.strip()
-        return json.loads(content)
+        decision = parse_json_object(response["content"])
+        if not decision:
+            log.warning(
+                "Ollama returned unparsable decision JSON model=%s content=%s",
+                model,
+                truncate_for_log(response["content"]),
+            )
+            return None
+        return decision
 
     except Exception as e:
         log.warning(f"Ollama routing failed: {e}")
