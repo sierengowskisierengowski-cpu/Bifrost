@@ -216,7 +216,6 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="5">
   <title>Bifrost Dashboard</title>
   <style>
     body {{ font-family: Arial, sans-serif; margin: 1.5rem; background: #0f172a; color: #e2e8f0; }}
@@ -232,7 +231,14 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
 </head>
 <body>
   <h1>Bifrost Live Dashboard</h1>
-  <p>Generated at {html.escape(str(state.get("generated_at")))} · auto-refresh every 5s</p>
+  <p>Generated at {html.escape(str(state.get("generated_at")))}</p>
+  <p>
+    <button type="button" onclick="window.location.reload()">Refresh now</button>
+    <label style="margin-left:0.75rem;">
+      <input id="auto-refresh" type="checkbox" checked>
+      Auto-refresh every 5s
+    </label>
+  </p>
   <p>DB: <code>{html.escape(str(state.get("paths", {}).get("db_path", "n/a")))}</code><br>
      JSONL: <code>{html.escape(str(state.get("paths", {}).get("live_monitor_jsonl_path", "n/a")))}</code></p>
   <div class="grid">
@@ -262,6 +268,14 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
       <tbody>{''.join(incidents) or '<tr><td colspan=7>No incidents recorded yet</td></tr>'}</tbody>
     </table>
   </section>
+  <script>
+    setInterval(function () {{
+      var toggle = document.getElementById('auto-refresh');
+      if (toggle && toggle.checked) {{
+        window.location.reload();
+      }}
+    }}, 5000);
+  </script>
 </body>
 </html>"""
 
