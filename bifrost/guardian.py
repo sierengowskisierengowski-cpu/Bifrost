@@ -1793,6 +1793,8 @@ def apply_cli_overrides(config, args):
 
 def _launch_desktop_window(url: str, log: logging.Logger) -> None:
     """Open the dashboard in a native pywebview desktop window (non-blocking)."""
+    _STARTUP_DELAY = 0.5  # seconds — lets the HTTP server finish binding before loading
+
     def _run() -> None:
         try:
             import webview  # pywebview
@@ -1804,9 +1806,8 @@ def _launch_desktop_window(url: str, log: logging.Logger) -> None:
             )
             return
         try:
-            # Brief delay to let the HTTP server finish binding
-            time.sleep(0.5)
-            window = webview.create_window(
+            time.sleep(_STARTUP_DELAY)
+            _window = webview.create_window(
                 "Bifrost \u2014 Heimdall Dashboard",
                 url,
                 width=1280,
