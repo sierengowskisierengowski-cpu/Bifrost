@@ -62,6 +62,7 @@ SUBSYSTEMS: Dict[str, Dict] = {
             "tests/test_guardian_config_checksum.py",
             "tests/test_guardian_shutdown.py",
             "tests/test_inference_resilience.py",
+            "tests/test_live_monitor.py",
             "tests/test_router_failover.py",
             # guardian_policy — policy-gate subtests only (dispatch tests
             # belong to hands_actions and are filtered out here)
@@ -91,6 +92,7 @@ SUBSYSTEMS: Dict[str, Dict] = {
         "label": "End-to-End (replay / resilience / demo path)",
         "test_files": [
             "tests/test_demo_replays.py",
+            "tests/test_live_monitor_integration.py",
             "tests/test_resilience.py",
         ],
         "pytest_extra": [],

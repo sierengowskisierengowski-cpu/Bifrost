@@ -323,6 +323,23 @@ def generate_config(tier, analyst_model, extractor_model, ollama_ok, paths):
         "min_evidence_count": 2,
         "never_block_rfc1918": True,
         "protected_pids_max": 100,
+        "live_monitor_enabled": True,
+        "human_live_enabled": True,
+        "test_mode_enabled": False,
+        "test_mode_summary_interval_seconds": 60,
+        "correlation_window_seconds": 300,
+        "recent_window_seconds": 3600,
+        "repeat_window_seconds": 86400,
+        "live_confidence_threshold": 0.35,
+        "possible_false_positive_confidence_threshold": 0.55,
+        "dedup_cooldown_seconds": 30,
+        "noisy_rule_threshold": 25,
+        "noisy_rule_window_seconds": 300,
+        "monitor_safelist": [],
+        "monitor_max_tracked_entities": 4096,
+        "live_monitor_jsonl_path": os.path.join(
+            paths["log_path"], "live_monitor.jsonl"
+        ),
     }
 
     from bifrost.paths import config_checksum_path, config_path

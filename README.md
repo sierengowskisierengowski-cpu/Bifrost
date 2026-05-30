@@ -149,6 +149,72 @@ explicitly disable all three safeguards in `heimdall_config.json`:
 **Do not enable autonomous mode on production systems until you have completed
 the 7-day learning period and reviewed false positive rates.**
 
+## Built-In Live Monitoring
+
+Bifrost now ships with a native live monitoring layer inside the Guardian
+pipeline. It emits:
+
+- plain-English live incident lines for operators,
+- structured JSONL records in parallel for downstream analysis,
+- repeat vs new attacker and pattern classification,
+- suppression/audit metadata for low-confidence, allowlisted, duplicate, or
+  noisy alerts,
+- TEST MODE summaries for controlled lab runs.
+
+### Runtime toggles
+
+`heimdall_config.json` now includes these controls:
+
+- `live_monitor_enabled`
+- `human_live_enabled`
+- `test_mode_enabled`
+- `test_mode_summary_interval_seconds`
+- `live_confidence_threshold`
+- `dedup_cooldown_seconds`
+- `noisy_rule_threshold`
+- `monitor_safelist`
+
+CLI overrides are available on the Guardian runtime:
+
+```bash
+python -m bifrost.guardian --human-live --test-mode --summary-interval 60
+python -m bifrost.guardian --no-human-live
+python -m bifrost.guardian --live-monitor-json /tmp/live-monitor.jsonl
+```
+
+### What operators see
+
+Each live line includes:
+
+- timestamp,
+- host,
+- severity,
+- plain-English summary,
+- source/attacker identity,
+- repeat/new attacker plus repeat/new pattern classification,
+- counts in recent rolling windows,
+- action taken.
+
+Structured records are written to `live_monitor.jsonl` beside `guardian.log`
+unless `live_monitor_jsonl_path` overrides it.
+
+### Interpreting repeat/new and suppression output
+
+- `attacker_status=new` means the attacker identity has not been seen in the
+  current monitoring history window.
+- `attacker_status=repeat` means the identity was already seen and is counted in
+  the rolling windows.
+- `pattern_status=new` means the behavior fingerprint is new even if the actor
+  is already known.
+- Suppression reasons are logged in structured output as:
+  - `allowlisted`
+  - `below_confidence_threshold`
+  - `dedup_cooldown`
+  - `noisy_rule_dampening`
+
+Suppressed records remain visible in JSONL so defensive audit trails stay
+intact while operator alert fatigue is reduced.
+
 ### Service tokens (required in production)
 
 After `python setup.py`, source the generated token file:
@@ -195,6 +261,12 @@ Requirements: Linux, Python 3.8+, Go 1.21+, Ollama optional.
     sudo bash kernel/tetragon/setup.sh
     sudo systemctl start bifrost-guardian
     sudo systemctl start bifrost-agent
+
+To run a lab-focused operator session with live feed and TEST MODE summaries:
+
+```bash
+python -m bifrost.guardian --human-live --test-mode --summary-interval 60
+```
 
 Set API keys for cloud fallback:
 

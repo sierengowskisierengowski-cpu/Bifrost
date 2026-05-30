@@ -14,6 +14,7 @@ Hardened version. Addresses critical issues:
 - Bounded retry on queue full
 """
 
+import argparse
 import os
 import sys
 import json
@@ -40,6 +41,7 @@ from bifrost.resilience import (
 from logging.handlers import RotatingFileHandler
 
 from bifrost.db_maintenance import WALCheckpointThread
+from bifrost.live_monitor import LiveMonitor, apply_monitoring_defaults
 from bifrost.security import (
     TELEMETRY_TRUST_PREAMBLE,
     get_required_token,
@@ -631,7 +633,7 @@ class EventRouter(threading.Thread):
     def __init__(self, queue, config, db_path, log):
         super().__init__(daemon=True, name="bifrost.router")
         self.queue = queue
-        self.config = config
+        self.config = apply_monitoring_defaults(config)
         self.db_path = db_path
         self.log = log
         self.event_count = 0
@@ -642,6 +644,14 @@ class EventRouter(threading.Thread):
         self.analyst_breaker = CircuitBreaker("guardian_analyst")
         self.setup_inference_clients()
         self.setup_db()
+        self.live_monitor = LiveMonitor(self.config, self.log, queue=self.queue)
+        self.log.info(
+            "Live monitor active: enabled=%s human=%s test_mode=%s structured=%s",
+            self.live_monitor.enabled,
+            self.live_monitor.human_live_enabled,
+            self.live_monitor.test_mode_enabled,
+            self.live_monitor.structured_log_path,
+        )
 
     def setup_db(self):
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
@@ -1153,6 +1163,7 @@ class EventRouter(threading.Thread):
 
                 if boundary == "HONEYPOT" and not is_breakout:
                     self.store_event(event)
+                    self.live_monitor.record_event(event)
                     self.event_count += 1
                     continue
 
@@ -1164,6 +1175,7 @@ class EventRouter(threading.Thread):
                 decision = self.route_to_heimdall(compressed)
                 decision = self.apply_policy_gate(decision, event)
                 event_id = self.store_event(event, compressed, decision)
+                self.live_monitor.record_event(event, decision)
 
                 severity = decision.get("severity", "UNKNOWN")
                 action = decision.get("action_requested", decision.get("action_required", "NONE"))
@@ -1200,6 +1212,7 @@ class EventRouter(threading.Thread):
                         )
 
             except Empty:
+                self.live_monitor.emit_due_summary()
                 continue
             except Exception as e:
                 self.log.error(f"EventRouter error: {e}", exc_info=True)
@@ -1211,6 +1224,8 @@ class EventRouter(threading.Thread):
                     self.queue.task_done()
 
         self.flush_db()
+        self.live_monitor.emit_due_summary(force=True)
+        self.live_monitor.close()
         if self.conn:
             self.conn.close()
 
@@ -1235,13 +1250,68 @@ def signal_handler(sig, frame):
     COLLECTOR_STOP.set()
 
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="Bifrost guardian runtime")
+    parser.set_defaults(
+        live_monitor_enabled=None,
+        human_live_enabled=None,
+        test_mode_enabled=None,
+    )
+    parser.add_argument(
+        "--human-live",
+        dest="human_live_enabled",
+        action="store_true",
+        help="Enable the plain-English live incident feed.",
+    )
+    parser.add_argument(
+        "--no-human-live",
+        dest="human_live_enabled",
+        action="store_false",
+        help="Disable the plain-English live incident feed.",
+    )
+    parser.add_argument(
+        "--test-mode",
+        dest="test_mode_enabled",
+        action="store_true",
+        help="Enable test-mode summaries for controlled lab validation.",
+    )
+    parser.add_argument(
+        "--summary-interval",
+        type=int,
+        default=None,
+        help="Override the test-mode summary interval in seconds.",
+    )
+    parser.add_argument(
+        "--live-monitor-json",
+        default=None,
+        help="Override the JSONL path for structured live monitor records.",
+    )
+    return parser.parse_args(argv)
+
+
+def apply_cli_overrides(config, args):
+    merged = apply_monitoring_defaults(config)
+    if args.live_monitor_enabled is not None:
+        merged["live_monitor_enabled"] = args.live_monitor_enabled
+    if args.human_live_enabled is not None:
+        merged["human_live_enabled"] = args.human_live_enabled
+    if args.test_mode_enabled is not None:
+        merged["test_mode_enabled"] = args.test_mode_enabled
+    if args.summary_interval is not None:
+        merged["test_mode_summary_interval_seconds"] = max(args.summary_interval, 1)
+    if args.live_monitor_json:
+        merged["live_monitor_jsonl_path"] = args.live_monitor_json
+    return merged
+
+
+def main(argv=None):
+    args = parse_args(argv)
     log = setup_logging()
     log.info("=" * 60)
     log.info(f"Heimdall Guardian v{BIFROST_VERSION} starting.")
     log.info("=" * 60)
 
-    config = load_config()
+    config = apply_cli_overrides(load_config(), args)
     refresh_runtime_paths(config)
 
     if is_production_mode() and not get_required_token("BIFROST_INGEST_TOKEN"):

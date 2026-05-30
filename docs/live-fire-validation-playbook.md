@@ -61,6 +61,7 @@ Gate criteria:
 - No destructive action is actually enforced
 - Benign replay does not produce high-confidence destructive decisions
 - Results are captured from `logs/decision_audit.jsonl`
+- Live feed emits readable lines and `live_monitor.jsonl` is populated
 
 ---
 
@@ -120,6 +121,31 @@ Gate criteria:
 - Components recover cleanly after dependency restoration
 - Event processing resumes without manual data surgery
 - Recovery behavior and latency are recorded in scorecard notes
+
+### TEST MODE operator runbook
+
+Use TEST MODE during long controlled runs so Bifrost emits periodic status
+summaries without enabling destructive enforcement:
+
+```bash
+cd /tmp/workspace/sierengowskisierengowski-cpu/Bifrost
+python -m bifrost.guardian --human-live --test-mode --summary-interval 60
+```
+
+Pass/fail checkpoints for a 48-hour stress rehearsal:
+
+- **Pass**: `live_monitor.jsonl` continues to grow with incident + summary
+  records, `events_dropped` stays at `0` or is explicitly counted, and queue
+  occupancy remains bounded.
+- **Pass**: repeated attackers switch from `new` to `repeat`, and new behavior
+  fingerprints remain distinguishable from known campaigns.
+- **Pass**: low-confidence, allowlisted, or noisy detections show suppression
+  metadata instead of disappearing silently.
+- **Fail**: summary counters stop advancing while telemetry is still flowing.
+- **Fail**: queue drop counters rise unexpectedly without a matching operator
+  alert or structured record trail.
+- **Fail**: structured JSONL and live human-readable feed disagree on action,
+  severity, or repeat/new classification.
 
 ---
 
