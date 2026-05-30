@@ -307,6 +307,10 @@ def test_render_dashboard_html_includes_test_run_panel_when_active(tmp_path):
     assert "data-view=\"attackers\"" in html
     assert "stat-card" in html
     assert "stat-row" in html
+    assert "Total Events" in html
+    assert "Incidents" in html
+    assert "Blocked" in html
+    assert "Last Hour" in html
     assert "JetBrains Mono" in html
     assert "favicon" in html.lower() or "image/svg+xml" in html
     assert "test-run-panel" in html

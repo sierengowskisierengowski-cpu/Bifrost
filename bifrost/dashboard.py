@@ -522,6 +522,57 @@ def _severity_badge(severity: str) -> str:
     )
 
 
+def _render_stat_cards_html(state: Mapping[str, Any]) -> str:
+    """Server-render stat cards so layout works before JS hydrates."""
+    summary = state.get("summary") or {}
+    severity = state.get("severity_counts") or {}
+    critical_high = int(severity.get("CRITICAL", 0)) + int(severity.get("HIGH", 0))
+    cards = [
+        ("⬡", "Total Events", summary.get("db_events", 0), "#9D4EDD", "events"),
+        ("⚡", "Incidents", summary.get("dashboard_incidents", 0), "#E040FB", "incidents"),
+        ("🛡", "Blocked", summary.get("blocked_actions", 0), "#C4607A", "blocked"),
+        ("👤", "Unique Attackers", summary.get("unique_attackers", 0), "#06B6D4", "attackers"),
+        ("⏱", "Last Hour", summary.get("last_hour_incidents", 0), "#22C55E", "hour"),
+        ("🔥", "Critical + High", critical_high, "#FF2D2D", "critical"),
+    ]
+    parts = []
+    for icon, label, value, color, panel in cards:
+        parts.append(
+            f'<div class="stat-card" data-panel="{html.escape(panel)}">'
+            f'<div class="stat-icon">{icon}</div>'
+            f'<div class="stat-value" style="color:{color}">{html.escape(str(value))}</div>'
+            f'<div class="stat-label">{html.escape(label)}</div>'
+            "</div>"
+        )
+    return "".join(parts)
+
+
+def _render_timeline_html(state: Mapping[str, Any]) -> str:
+    timeline = state.get("timeline") or []
+    range_key = str(state.get("time_range") or DEFAULT_TIME_RANGE).upper()
+    if not timeline:
+        return (
+            '<h2 class="card-title">Activity Timeline</h2>'
+            '<p class="muted">No activity</p>'
+        )
+    max_count = max(int(row.get("count", 0)) for row in timeline) or 1
+    bars = []
+    for row in timeline:
+        count = int(row.get("count", 0))
+        height = max(12, round((count / max_count) * 120))
+        minute = html.escape(str(row.get("minute", "")))
+        bars.append(
+            f'<div class="tl-bar-wrap" title="{minute} — {count}">'
+            f'<div class="tl-bar" style="height:{height}px"></div>'
+            f'<div class="tl-lbl">{html.escape(str(count))}</div>'
+            "</div>"
+        )
+    return (
+        f'<h2 class="card-title">Activity Timeline <span class="badge">{range_key}</span></h2>'
+        f'<div class="tl-chart">{"".join(bars)}</div>'
+    )
+
+
 def _render_test_mode_panel(test_mode: Mapping[str, Any]) -> str:
     if not test_mode.get("active"):
         return (
@@ -605,7 +656,7 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
   </div>
 </div>
 
-<div class="app-shell" id="app" hidden>
+<div class="app-shell" id="app" hidden aria-hidden="true">
   <aside class="sidebar">
     <div class="logo-wrap">
       <span class="logo">Bifrost</span>
@@ -645,10 +696,10 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
 
     <main class="content">
       <section id="view-overview" class="view active">
-        <div class="stat-row" id="stat-cards"></div>
+        <div class="stat-row" id="stat-cards">{_render_stat_cards_html(state)}</div>
         {_render_test_mode_panel(state.get("test_mode") or {})}
         <div class="grid-3" id="breakdown-cards"></div>
-        <div class="card" id="timeline-card"></div>
+        <div class="card" id="timeline-card">{_render_timeline_html(state)}</div>
         <div class="card">
           <h2 class="card-title">Recent Incidents <span class="badge" id="incident-count-badge"></span></h2>
           <div class="table-scroll" id="overview-incidents-table"></div>

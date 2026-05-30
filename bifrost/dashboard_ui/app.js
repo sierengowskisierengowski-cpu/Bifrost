@@ -56,15 +56,23 @@
     return sessionStorage.getItem("bifrost_disclaimer_accepted") === "1";
   }
 
+  function showApp() {
+    const app = $("app");
+    const modal = $("disclaimer-modal");
+    document.body.classList.remove("disclaimer-locked");
+    if (modal) modal.style.display = "none";
+    if (app) {
+      app.hidden = false;
+      app.removeAttribute("aria-hidden");
+    }
+  }
+
   function initDisclaimer() {
     const modal = $("disclaimer-modal");
     const scroll = $("disclaimer-scroll");
     const accept = $("disclaimer-accept");
-    const app = $("app");
     if (disclaimerOk()) {
-      document.body.classList.remove("disclaimer-locked");
-      modal.style.display = "none";
-      app.hidden = false;
+      showApp();
       return;
     }
     scroll.addEventListener("scroll", function () {
@@ -75,9 +83,8 @@
     accept.addEventListener("click", function () {
       sessionStorage.setItem("bifrost_disclaimer_accepted", "1");
       fetch("/api/disclaimer/accept", { method: "POST" }).catch(function () {});
-      document.body.classList.remove("disclaimer-locked");
-      modal.style.display = "none";
-      app.hidden = false;
+      showApp();
+      renderAll();
       loadState();
     });
   }
@@ -88,15 +95,22 @@
       btn.classList.toggle("active", btn.dataset.view === name);
     });
     document.querySelectorAll(".view").forEach(function (v) {
-      v.classList.toggle("active", v.id === "view-" + name);
+      const active = v.id === "view-" + name;
+      v.classList.toggle("active", active);
+      v.setAttribute("aria-hidden", active ? "false" : "true");
     });
     const content = document.querySelector(".content");
     if (content) content.scrollTop = 0;
     if (name === "settings") renderSettings();
-    if (name === "incidents") renderIncidentsTable();
-    if (name === "attackers") renderAttackers();
-    if (name === "timeline") renderTimelineFull();
-    if (name === "overview") renderAll();
+    else if (name === "incidents") renderIncidentsTable();
+    else if (name === "attackers") renderAttackers();
+    else if (name === "timeline") renderTimelineFull();
+    else if (name === "overview") {
+      renderStatCards();
+      renderBreakdown();
+      renderTimelineCard("timeline-card");
+      renderOverviewIncidents();
+    }
   }
 
   function openDetail(title, html) {
@@ -625,11 +639,16 @@
         return r.json();
       })
       .then(function (data) {
-        if (!data) return;
+        if (!data) {
+          if (state) renderAll();
+          return;
+        }
         state = data;
         renderAll();
       })
-      .catch(function () {});
+      .catch(function () {
+        if (state) renderAll();
+      });
   }
 
   function scheduleRefresh() {
@@ -644,32 +663,44 @@
   }
 
   function initNav() {
-    document.querySelectorAll(".nav-item").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        setView(btn.dataset.view);
+    const nav = document.querySelector(".nav");
+    if (nav) {
+      nav.addEventListener("click", function (e) {
+        const btn = e.target.closest(".nav-item");
+        if (btn && btn.dataset.view) setView(btn.dataset.view);
       });
-    });
-    $("settings-gear").addEventListener("click", function () {
-      setView("settings");
-    });
-    document.querySelectorAll("#time-range button").forEach(function (btn) {
-      btn.addEventListener("click", function () {
+    }
+    const gear = $("settings-gear");
+    if (gear) {
+      gear.addEventListener("click", function () {
+        setView("settings");
+      });
+    }
+    const rangeEl = document.getElementById("time-range");
+    if (rangeEl) {
+      rangeEl.addEventListener("click", function (e) {
+        const btn = e.target.closest("button[data-range]");
+        if (!btn) return;
         range = btn.dataset.range;
-        document
-          .querySelectorAll("#time-range button")
-          .forEach(function (b) {
-            b.classList.toggle("active", b === btn);
-          });
+        document.querySelectorAll("#time-range button").forEach(function (b) {
+          b.classList.toggle("active", b === btn);
+        });
         incidentPage = 0;
         loadState();
       });
-    });
-    $("attacker-sort").addEventListener("change", renderAttackers);
-    $("detail-close").addEventListener("click", closeDetail);
-    $("detail-overlay").addEventListener("click", function (e) {
-      if (e.target === $("detail-overlay")) closeDetail();
-    });
-    $("auto-refresh").addEventListener("change", scheduleRefresh);
+    }
+    const sorter = $("attacker-sort");
+    if (sorter) sorter.addEventListener("change", renderAttackers);
+    const closer = $("detail-close");
+    if (closer) closer.addEventListener("click", closeDetail);
+    const overlay = $("detail-overlay");
+    if (overlay) {
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) closeDetail();
+      });
+    }
+    const refresh = $("auto-refresh");
+    if (refresh) refresh.addEventListener("change", scheduleRefresh);
   }
 
   function bootstrap() {
