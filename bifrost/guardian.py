@@ -1778,11 +1778,47 @@ def apply_cli_overrides(config, args):
         merged["human_live_enabled"] = args.human_live_enabled
     if args.test_mode_enabled is not None:
         merged["test_mode_enabled"] = args.test_mode_enabled
+    # --test-mode is the one-command entry point: auto-enable all live features
+    if args.test_mode_enabled:
+        merged.setdefault("dashboard_enabled", True)
+        merged["dashboard_enabled"] = True
+        merged["live_monitor_enabled"] = True
+        merged["human_live_enabled"] = True
     if args.summary_interval is not None:
         merged["test_mode_summary_interval_seconds"] = max(args.summary_interval, 1)
     if args.live_monitor_json:
         merged["live_monitor_jsonl_path"] = args.live_monitor_json
     return merged
+
+
+def _launch_desktop_window(url: str, log: logging.Logger) -> None:
+    """Open the dashboard in a native pywebview desktop window (non-blocking)."""
+    def _run() -> None:
+        try:
+            import webview  # pywebview
+        except ImportError:
+            log.warning(
+                "pywebview is not installed — desktop window unavailable. "
+                "Dashboard is accessible at %s",
+                url,
+            )
+            return
+        try:
+            # Brief delay to let the HTTP server finish binding
+            time.sleep(0.5)
+            window = webview.create_window(
+                "Bifrost \u2014 Heimdall Dashboard",
+                url,
+                width=1280,
+                height=860,
+                resizable=True,
+            )
+            webview.start()
+        except Exception as exc:
+            log.warning("Desktop window failed to open: %s", exc)
+
+    t = threading.Thread(target=_run, name="BifrostWebview", daemon=True)
+    t.start()
 
 
 def main(argv=None):
@@ -1825,6 +1861,7 @@ def main(argv=None):
         from bifrost.dashboard import DashboardServer
         dashboard = DashboardServer(config, log, db_path=db_path)
         dashboard.start()
+        _launch_desktop_window(dashboard.url, log)
 
     collectors = [
         AuditdCollector(EVENT_QUEUE, log),

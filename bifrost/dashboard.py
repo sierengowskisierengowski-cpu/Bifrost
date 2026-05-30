@@ -214,10 +214,11 @@ def _render_ranked(title: str, rows: list[dict[str, Any]], key_name: str = "name
 def _render_test_mode_panel(test_mode: Mapping[str, Any]) -> str:
     if not test_mode.get("active"):
         return (
-            "<section><h2>Test Run Status</h2>"
+            "<div class='card'>"
+            "<h2 class='card-title'>Test Run Status</h2>"
             "<p style='color:#64748b'>No test-mode summary records found. "
             "Start Guardian with <code>--test-mode</code> to enable live-fire tracking.</p>"
-            "</section>"
+            "</div>"
         )
     s = test_mode.get("latest_summary") or {}
     total = (s.get("test_passed") or 0) + (s.get("test_failed") or 0)
@@ -247,129 +248,481 @@ def _render_test_mode_panel(test_mode: Mapping[str, Any]) -> str:
         for row in (test_mode.get("recent_summaries") or [])
     )
 
-    return f"""<section>
-  <h2>Test Run Status</h2>
-  <div style="margin-bottom:0.75rem;">
-    <strong>Pass rate:</strong> {html.escape(pass_pct)} ({html.escape(str(s.get('test_passed', 0)))} pass / {html.escape(str(s.get('test_failed', 0)))} fail / {html.escape(str(total))} total)
-    <div style="background:#1e293b;border-radius:4px;height:12px;margin-top:4px;overflow:hidden;">
-      <div style="background:{bar_color};width:{bar_pct}%;height:100%;"></div>
+    return f"""<div class="card" style="border-color:#1e3a5f;margin-bottom:1rem">
+  <h2 class="card-title">Test Run Status <span class="badge" style="background:#052e16;color:#4ade80">LIVE FIRE</span></h2>
+  <div style="margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      <span style="font-size:0.82rem;color:#64748b">Pass rate:</span>
+      <span style="font-size:2rem;font-weight:800;color:{bar_color}">{html.escape(pass_pct)}</span>
+      <span style="font-size:0.82rem;color:#94a3b8">{html.escape(str(s.get('test_passed', 0)))} pass &nbsp;/&nbsp; {html.escape(str(s.get('test_failed', 0)))} fail &nbsp;/&nbsp; {html.escape(str(total))} total</span>
+    </div>
+    <div style="background:#0a1628;border-radius:6px;height:10px;margin-top:0.5rem;overflow:hidden;border:1px solid #1e3a5f">
+      <div style="background:{bar_color};width:{bar_pct}%;height:100%;border-radius:6px;transition:width .5s"></div>
     </div>
   </div>
-  <ul>
-    <li><strong>Events processed:</strong> {html.escape(str(s.get('total_events', 0)))}</li>
-    <li><strong>Incidents:</strong> {html.escape(str(s.get('incidents', 0)))}</li>
-    <li><strong>Blocked actions:</strong> {html.escape(str(s.get('blocked_actions', 0)))}</li>
-    <li><strong>Unique attackers:</strong> {html.escape(str(s.get('unique_attackers', 0)))} (repeat: {html.escape(str(s.get('repeat_attackers', 0)))}, new: {html.escape(str(s.get('new_attackers', 0)))})</li>
-    <li><strong>Suppressed:</strong> {html.escape(str(s.get('suppressed', 0)))} (possible FP queue: {html.escape(str(s.get('possible_false_positive_queue', 0)))})</li>
-    <li><strong>Queue:</strong> <span style="color:{queue_color}">{html.escape(queue_label)}</span> &nbsp; Dropped: <span style="color:{'#ef4444' if dropped else '#22c55e'}">{html.escape(str(dropped))}</span></li>
-    <li><strong>Strongest areas:</strong> <span style="color:#22c55e">{html.escape(strengths)}</span></li>
-    <li><strong>Weakest areas:</strong> <span style="color:#f59e0b">{html.escape(weaknesses)}</span></li>
-    <li><strong>Last summary:</strong> {html.escape(str(s.get('timestamp', 'n/a')))}</li>
+  <div class="grid-3" style="margin-bottom:0.75rem">
+    <div style="background:#0a1628;border-radius:8px;padding:0.6rem 0.9rem;border:1px solid #1e3a5f">
+      <div style="font-size:0.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em">Events</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#60a5fa">{html.escape(str(s.get('total_events', 0)))}</div>
+    </div>
+    <div style="background:#0a1628;border-radius:8px;padding:0.6rem 0.9rem;border:1px solid #1e3a5f">
+      <div style="font-size:0.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em">Incidents</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#a78bfa">{html.escape(str(s.get('incidents', 0)))}</div>
+    </div>
+    <div style="background:#0a1628;border-radius:8px;padding:0.6rem 0.9rem;border:1px solid #1e3a5f">
+      <div style="font-size:0.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em">Blocked</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#f43f5e">{html.escape(str(s.get('blocked_actions', 0)))}</div>
+    </div>
+  </div>
+  <ul style="font-size:0.82rem;list-style:none;padding:0;display:flex;flex-direction:column;gap:0.3rem">
+    <li><span style="color:#64748b">Unique attackers:</span> {html.escape(str(s.get('unique_attackers', 0)))} &nbsp;<span style="color:#64748b">(repeat: {html.escape(str(s.get('repeat_attackers', 0)))}, new: {html.escape(str(s.get('new_attackers', 0)))})</span></li>
+    <li><span style="color:#64748b">Suppressed:</span> {html.escape(str(s.get('suppressed', 0)))} &nbsp;<span style="color:#64748b">(FP queue: {html.escape(str(s.get('possible_false_positive_queue', 0)))})</span></li>
+    <li><span style="color:#64748b">Queue:</span> <span style="color:{queue_color};font-weight:600">{html.escape(queue_label)}</span> &nbsp; <span style="color:#64748b">Dropped:</span> <span style="color:{'#ef4444' if dropped else '#22c55e'};font-weight:600">{html.escape(str(dropped))}</span></li>
+    <li><span style="color:#64748b">Strongest:</span> <span style="color:#22c55e">{html.escape(strengths)}</span></li>
+    <li><span style="color:#64748b">Weakest:</span> <span style="color:#f59e0b">{html.escape(weaknesses)}</span></li>
+    <li><span style="color:#64748b">Last summary:</span> {html.escape(str(s.get('timestamp', 'n/a')))}</li>
   </ul>
-  <h3 style="margin-top:1rem;font-size:0.9rem;">Recent periodic summaries (last 10)</h3>
-  <table>
+  <h3 style="margin-top:1rem;font-size:0.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.1em">Recent periodic summaries (last 10)</h3>
+  <table style="margin-top:0.5rem">
     <thead><tr><th>Time</th><th>Pass</th><th>Fail</th><th>Pass %</th><th>Events</th><th>Dropped</th></tr></thead>
-    <tbody>{recent_rows or '<tr><td colspan=6>No summaries yet</td></tr>'}</tbody>
+    <tbody>{recent_rows or '<tr><td colspan=6 style="color:#64748b">No summaries yet</td></tr>'}</tbody>
   </table>
-</section>"""
+</div>"""
+
+
+def _severity_badge(severity: str) -> str:
+    """Return an HTML badge span for a severity string."""
+    sev = str(severity).upper()
+    colors = {
+        "CRITICAL": ("#ff2d55", "#fff"),
+        "HIGH": ("#ff6b35", "#fff"),
+        "MEDIUM": ("#f59e0b", "#000"),
+        "LOW": ("#22c55e", "#000"),
+        "INFO": ("#60a5fa", "#000"),
+    }
+    bg, fg = colors.get(sev, ("#475569", "#fff"))
+    return (
+        f'<span style="background:{bg};color:{fg};padding:2px 8px;'
+        f'border-radius:999px;font-size:0.72rem;font-weight:700;'
+        f'letter-spacing:0.05em;white-space:nowrap">'
+        f"{html.escape(sev)}</span>"
+    )
 
 
 def render_dashboard_html(state: Mapping[str, Any]) -> str:
-    incidents = []
+    summary = state.get("summary", {})
+    severity_counts = state.get("severity_counts", {})
+    test_mode = state.get("test_mode") or {}
+    generated_at = str(state.get("generated_at", ""))
+
+    # — stat cards row —
+    stat_cards = [
+        ("Total Events", str(summary.get("db_events", 0)), "#60a5fa", "⬡"),
+        ("Incidents", str(summary.get("dashboard_incidents", 0)), "#a78bfa", "⚡"),
+        ("Blocked", str(summary.get("blocked_actions", 0)), "#f43f5e", "🛡"),
+        ("Unique Attackers", str(summary.get("unique_attackers", 0)), "#fb923c", "👤"),
+        ("Last Hour", str(summary.get("last_hour_incidents", 0)), "#34d399", "⏱"),
+    ]
+    stat_html = "".join(
+        f"""<div class="stat-card">
+  <div class="stat-icon" style="color:{color}">{icon}</div>
+  <div class="stat-value" style="color:{color}">{html.escape(val)}</div>
+  <div class="stat-label">{html.escape(label)}</div>
+</div>"""
+        for label, val, color, icon in stat_cards
+    )
+
+    # — severity breakdown —
+    sev_order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "UNKNOWN"]
+    sev_rows = ""
+    for sev in sev_order:
+        cnt = severity_counts.get(sev, 0)
+        if cnt:
+            sev_rows += (
+                f"<tr><td>{_severity_badge(sev)}</td>"
+                f"<td style='text-align:right;font-weight:600'>{html.escape(str(cnt))}</td></tr>"
+            )
+    if not sev_rows:
+        sev_rows = "<tr><td colspan=2 style='color:#64748b'>No incidents yet</td></tr>"
+
+    # — threat classes —
+    threat_rows = "".join(
+        f"<tr><td>{html.escape(str(row.get('name','?')))}</td>"
+        f"<td style='text-align:right'>{html.escape(str(row.get('count',0)))}</td></tr>"
+        for row in state.get("top_threat_classes", [])
+    ) or "<tr><td colspan=2 style='color:#64748b'>None</td></tr>"
+
+    # — MITRE techniques —
+    mitre_rows = "".join(
+        f"<tr><td><code style='font-size:0.78rem'>{html.escape(str(row.get('name','?')))}</code></td>"
+        f"<td style='text-align:right'>{html.escape(str(row.get('count',0)))}</td></tr>"
+        for row in state.get("top_mitre_techniques", [])
+    ) or "<tr><td colspan=2 style='color:#64748b'>None</td></tr>"
+
+    # — incident rows —
+    incident_rows = []
     for incident in state.get("incidents", []):
         mitre_attack = incident.get("mitre_attack") or []
         mitre_summary = ", ".join(
-            f"{item.get('technique_id', 'UNKNOWN')} {item.get('technique', 'Unknown')}"
+            f"{item.get('technique_id', '?')} {item.get('technique', '?')}"
             for item in mitre_attack
             if isinstance(item, Mapping)
-        ) or "n/a"
-        incidents.append(
+        ) or "—"
+        sev = str(incident.get("severity", "UNKNOWN"))
+        incident_rows.append(
             "<tr>"
-            f"<td>{html.escape(str(incident.get('timestamp', 'n/a')))}</td>"
-            f"<td>{html.escape(str(incident.get('severity', 'UNKNOWN')))}</td>"
-            f"<td>{html.escape(str(incident.get('threat_class', 'unknown')))}</td>"
-            f"<td>{html.escape(str(incident.get('attacker_identity', 'unknown')))}</td>"
-            f"<td>{html.escape(mitre_summary)}</td>"
-            f"<td>{html.escape(str(incident.get('action_taken', 'NONE')))}</td>"
-            f"<td>{html.escape(str(incident.get('summary', '')))}</td>"
+            f"<td style='font-size:0.78rem;white-space:nowrap'>{html.escape(str(incident.get('timestamp','n/a')))}</td>"
+            f"<td>{_severity_badge(sev)}</td>"
+            f"<td style='font-size:0.82rem'>{html.escape(str(incident.get('threat_class','?')))}</td>"
+            f"<td style='font-size:0.82rem'>{html.escape(str(incident.get('attacker_identity','?')))}</td>"
+            f"<td style='font-size:0.75rem;color:#93c5fd'>{html.escape(mitre_summary)}</td>"
+            f"<td style='font-size:0.8rem;font-weight:600'>{html.escape(str(incident.get('action_taken','NONE')))}</td>"
+            f"<td style='font-size:0.78rem;color:#cbd5e1'>{html.escape(str(incident.get('summary','')))}</td>"
             "</tr>"
         )
 
-    timeline = "".join(
-        f"<tr><td>{html.escape(str(row.get('minute')))}</td><td>{html.escape(str(row.get('count')))}</td></tr>"
-        for row in state.get("timeline", [])
-    )
-    allowlist = "".join(
-        f"<li>{html.escape(str(entry))}</li>" for entry in state.get("allowlist", [])
+    incidents_body = "".join(incident_rows) or (
+        "<tr><td colspan=7 style='color:#64748b;text-align:center;padding:1.5rem'>"
+        "No incidents recorded yet</td></tr>"
     )
 
-    test_mode_panel = _render_test_mode_panel(state.get("test_mode") or {})
+    # — timeline mini-chart —
+    timeline_data = state.get("timeline", [])
+    if timeline_data:
+        max_cnt = max((row.get("count", 0) for row in timeline_data), default=1) or 1
+        tl_bars = "".join(
+            f"""<div class="tl-bar-wrap" title="{html.escape(str(row.get('minute','')))} — {html.escape(str(row.get('count',0)))} incidents">
+  <div class="tl-bar" style="height:{max(4, int(row.get('count',0)/max_cnt*80))}px"></div>
+  <div class="tl-cnt">{html.escape(str(row.get('count',0)))}</div>
+</div>"""
+            for row in timeline_data[-30:]
+        )
+        timeline_section = f"""<section class="card">
+  <h2 class="card-title">Activity Timeline <span class="badge">last 60 min</span></h2>
+  <div class="tl-chart">{tl_bars}</div>
+</section>"""
+    else:
+        timeline_section = """<section class="card">
+  <h2 class="card-title">Activity Timeline</h2>
+  <p style="color:#64748b;margin:0">No recent activity</p>
+</section>"""
+
+    # — allowlist —
+    allowlist_items = "".join(
+        f"<li>{html.escape(str(e))}</li>" for e in state.get("allowlist", [])
+    ) or "<li style='color:#64748b'>Empty</li>"
+
+    # — test mode panel —
+    test_panel = _render_test_mode_panel(test_mode)
+
+    # — paths —
+    db_path = html.escape(str(state.get("paths", {}).get("db_path", "n/a")))
+    jsonl_path = html.escape(str(state.get("paths", {}).get("live_monitor_jsonl_path", "n/a")))
 
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Bifrost Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bifrost \u2014 Heimdall Dashboard</title>
   <style>
-    body {{ font-family: Arial, sans-serif; margin: 1.5rem; background: #0f172a; color: #e2e8f0; }}
-    h1, h2, h3 {{ color: #f8fafc; }}
-    .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }}
-    section {{ background: #111827; border: 1px solid #334155; border-radius: 8px; padding: 1rem; }}
-    table {{ width: 100%; border-collapse: collapse; }}
-    th, td {{ border-bottom: 1px solid #334155; padding: 0.45rem; text-align: left; vertical-align: top; }}
-    th {{ color: #93c5fd; }}
-    code {{ color: #bfdbfe; }}
+    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    :root {{
+      --bg: #060b14;
+      --surface: #0d1626;
+      --surface2: #111e33;
+      --border: #1e3a5f;
+      --text: #cdd9ef;
+      --text-dim: #5a7299;
+      --accent: #3b82f6;
+      --accent2: #8b5cf6;
+      --red: #f43f5e;
+      --orange: #fb923c;
+      --yellow: #f59e0b;
+      --green: #22c55e;
+      --teal: #2dd4bf;
+    }}
+    html {{ font-size: 15px; }}
+    body {{
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }}
+
+    /* ── Header ── */
+    .header {{
+      background: linear-gradient(135deg, #0a1628 0%, #0d1e3a 50%, #071526 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 62px;
+    }}
+    .logo {{
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa, #60a5fa);
+      background-size: 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s linear infinite;
+    }}
+    @keyframes shimmer {{ to {{ background-position: -200%; }} }}
+    .logo-sub {{
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-left: 0.25rem;
+    }}
+    .header-spacer {{ flex: 1; }}
+    .live-dot {{
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }}
+    @keyframes pulse {{
+      0%, 100% {{ opacity: 1; box-shadow: 0 0 8px var(--green); }}
+      50% {{ opacity: 0.55; box-shadow: 0 0 3px var(--green); }}
+    }}
+    .live-label {{ font-size: 0.72rem; color: var(--green); font-weight: 600; letter-spacing: 0.06em; }}
+    .ts {{ font-size: 0.72rem; color: var(--text-dim); }}
+    .refresh-btn {{
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      transition: border-color .2s;
+    }}
+    .refresh-btn:hover {{ border-color: var(--accent); color: #fff; }}
+    .auto-toggle {{ font-size: 0.75rem; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }}
+    .auto-toggle input {{ accent-color: var(--accent); }}
+
+    /* ── Layout ── */
+    .main {{ padding: 1.5rem 1.75rem; flex: 1; }}
+
+    /* ── Stat cards ── */
+    .stat-row {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }}
+    .stat-card {{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: border-color .2s, transform .15s;
+    }}
+    .stat-card:hover {{ border-color: var(--accent); transform: translateY(-2px); }}
+    .stat-icon {{ font-size: 1.4rem; line-height: 1; }}
+    .stat-value {{ font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }}
+    .stat-label {{ font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }}
+
+    /* ── Grid / cards ── */
+    .grid-2 {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1rem; }}
+    .grid-3 {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem; }}
+    .card {{
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1rem;
+    }}
+    .card-title {{
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #93c5fd;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }}
+    .badge {{
+      background: #1e3a5f;
+      color: #60a5fa;
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0.04em;
+    }}
+
+    /* ── Tables ── */
+    table {{ width: 100%; border-collapse: collapse; font-size: 0.82rem; }}
+    th {{
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      padding: 0.5rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }}
+    td {{
+      padding: 0.55rem 0.5rem;
+      border-bottom: 1px solid #0f1e34;
+      vertical-align: top;
+    }}
+    tr:last-child td {{ border-bottom: none; }}
+    tr:hover td {{ background: rgba(59,130,246,0.04); }}
+
+    /* ── Timeline chart ── */
+    .tl-chart {{
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 90px;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }}
+    .tl-bar-wrap {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 18px;
+    }}
+    .tl-bar {{
+      width: 14px;
+      background: linear-gradient(180deg, #60a5fa, #1d4ed8);
+      border-radius: 3px 3px 0 0;
+      transition: height .3s;
+    }}
+    .tl-cnt {{ font-size: 0.6rem; color: var(--text-dim); }}
+
+    /* ── Paths row ── */
+    .paths-row {{ font-size: 0.72rem; color: var(--text-dim); margin-bottom: 1.25rem; }}
+    .paths-row code {{ color: #7dd3fc; background: #0a1628; padding: 1px 5px; border-radius: 4px; }}
+
     ul {{ padding-left: 1.2rem; }}
+    li {{ font-size: 0.82rem; padding: 0.2rem 0; }}
+    code {{ color: #7dd3fc; font-size: 0.82rem; }}
+
+    /* ── Incidents table ── */
+    .incidents-wrap {{ overflow-x: auto; }}
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
+    ::-webkit-scrollbar-track {{ background: var(--bg); }}
+    ::-webkit-scrollbar-thumb {{ background: var(--border); border-radius: 3px; }}
   </style>
 </head>
 <body>
-  <h1>Bifrost Live Dashboard</h1>
-  <p>Generated at {html.escape(str(state.get("generated_at")))}</p>
-  <p>
-    <button type="button" onclick="window.location.reload()">Refresh now</button>
-    <label style="margin-left:0.75rem;">
-    <input id="auto-refresh" type="checkbox" checked aria-label="Toggle automatic dashboard refresh">
-      Auto-refresh every 5s
-    </label>
-  </p>
-  <p>DB: <code>{html.escape(str(state.get("paths", {}).get("db_path", "n/a")))}</code><br>
-     JSONL: <code>{html.escape(str(state.get("paths", {}).get("live_monitor_jsonl_path", "n/a")))}</code></p>
-  <div class="grid">
-    {_render_key_values("Summary", state.get("summary", {}))}
-    {_render_key_values("Severity Counts", state.get("severity_counts", {}))}
-    <section><h2>Allowlist</h2><ul>{allowlist or '<li>Empty</li>'}</ul></section>
+<header class="header">
+  <div>
+    <span class="logo">⬡ Bifrost</span>
+    <span class="logo-sub">Heimdall Dashboard</span>
   </div>
-  {test_mode_panel}
-  <div class="grid">
-    {_render_ranked("Top Threat Classes", state.get("top_threat_classes", []))}
-    {_render_ranked("Top MITRE Techniques", state.get("top_mitre_techniques", []))}
+  <div class="header-spacer"></div>
+  <div class="live-dot"></div>
+  <span class="live-label">LIVE</span>
+  <span class="ts">{html.escape(generated_at)}</span>
+  <button class="refresh-btn" type="button" onclick="window.location.reload()">↺ Refresh</button>
+  <label class="auto-toggle">
+    <input id="auto-refresh" type="checkbox" checked aria-label="Toggle automatic refresh">
+    Auto 5s
+  </label>
+</header>
+
+<main class="main">
+  <div class="paths-row">
+    DB: <code>{db_path}</code> &nbsp;·&nbsp; JSONL: <code>{jsonl_path}</code>
   </div>
-  <section>
-    <h2>Timeline (last 60 minutes)</h2>
-    <table>
-      <thead><tr><th>Minute</th><th>Incidents</th></tr></thead>
-      <tbody>{timeline or '<tr><td colspan=2>No recent incidents</td></tr>'}</tbody>
-    </table>
-  </section>
-  <section>
-    <h2>Recent Incidents</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Timestamp</th><th>Severity</th><th>Threat</th><th>Attacker</th><th>MITRE</th><th>Action</th><th>Summary</th>
-        </tr>
-      </thead>
-      <tbody>{''.join(incidents) or '<tr><td colspan=7>No incidents recorded yet</td></tr>'}</tbody>
-    </table>
-  </section>
-  <script>
-    setInterval(function () {{
-      var toggle = document.getElementById('auto-refresh');
-      if (toggle && toggle.checked) {{
-        window.location.reload();
-      }}
-    }}, 5000);
-  </script>
+
+  <!-- Stat cards -->
+  <div class="stat-row">{stat_html}</div>
+
+  <!-- Test-mode panel -->
+  {test_panel}
+
+  <!-- Middle grid: severity + threats + MITRE -->
+  <div class="grid-3">
+    <div class="card">
+      <h2 class="card-title">Severity Breakdown</h2>
+      <table>
+        <thead><tr><th>Level</th><th style="text-align:right">Count</th></tr></thead>
+        <tbody>{sev_rows}</tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2 class="card-title">Top Threat Classes</h2>
+      <table>
+        <thead><tr><th>Class</th><th style="text-align:right">Hits</th></tr></thead>
+        <tbody>{threat_rows}</tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2 class="card-title">Top MITRE Techniques</h2>
+      <table>
+        <thead><tr><th>Technique</th><th style="text-align:right">Hits</th></tr></thead>
+        <tbody>{mitre_rows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  {timeline_section}
+
+  <!-- Recent Incidents -->
+  <div class="card">
+    <h2 class="card-title">Recent Incidents <span class="badge">last 50</span></h2>
+    <div class="incidents-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th><th>Severity</th><th>Threat</th><th>Attacker</th>
+            <th>MITRE</th><th>Action</th><th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>{incidents_body}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Allowlist -->
+  <div class="card">
+    <h2 class="card-title">Monitor Allowlist</h2>
+    <ul>{allowlist_items}</ul>
+  </div>
+</main>
+
+<script>
+(function() {{
+  var refreshTimer = null;
+  function scheduleRefresh() {{
+    clearTimeout(refreshTimer);
+    var toggle = document.getElementById('auto-refresh');
+    if (toggle && toggle.checked) {{
+      refreshTimer = setTimeout(function() {{ window.location.reload(); }}, 5000);
+    }}
+  }}
+  var toggle = document.getElementById('auto-refresh');
+  if (toggle) {{
+    toggle.addEventListener('change', scheduleRefresh);
+  }}
+  scheduleRefresh();
+}})();
+</script>
 </body>
 </html>"""
 

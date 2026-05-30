@@ -31,7 +31,7 @@ TIER_MODELS = {
 }
 
 FALLBACK_CHAIN = ["ollama", "groq", "claude", "rules"]
-REQUIRED_PACKAGES = ["psutil", "openai", "requests", "paho-mqtt"]
+REQUIRED_PACKAGES = ["psutil", "openai", "requests", "paho-mqtt", "pywebview"]
 
 SYSTEM_BASELINE = """
 You are Heimdall-Core v{version} — a defensive security
@@ -332,6 +332,9 @@ def generate_config(tier, analyst_model, extractor_model, ollama_ok, paths):
         "live_monitor_enabled": True,
         "human_live_enabled": True,
         "test_mode_enabled": False,
+        "dashboard_enabled": True,
+        "dashboard_port": 8766,
+        "dashboard_host": "127.0.0.1",
         "config_profile": "default",
         "vm_test_profile": {
             "local_url": "http://127.0.0.1:11434/v1",
