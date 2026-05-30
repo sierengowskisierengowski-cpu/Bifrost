@@ -118,6 +118,7 @@ def test_ingest_rejects_without_token_in_production(monkeypatch):
 
 def test_ingest_accepts_valid_token(monkeypatch):
     from http.client import HTTPConnection
+    from queue import Empty
     from queue import Queue
     import time
 
@@ -146,7 +147,21 @@ def test_ingest_accepts_valid_token(monkeypatch):
         })
         resp = conn.getresponse()
         assert resp.status == 200
-        assert q.qsize() == 1
+        resp.read()
+
+        queued_event = None
+        deadline = time.time() + 1.0
+        while time.time() < deadline:
+            try:
+                queued_event = q.get_nowait()
+                break
+            except Empty:
+                time.sleep(0.01)
+
+        assert queued_event is not None
+        assert queued_event["source"] == "test"
+        assert queued_event["boundary"] == "HOST"
+        assert queued_event["raw"] == {"event": "test"}
     finally:
         server.stop()
         server.join(timeout=2)
