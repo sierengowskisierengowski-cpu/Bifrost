@@ -20,7 +20,7 @@ _logger = logging.getLogger("heimdall.schema")
 SCHEMA_VERSION = "0.1.0"
 
 try:
-    from pydantic import BaseModel, ConfigDict, field_validator
+    from pydantic import BaseModel, ConfigDict, Field, field_validator
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
@@ -117,6 +117,7 @@ if PYDANTIC_AVAILABLE:
         extractor_model:   str            = "unknown"
         reasoner_model:    str            = "unknown"
         hardware_tier:     str            = "TIER_4"
+        mitre_attack:      list[dict[str, str]] = Field(default_factory=list)
         action_effective:  Optional[ActionType] = None
         policy_rationale:  Optional[str]  = None
         rollback_id:       Optional[str]  = None
@@ -176,6 +177,7 @@ if PYDANTIC_AVAILABLE:
                 "extractor_model":   self.extractor_model,
                 "reasoner_model":    self.reasoner_model,
                 "hardware_tier":     self.hardware_tier,
+                "mitre_attack":      self.mitre_attack,
                 "action_effective":  self.action_effective.value
                                      if self.action_effective else None,
                 "policy_rationale":  self.policy_rationale,
@@ -273,6 +275,7 @@ else:
         extractor_model:   str            = "unknown"
         reasoner_model:    str            = "unknown"
         hardware_tier:     str            = "TIER_4"
+        mitre_attack:      Any            = dataclasses.field(default_factory=list)
         action_effective:  Any            = None
         policy_rationale:  Any            = None
         rollback_id:       Any            = None
@@ -341,6 +344,7 @@ else:
                 "extractor_model":   self.extractor_model,
                 "reasoner_model":    self.reasoner_model,
                 "hardware_tier":     self.hardware_tier,
+                "mitre_attack":      list(self.mitre_attack or []),
                 "action_effective":  _enum_val(self.action_effective)
                                      if self.action_effective is not None else None,
                 "policy_rationale":  self.policy_rationale,

@@ -31,6 +31,10 @@ DEFAULT_MONITORING_CONFIG = {
     "monitor_safelist": [],
     "monitor_max_tracked_entities": 4096,
     "live_monitor_jsonl_path": None,
+    "dashboard_enabled": False,
+    "dashboard_host": "127.0.0.1",
+    "dashboard_port": 8766,
+    "dashboard_incident_limit": 50,
 }
 
 SEVERITY_ORDER = {
@@ -262,6 +266,7 @@ def normalize_monitor_event(
         "policy_allowed": decision.get("policy_allowed"),
         "policy_rationale": decision.get("policy_rationale"),
         "decision_reasoning": decision.get("reasoning"),
+        "mitre_attack": list(decision.get("mitre_attack") or []),
         "event_id": str(event.get("event_id") or raw.get("event_id") or incident_id),
         "fingerprint": fingerprint,
         "attacker_fingerprint": attacker_fingerprint,

@@ -173,10 +173,15 @@ pipeline. It emits:
 - `dedup_cooldown_seconds`
 - `noisy_rule_threshold`
 - `monitor_safelist`
+- `dashboard_enabled`
+- `dashboard_host`
+- `dashboard_port`
+- `dashboard_incident_limit`
 
 CLI overrides are available on the Guardian runtime:
 
 ```bash
+python -m bifrost.guardian --dashboard --dashboard-port 8766
 python -m bifrost.guardian --human-live --test-mode --summary-interval 60
 python -m bifrost.guardian --no-human-live
 python -m bifrost.guardian --live-monitor-json /tmp/live-monitor.jsonl
@@ -258,6 +263,32 @@ Each live line includes:
 
 Structured records are written to `live_monitor.jsonl` beside `guardian.log`
 unless `live_monitor_jsonl_path` overrides it.
+
+### Local read-only dashboard
+
+Guardian can now expose a small local dashboard that reads the SQLite event
+store plus `live_monitor.jsonl` and renders:
+
+- recent incidents,
+- a rolling incident timeline,
+- top threat classes,
+- MITRE ATT&CK technique counts,
+- current monitor safelist entries.
+
+Enable it with:
+
+```bash
+python -m bifrost.guardian --dashboard --dashboard-port 8766
+```
+
+Then open `http://127.0.0.1:8766/`.
+
+### MITRE ATT&CK enrichment
+
+Guardian now enriches supported `threat_class` decisions with a `mitre_attack`
+list in the persisted decision payload and structured live-monitor records. Each
+entry includes the ATT&CK tactic and technique IDs/names so downstream tooling
+and operators get immediate context without changing the action pipeline.
 
 ### Interpreting repeat/new and suppression output
 

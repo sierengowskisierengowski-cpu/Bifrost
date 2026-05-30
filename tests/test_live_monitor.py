@@ -46,6 +46,14 @@ def _make_decision(confidence=0.86, *, action="ALERT", severity="HIGH"):
         "action_effective": action,
         "reasoning": "SSH brute-force detected against the lab host.",
         "policy_allowed": True,
+        "mitre_attack": [
+            {
+                "tactic_id": "TA0006",
+                "tactic": "Credential Access",
+                "technique_id": "T1110",
+                "technique": "Brute Force",
+            }
+        ],
     }
 
 
@@ -61,6 +69,7 @@ def test_normalize_monitor_event_is_deterministic():
     assert first["attacker_identity"] == "45.83.64.11"
     assert first["host"] == "ingest"
     assert first["action_taken"] == "ALERT"
+    assert first["mitre_attack"][0]["technique_id"] == "T1110"
 
 
 def test_live_monitor_tracks_new_and_repeat_attackers(tmp_path):

@@ -100,6 +100,7 @@ def test_event_router_emits_human_and_structured_live_monitoring(
         assert incident_records
         assert incident_records[0]["attacker_status"] == "new"
         assert incident_records[0]["action_taken"] == "ALERT"
+        assert incident_records[0]["mitre_attack"][0]["technique_id"] == "T1110"
         assert isinstance(incident_records[0]["model_calls"], list)
         assert incident_records[0]["test_pass"] in (True, False)
         assert summary_records
@@ -107,7 +108,11 @@ def test_event_router_emits_human_and_structured_live_monitoring(
 
         with sqlite3.connect(db_path) as conn:
             stored_events = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+            stored_decision = json.loads(
+                conn.execute("SELECT heimdall_decision FROM events LIMIT 1").fetchone()[0]
+            )
         assert stored_events == 1
+        assert stored_decision["mitre_attack"][0]["technique_id"] == "T1110"
     finally:
         guardian.SHUTDOWN.clear()
         guardian.COLLECTOR_STOP.clear()

@@ -47,6 +47,7 @@ from logging.handlers import RotatingFileHandler
 
 from bifrost.db_maintenance import WALCheckpointThread
 from bifrost.live_monitor import LiveMonitor, apply_monitoring_defaults
+from bifrost.mitre import enrich_decision
 from bifrost.security import (
     TELEMETRY_TRUST_PREAMBLE,
     get_required_token,
@@ -1091,7 +1092,7 @@ class EventRouter(threading.Thread):
     def _safe_fallback(self, reason: str) -> dict:
         with METRICS_LOCK:
             METRICS["fallbacks"] += 1
-        return {
+        return enrich_decision({
             "schema_version": "0.1.0",
             "incident_detected": False,
             "severity": "LOW",
@@ -1105,7 +1106,7 @@ class EventRouter(threading.Thread):
             "extractor_model": "unknown",
             "reasoner_model": "safe_fallback",
             "hardware_tier": self.config.get("hardware_tier", "TIER_4")
-        }
+        })
 
     def check_runtime_integrity(self) -> bool:
         """Fail closed if config or DB integrity is compromised at runtime."""
@@ -1443,7 +1444,7 @@ class EventRouter(threading.Thread):
                     status="ok",
                     details={"model_call": self._last_extractor_call_meta},
                 )
-                decision = self.route_to_heimdall(compressed)
+                decision = enrich_decision(self.route_to_heimdall(compressed))
                 decision["model_calls"] = [
                     self._last_extractor_call_meta,
                     self._last_analyst_call_meta,
@@ -1556,9 +1557,33 @@ def signal_handler(sig, frame):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Bifrost guardian runtime")
     parser.set_defaults(
+        dashboard_enabled=None,
         live_monitor_enabled=None,
         human_live_enabled=None,
         test_mode_enabled=None,
+    )
+    parser.add_argument(
+        "--dashboard",
+        dest="dashboard_enabled",
+        action="store_true",
+        help="Enable the local read-only dashboard.",
+    )
+    parser.add_argument(
+        "--no-dashboard",
+        dest="dashboard_enabled",
+        action="store_false",
+        help="Disable the local read-only dashboard.",
+    )
+    parser.add_argument(
+        "--dashboard-host",
+        default=None,
+        help="Bind address for the dashboard server.",
+    )
+    parser.add_argument(
+        "--dashboard-port",
+        type=int,
+        default=None,
+        help="Bind port for the dashboard server.",
     )
     parser.add_argument(
         "--human-live",
@@ -1594,6 +1619,12 @@ def parse_args(argv=None):
 
 def apply_cli_overrides(config, args):
     merged = apply_monitoring_defaults(config)
+    if args.dashboard_enabled is not None:
+        merged["dashboard_enabled"] = args.dashboard_enabled
+    if args.dashboard_host:
+        merged["dashboard_host"] = args.dashboard_host
+    if args.dashboard_port is not None:
+        merged["dashboard_port"] = args.dashboard_port
     if args.live_monitor_enabled is not None:
         merged["live_monitor_enabled"] = args.live_monitor_enabled
     if args.human_live_enabled is not None:
@@ -1642,6 +1673,12 @@ def main(argv=None):
     ingest_server.start()
     log.info("Ingest server started on http://127.0.0.1:8765/ingest")
 
+    dashboard = None
+    if config.get("dashboard_enabled"):
+        from bifrost.dashboard import DashboardServer
+        dashboard = DashboardServer(config, log, db_path=db_path)
+        dashboard.start()
+
     collectors = [
         AuditdCollector(EVENT_QUEUE, log),
         HoneypotLogCollector(
@@ -1671,6 +1708,11 @@ def main(argv=None):
 
     log.info("Stopping ingest server...")
     ingest_server.stop()
+
+    if dashboard:
+        log.info("Stopping dashboard...")
+        dashboard.stop()
+        dashboard.join(timeout=3.0)
 
     log.info("Draining event queue...")
     drained, remaining = drain_event_queue(EVENT_QUEUE, timeout=10.0)

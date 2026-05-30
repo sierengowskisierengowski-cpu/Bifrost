@@ -202,12 +202,21 @@ class TestDecision:
             "severity": "CRITICAL",
             "action_required": "ALERT",
             "confidence": 0.95,
-            "threat_class": "breakout"
+            "threat_class": "breakout",
+            "mitre_attack": [
+                {
+                    "tactic_id": "TA0008",
+                    "tactic": "Lateral Movement",
+                    "technique_id": "T1021",
+                    "technique": "Remote Services",
+                }
+            ],
         })
         result = d.to_dict()
         assert result["severity"] == "CRITICAL"
         assert result["confidence"] == 0.95
         assert result["schema_version"] == SCHEMA_VERSION
+        assert result["mitre_attack"][0]["technique_id"] == "T1021"
 
     def test_event_id_accepts_string(self):
         import uuid
