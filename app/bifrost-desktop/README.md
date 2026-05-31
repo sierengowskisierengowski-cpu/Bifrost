@@ -62,17 +62,18 @@ guardian is launched as `python3 <script> --port 8766`.
 Install the Tauri system dependencies (Debian/Ubuntu shown):
 
 ```bash
-sudo apt update
-sudo apt install -y \
-  libwebkit2gtk-4.1-dev \
-  build-essential \
-  curl \
-  wget \
-  file \
-  libxdo-dev \
-  libssl-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev
+sudo ./scripts/setup-linux-build-env.sh
+```
+
+This installs all required native libraries and places `linuxdeploy` at:
+
+`/usr/local/bin/linuxdeploy`
+
+If needed, the install command used by the script is:
+
+```bash
+wget -O /usr/local/bin/linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+chmod +x /usr/local/bin/linuxdeploy
 ```
 
 Then install the toolchains:
@@ -108,6 +109,25 @@ Artifacts are written to:
 
 - `src-tauri/target/release/bundle/deb/*.deb`
 - `src-tauri/target/release/bundle/appimage/*.AppImage`
+
+`src-tauri/tauri.conf.json` explicitly bundles only:
+
+```json
+"targets": ["deb", "appimage"]
+```
+
+## Arch Linux package (pacman / makepkg)
+
+An Arch package recipe is provided at `PKGBUILD`.
+
+```bash
+cd app/bifrost-desktop
+makepkg -si
+```
+
+This builds the desktop binary and installs:
+
+- `/usr/bin/bifrost`
 
 ## Icons
 

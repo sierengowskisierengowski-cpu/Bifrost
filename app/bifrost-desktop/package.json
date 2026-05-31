@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "LINUXDEPLOY=${LINUXDEPLOY:-/usr/local/bin/linuxdeploy} tauri build"
   },
   "dependencies": {
     "@radix-ui/react-toast": "^1.2.7",
