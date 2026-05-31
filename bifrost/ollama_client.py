@@ -94,6 +94,7 @@ def ollama_chat(
         "model": model,
         "messages": messages,
         "stream": False,
+        "format": "json",
         "options": {
             "num_ctx": _as_int(config.get("llm_num_ctx", DEFAULT_NUM_CTX), DEFAULT_NUM_CTX),
             "num_predict": _as_int(
