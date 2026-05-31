@@ -23,7 +23,6 @@ from bifrost.guardian import (
     _normalize_compressed_event,
     load_config,
     refresh_runtime_paths,
-    should_route_to_reasoner,
 )
 from bifrost.resilience import configure_sqlite_connection, execute_with_db_retry
 
@@ -55,6 +54,9 @@ def fetch_pending_rows(
         SELECT id, timestamp, source, boundary, raw_event, compressed_event
         FROM events
         WHERE heimdall_decision IS NULL
+          AND false_positive = 0
+          AND raw_event IS NOT NULL
+          AND TRIM(raw_event) != ''
         ORDER BY timestamp ASC, id ASC
     """
     if limit is not None:
@@ -112,10 +114,12 @@ def process_event(
 
     Returns (conn, status) where status is updated|skipped|dry_run|error.
     """
-    event, event_id, stored_compressed = row_to_event(row)
-
-    if not should_route_to_reasoner(event):
+    event_id = row[0]
+    raw_event = row[4]
+    if raw_event is None or not str(raw_event).strip():
         return conn, "skipped"
+
+    event, event_id, stored_compressed = row_to_event(row)
 
     if reuse_compressed and stored_compressed:
         compressed = _normalize_compressed_event(stored_compressed) or ""
@@ -148,7 +152,8 @@ def run_backfill(
     limit: int | None = None,
     reuse_compressed: bool = True,
     dry_run: bool = False,
-    progress_interval: int = 25,
+    progress_interval: int = 50,
+    delay_seconds: float = 0.5,
 ) -> dict[str, int]:
     """Backfill NULL heimdall_decision rows in chronological order."""
     logger = logging.getLogger("heimdall.backfill")
@@ -190,15 +195,24 @@ def run_backfill(
         if progress_interval and index % progress_interval == 0:
             elapsed = time.monotonic() - started
             rate = index / elapsed if elapsed > 0 else 0.0
+            classified = stats.get("updated", 0)
             logger.info(
-                "Progress: %d/%d (updated=%d skipped=%d errors=%d, %.2f ev/s)",
+                "Progress: %d/%d classified=%d skipped=%d errors=%d (%.2f ev/s)",
                 index,
                 total,
-                stats.get("updated", 0),
+                classified,
                 stats.get("skipped", 0),
                 stats.get("errors", 0),
                 rate,
             )
+            print(
+                f"[backfill] {index}/{total} processed, "
+                f"{classified} decisions written",
+                flush=True,
+            )
+
+        if delay_seconds > 0 and index < total:
+            time.sleep(delay_seconds)
 
     router.flush_db()
     router.conn.close()
@@ -241,8 +255,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--progress-interval",
         type=int,
-        default=25,
+        default=50,
         help="Log progress every N events (0 to disable).",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.5,
+        help="Seconds to wait between events (Ollama rate limit).",
     )
     parser.add_argument(
         "-v",
@@ -277,6 +297,7 @@ def main(argv: list[str] | None = None) -> int:
         reuse_compressed=not args.recompress,
         dry_run=args.dry_run,
         progress_interval=args.progress_interval,
+        delay_seconds=args.delay,
     )
 
     if stats.get("errors", 0):

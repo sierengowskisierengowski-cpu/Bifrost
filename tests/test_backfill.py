@@ -66,6 +66,18 @@ def test_fetch_pending_rows_orders_chronologically(backfill_db):
         VALUES ('2026-05-30T12:00:00Z', 'cowrie', 'HONEYPOT', '{}', '{"done": true}')
         """
     )
+    conn.execute(
+        """
+        INSERT INTO events (timestamp, source, boundary, raw_event, heimdall_decision, false_positive)
+        VALUES ('2026-05-30T10:00:00Z', 'cowrie', 'HONEYPOT', '{}', NULL, 1)
+        """
+    )
+    conn.execute(
+        """
+        INSERT INTO events (timestamp, source, boundary, raw_event, heimdall_decision)
+        VALUES ('2026-05-30T09:00:00Z', 'cowrie', 'HONEYPOT', '', NULL)
+        """
+    )
     conn.commit()
 
     rows = backfill.fetch_pending_rows(conn)
@@ -151,6 +163,7 @@ def test_run_backfill_updates_routed_events(backfill_db, monkeypatch):
         db_path=str(backfill_db),
         config=config,
         progress_interval=0,
+        delay_seconds=0,
     )
 
     assert stats["updated"] == 1
@@ -166,23 +179,44 @@ def test_run_backfill_updates_routed_events(backfill_db, monkeypatch):
     assert stored["execution_result"] == "backfill_skipped"
 
 
-def test_run_backfill_skips_unsupported_cowrie_noise(backfill_db, monkeypatch):
+def test_run_backfill_processes_all_pending_events(backfill_db, monkeypatch):
     conn = sqlite3.connect(backfill_db)
-    _insert_pending_event(conn, eventid="cowrie.client.kex")
+    event_id = _insert_pending_event(conn, eventid="cowrie.client.kex")
     conn.close()
 
-    monkeypatch.setattr(
-        guardian.EventRouter,
-        "setup_inference_clients",
-        lambda self: None,
-    )
+    decision = {
+        "schema_version": "0.1.0",
+        "incident_detected": False,
+        "severity": "LOW",
+        "boundary": "HONEYPOT",
+        "threat_class": "scanner_noise",
+        "confidence": 0.3,
+        "action_required": "LOG",
+        "target": None,
+        "gjallarhorn_tier": 1,
+        "reasoning": "mocked backfill",
+        "action_effective": "LOG",
+        "policy_allowed": True,
+    }
+
+    monkeypatch.setattr(guardian.EventRouter, "_reason_event", lambda s, e, c: dict(decision))
+    monkeypatch.setattr(guardian.EventRouter, "compress_event", lambda s, e: "{}")
+    monkeypatch.setattr(guardian.EventRouter, "apply_policy_gate", lambda s, d, e: d)
+    monkeypatch.setattr(guardian.EventRouter, "setup_inference_clients", lambda self: None)
 
     config = {"use_local_llm": False, "hardware_tier": "TIER_4"}
     stats = backfill.run_backfill(
         db_path=str(backfill_db),
         config=config,
         progress_interval=0,
+        delay_seconds=0,
     )
 
-    assert stats["skipped"] == 1
-    assert stats["updated"] == 0
+    assert stats["updated"] == 1
+    conn = sqlite3.connect(backfill_db)
+    row = conn.execute(
+        "SELECT heimdall_decision FROM events WHERE id = ?",
+        (event_id,),
+    ).fetchone()
+    conn.close()
+    assert json.loads(row[0])["action_required"] == "LOG"
