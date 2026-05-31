@@ -1,0 +1,22 @@
+#include <tunables/global>
+
+/usr/bin/bifrost-engine {
+  #include <abstractions/base>
+  #include <abstractions/python>
+
+  deny /bin/dash rwx,
+  deny /bin/bash rwx,
+  deny /bin/sh rwx,
+  deny /usr/bin/sudo rwx,
+  deny /etc/shadow r,
+  deny /etc/passwd r,
+
+  /home/*/.config/bifrost/ r,
+  /home/*/.config/bifrost/** r,
+  /usr/share/bifrost/ r,
+  /usr/share/bifrost/** r,
+  /home/*/.config/bifrost/database.sqlite rw,
+  /var/log/cowrie/** r,
+
+  network tcp,
+}
