@@ -45,7 +45,7 @@ def _make_router(config_overrides=None):
     router.db_path = "/tmp/test-events.db"
     router.db_healthy = True
     router.config_integrity_ok = True
-    router.check_runtime_integrity = lambda: True
+    router.check_executor_integrity = lambda: True
     return router
 
 

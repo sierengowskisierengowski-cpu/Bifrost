@@ -1,26 +1,841 @@
-2026-05-28 23:48:00,896 [INFO] heimdall.guardian — ============================================================
-2026-05-28 23:48:00,896 [INFO] heimdall.guardian — Heimdall Guardian v0.1.0 starting.
-2026-05-28 23:48:00,896 [INFO] heimdall.guardian — ============================================================
-2026-05-28 23:48:00,922 [INFO] heimdall.guardian — Database initialized: /home/cosmic/Projects/bifrost/db/events.db
-2026-05-28 23:48:00,941 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
-2026-05-28 23:48:00,941 [INFO] heimdall.guardian — AuditdCollector started.
-2026-05-28 23:48:00,941 [INFO] heimdall.guardian — Collector started: collector.auditd
-2026-05-28 23:48:00,941 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
-2026-05-28 23:48:00,942 [INFO] heimdall.guardian — HoneypotLogCollector started.
-2026-05-28 23:48:00,942 [INFO] heimdall.guardian — Collector started: collector.cowrie
-2026-05-28 23:48:00,942 [INFO] heimdall.guardian — ProcessWatcher started.
-2026-05-28 23:48:00,942 [INFO] heimdall.guardian — Collector started: collector.process
-2026-05-28 23:48:00,943 [INFO] heimdall.guardian — NetworkWatcher started.
-2026-05-28 23:48:00,943 [INFO] heimdall.guardian — Collector started: collector.network
-2026-05-28 23:48:00,944 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
-2026-05-28 23:48:01,317 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
-2026-05-28 23:48:01,317 [INFO] heimdall.guardian — Bifrost pipeline active.
-2026-05-28 23:48:01,317 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
-2026-05-29 11:02:40,569 [INFO] heimdall.guardian — Bifrost: 100 events processed.
-2026-05-29 13:42:07,448 [INFO] heimdall.guardian — Shutting down...
-2026-05-29 13:42:07,778 [INFO] heimdall.ingest — Ingest server stopped.
-2026-05-29 13:42:09,455 [INFO] heimdall.guardian — Heimdall shutdown complete.
-2026-05-29 15:50:01,329 [INFO] heimdall.guardian — ============================================================
-2026-05-29 15:50:01,329 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
-2026-05-29 15:50:01,329 [INFO] heimdall.guardian — ============================================================
-2026-05-29 15:50:01,329 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 12:46:55,762 [INFO] heimdall.guardian — ============================================================
+2026-05-30 12:46:55,762 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 12:46:55,762 [INFO] heimdall.guardian — ============================================================
+2026-05-30 12:46:55,762 [INFO] heimdall.guardian — Config integrity verified.
+
+╔══════════════════════════════════════════════════════╗
+║           HEIMDALL GUARDIAN v0.1.1                   ║
+║           Bifrost Security Platform                  ║
+║                                                      ║
+║   Hardware Tier : TIER_2                            ║
+║   Analyst Model : qwen2.5:7b-instruct               ║
+║   Extractor     : qwen2.5:1.5b-instruct             ║
+║   Learning Days : 7                                 ║
+║                                                      ║
+║   The Bridge Is Watched. Heimdall Never Sleeps.      ║
+╚══════════════════════════════════════════════════════╝
+
+2026-05-30 12:46:55,771 [INFO] heimdall.guardian — Database initialized: /home/cosmic/Projects/bifrost/db/events.db
+2026-05-30 12:46:55,771 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 12:46:55,781 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 12:46:55,782 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 12:46:55,782 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 12:46:55,782 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 12:46:55,782 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 12:46:55,782 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 12:46:55,783 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 12:46:55,783 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 12:46:55,784 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 12:46:55,784 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 12:46:55,784 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 12:46:56,126 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/home/cosmic/Projects/bifrost/db/live_monitor.jsonl
+2026-05-30 12:46:56,126 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 12:46:56,126 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 12:46:56,127 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 13:27:11,740 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:27:11,743 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 13:27:11,743 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:27:11,743 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 13:27:59,434 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:27:59,437 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 13:27:59,437 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:27:59,437 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 13:27:59,447 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 13:27:59,447 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 13:27:59,459 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 13:27:59,459 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 13:27:59,459 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 13:27:59,459 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 13:27:59,460 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 13:27:59,460 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 13:27:59,460 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 13:27:59,461 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 13:27:59,461 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 13:27:59,461 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 13:27:59,461 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 13:27:59,824 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 13:27:59,825 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 13:27:59,825 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 13:27:59,825 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 13:30:05,176 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:30:05,176 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 13:30:05,176 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:30:05,177 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 13:30:05,178 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 13:30:05,178 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 13:30:05,188 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 13:30:05,188 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 13:30:05,188 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 13:30:05,189 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 13:30:05,189 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 13:30:05,189 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 13:30:05,189 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 13:30:05,189 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 13:30:05,190 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 13:30:05,190 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 13:30:05,192 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 13:30:05,530 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 13:30:05,530 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 13:30:05,530 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 13:30:05,530 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 13:36:25,578 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 13:36:25,578 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 13:36:25,601 [INFO] heimdall.ingest — Ingest server stopped.
+2026-05-30 13:36:25,601 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 13:36:25,601 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 13:36:25,601 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 13:36:26,595 [INFO] heimdall.guardian — Shutdown summary: processed=0 dropped=0 remaining=0
+2026-05-30 13:36:26,595 [INFO] heimdall.guardian — Final metrics: {"events_received": 0, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 0, "fallbacks": 0, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 0, "live_monitor_events": 0, "live_monitor_incidents": 0, "live_monitor_suppressed": 0, "live_monitor_possible_false_positives": 0, "live_monitor_summaries": 0}
+2026-05-30 13:36:26,595 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 13:36:35,858 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:36:35,858 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 13:36:35,858 [INFO] heimdall.guardian — ============================================================
+2026-05-30 13:36:35,858 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 13:36:35,859 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 13:36:35,859 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 13:36:35,870 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 13:36:35,872 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 13:36:35,872 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 13:36:35,872 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 13:36:35,873 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 13:36:35,873 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 13:36:35,873 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-30 13:36:35,873 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 13:36:35,873 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 13:36:35,873 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 13:36:35,874 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 13:36:35,874 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 13:36:36,221 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 13:36:36,221 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 13:36:36,221 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 13:36:36,221 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 14:00:58,483 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting ':' delimiter: line 1 column 1453 (char 1452)
+2026-05-30 14:00:58,483 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 14:01:50,594 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting ',' delimiter: line 1 column 161 (char 160)
+2026-05-30 14:01:50,594 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 14:14:16,836 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting ',' delimiter: line 1 column 1039 (char 1038)
+2026-05-30 14:14:16,836 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 15:03:01,127 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-30 15:03:01,128 [INFO] heimdall.guardian — [HOST] [test] Routing to Heimdall.
+2026-05-30 15:03:01,439 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-30 15:03:06,373 [INFO] openai._base_client — Retrying request to /chat/completions in 0.411594 seconds
+2026-05-30 15:03:11,791 [INFO] openai._base_client — Retrying request to /chat/completions in 0.893130 seconds
+2026-05-30 15:03:17,690 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:03:22,945 [INFO] openai._base_client — Retrying request to /chat/completions in 0.441971 seconds
+2026-05-30 15:03:28,394 [INFO] openai._base_client — Retrying request to /chat/completions in 0.985270 seconds
+2026-05-30 15:03:34,386 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:03:39,892 [INFO] openai._base_client — Retrying request to /chat/completions in 0.406032 seconds
+2026-05-30 15:03:45,304 [INFO] openai._base_client — Retrying request to /chat/completions in 0.766939 seconds
+2026-05-30 15:03:51,078 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 3 failures. Retry in 30s.
+2026-05-30 15:03:51,078 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: Request timed out.
+2026-05-30 15:03:51,078 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 15:03:56,085 [INFO] openai._base_client — Retrying request to /chat/completions in 0.414578 seconds
+2026-05-30 15:04:01,505 [INFO] openai._base_client — Retrying request to /chat/completions in 0.835290 seconds
+2026-05-30 15:04:07,346 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:04:12,602 [INFO] openai._base_client — Retrying request to /chat/completions in 0.376950 seconds
+2026-05-30 15:04:17,986 [INFO] openai._base_client — Retrying request to /chat/completions in 0.927051 seconds
+2026-05-30 15:04:23,919 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:04:29,426 [INFO] openai._base_client — Retrying request to /chat/completions in 0.451513 seconds
+2026-05-30 15:04:34,884 [INFO] openai._base_client — Retrying request to /chat/completions in 0.806968 seconds
+2026-05-30 15:04:40,697 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 3 failures. Retry in 30s.
+2026-05-30 15:04:40,697 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: Request timed out.
+2026-05-30 15:04:40,704 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 15:04:40,704 [CRITICAL] heimdall.guardian — Runtime config integrity failure: config file missing. Blocking all executor dispatch.
+2026-05-30 15:04:40,704 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=289)
+2026-05-30 15:04:40,705 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 15:04:40,705 [INFO] heimdall.guardian — [HOST] [test] Routing to Heimdall.
+2026-05-30 15:04:45,711 [INFO] openai._base_client — Retrying request to /chat/completions in 0.441952 seconds
+2026-05-30 15:04:51,160 [INFO] openai._base_client — Retrying request to /chat/completions in 0.801504 seconds
+2026-05-30 15:04:56,969 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 4 failures. Retry in 30s.
+2026-05-30 15:04:56,969 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:05:02,227 [INFO] openai._base_client — Retrying request to /chat/completions in 0.441957 seconds
+2026-05-30 15:05:07,677 [INFO] openai._base_client — Retrying request to /chat/completions in 0.835910 seconds
+2026-05-30 15:05:13,519 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 5 failures. Retry in 30s.
+2026-05-30 15:05:13,519 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:05:19,026 [INFO] openai._base_client — Retrying request to /chat/completions in 0.465175 seconds
+2026-05-30 15:05:24,498 [INFO] openai._base_client — Retrying request to /chat/completions in 0.879383 seconds
+2026-05-30 15:05:30,384 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 6 failures. Retry in 30s.
+2026-05-30 15:05:30,384 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: Request timed out.
+2026-05-30 15:05:30,384 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 15:05:35,390 [INFO] openai._base_client — Retrying request to /chat/completions in 0.475728 seconds
+2026-05-30 15:05:40,872 [INFO] openai._base_client — Retrying request to /chat/completions in 0.805931 seconds
+2026-05-30 15:05:46,684 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 4 failures. Retry in 30s.
+2026-05-30 15:05:46,684 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:05:51,941 [INFO] openai._base_client — Retrying request to /chat/completions in 0.404167 seconds
+2026-05-30 15:05:57,351 [INFO] openai._base_client — Retrying request to /chat/completions in 0.876040 seconds
+2026-05-30 15:06:03,233 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 5 failures. Retry in 30s.
+2026-05-30 15:06:03,233 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:06:08,736 [INFO] openai._base_client — Retrying request to /chat/completions in 0.393549 seconds
+2026-05-30 15:06:14,137 [INFO] openai._base_client — Retrying request to /chat/completions in 0.849229 seconds
+2026-05-30 15:06:16,987 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting ':' delimiter: line 1 column 115 (char 114)
+2026-05-30 15:06:16,987 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 15:06:19,992 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 6 failures. Retry in 30s.
+2026-05-30 15:06:19,992 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: Request timed out.
+2026-05-30 15:06:19,996 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 15:06:19,996 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=290)
+2026-05-30 15:06:19,996 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 15:15:14,077 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-30 15:15:14,078 [INFO] heimdall.guardian — [HOST] [test] Routing to Heimdall.
+2026-05-30 15:15:14,391 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-30 15:15:18,809 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-30 15:15:19,086 [INFO] openai._base_client — Retrying request to /chat/completions in 0.447386 seconds
+2026-05-30 15:15:19,120 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-30 15:15:24,541 [INFO] openai._base_client — Retrying request to /chat/completions in 0.959710 seconds
+2026-05-30 15:15:30,508 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 7 failures. Retry in 30s.
+2026-05-30 15:15:30,508 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:15:35,765 [INFO] openai._base_client — Retrying request to /chat/completions in 0.429652 seconds
+2026-05-30 15:15:41,202 [INFO] openai._base_client — Retrying request to /chat/completions in 0.791312 seconds
+2026-05-30 15:15:47,000 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 8 failures. Retry in 30s.
+2026-05-30 15:15:47,000 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:15:52,508 [INFO] openai._base_client — Retrying request to /chat/completions in 0.485161 seconds
+2026-05-30 15:15:58,000 [INFO] openai._base_client — Retrying request to /chat/completions in 0.868836 seconds
+2026-05-30 15:16:03,876 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 9 failures. Retry in 30s.
+2026-05-30 15:16:03,876 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: Request timed out.
+2026-05-30 15:16:03,876 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 15:16:08,879 [INFO] openai._base_client — Retrying request to /chat/completions in 0.421533 seconds
+2026-05-30 15:16:14,307 [INFO] openai._base_client — Retrying request to /chat/completions in 0.933762 seconds
+2026-05-30 15:16:20,247 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 7 failures. Retry in 30s.
+2026-05-30 15:16:20,247 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:16:25,499 [INFO] openai._base_client — Retrying request to /chat/completions in 0.384970 seconds
+2026-05-30 15:16:30,889 [INFO] openai._base_client — Retrying request to /chat/completions in 0.778283 seconds
+2026-05-30 15:16:36,671 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 8 failures. Retry in 30s.
+2026-05-30 15:16:36,671 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:16:42,178 [INFO] openai._base_client — Retrying request to /chat/completions in 0.375998 seconds
+2026-05-30 15:16:47,560 [INFO] openai._base_client — Retrying request to /chat/completions in 0.861114 seconds
+2026-05-30 15:16:53,427 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 9 failures. Retry in 30s.
+2026-05-30 15:16:53,427 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: Request timed out.
+2026-05-30 15:16:53,431 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 15:16:53,431 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=347)
+2026-05-30 15:16:53,431 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 15:16:53,431 [INFO] heimdall.guardian — [HOST] [test] Routing to Heimdall.
+2026-05-30 15:16:58,438 [INFO] openai._base_client — Retrying request to /chat/completions in 0.434328 seconds
+2026-05-30 15:17:03,878 [INFO] openai._base_client — Retrying request to /chat/completions in 0.896410 seconds
+2026-05-30 15:17:09,780 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 10 failures. Retry in 30s.
+2026-05-30 15:17:09,780 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:17:15,036 [INFO] openai._base_client — Retrying request to /chat/completions in 0.376381 seconds
+2026-05-30 15:17:20,418 [INFO] openai._base_client — Retrying request to /chat/completions in 0.911632 seconds
+2026-05-30 15:17:26,336 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 11 failures. Retry in 30s.
+2026-05-30 15:17:26,336 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:17:31,842 [INFO] openai._base_client — Retrying request to /chat/completions in 0.424990 seconds
+2026-05-30 15:17:37,273 [INFO] openai._base_client — Retrying request to /chat/completions in 0.866215 seconds
+2026-05-30 15:17:43,145 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 12 failures. Retry in 30s.
+2026-05-30 15:17:43,145 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: Request timed out.
+2026-05-30 15:17:43,145 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 15:17:48,152 [INFO] openai._base_client — Retrying request to /chat/completions in 0.391847 seconds
+2026-05-30 15:17:53,550 [INFO] openai._base_client — Retrying request to /chat/completions in 0.825425 seconds
+2026-05-30 15:17:59,382 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 10 failures. Retry in 30s.
+2026-05-30 15:17:59,382 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:18:04,639 [INFO] openai._base_client — Retrying request to /chat/completions in 0.429501 seconds
+2026-05-30 15:18:10,075 [INFO] openai._base_client — Retrying request to /chat/completions in 0.902953 seconds
+2026-05-30 15:18:15,979 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 11 failures. Retry in 30s.
+2026-05-30 15:18:15,979 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:18:21,485 [INFO] openai._base_client — Retrying request to /chat/completions in 0.389376 seconds
+2026-05-30 15:18:26,881 [INFO] openai._base_client — Retrying request to /chat/completions in 0.976396 seconds
+2026-05-30 15:18:32,864 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 12 failures. Retry in 30s.
+2026-05-30 15:18:32,864 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: Request timed out.
+2026-05-30 15:18:32,868 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 15:18:32,869 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=348)
+2026-05-30 15:18:32,869 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 15:18:32,869 [INFO] heimdall.guardian — [HOST] [test] Routing to Heimdall.
+2026-05-30 15:18:37,876 [INFO] openai._base_client — Retrying request to /chat/completions in 0.430484 seconds
+2026-05-30 15:18:43,313 [INFO] openai._base_client — Retrying request to /chat/completions in 0.929292 seconds
+2026-05-30 15:18:49,248 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 13 failures. Retry in 30s.
+2026-05-30 15:18:49,248 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:18:54,504 [INFO] openai._base_client — Retrying request to /chat/completions in 0.425510 seconds
+2026-05-30 15:18:59,937 [INFO] openai._base_client — Retrying request to /chat/completions in 0.880243 seconds
+2026-05-30 15:19:05,824 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 14 failures. Retry in 30s.
+2026-05-30 15:19:05,824 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:19:11,334 [INFO] openai._base_client — Retrying request to /chat/completions in 0.436348 seconds
+2026-05-30 15:19:16,777 [INFO] openai._base_client — Retrying request to /chat/completions in 0.779787 seconds
+2026-05-30 15:19:22,563 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 15 failures. Retry in 30s.
+2026-05-30 15:19:22,563 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: Request timed out.
+2026-05-30 15:19:22,563 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 15:19:27,569 [INFO] openai._base_client — Retrying request to /chat/completions in 0.386919 seconds
+2026-05-30 15:19:32,964 [INFO] openai._base_client — Retrying request to /chat/completions in 0.788000 seconds
+2026-05-30 15:19:38,759 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 13 failures. Retry in 30s.
+2026-05-30 15:19:38,759 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:19:44,017 [INFO] openai._base_client — Retrying request to /chat/completions in 0.410915 seconds
+2026-05-30 15:19:49,435 [INFO] openai._base_client — Retrying request to /chat/completions in 0.820727 seconds
+2026-05-30 15:19:55,263 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 14 failures. Retry in 30s.
+2026-05-30 15:19:55,263 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:20:00,771 [INFO] openai._base_client — Retrying request to /chat/completions in 0.451822 seconds
+2026-05-30 15:20:06,229 [INFO] openai._base_client — Retrying request to /chat/completions in 0.901226 seconds
+2026-05-30 15:20:12,137 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 15 failures. Retry in 30s.
+2026-05-30 15:20:12,137 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: Request timed out.
+2026-05-30 15:20:12,141 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 15:20:12,141 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=349)
+2026-05-30 15:20:12,141 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 15:20:12,141 [INFO] heimdall.guardian — [HOST] [test] Routing to Heimdall.
+2026-05-30 15:20:17,148 [INFO] openai._base_client — Retrying request to /chat/completions in 0.432047 seconds
+2026-05-30 15:20:22,587 [INFO] openai._base_client — Retrying request to /chat/completions in 0.886393 seconds
+2026-05-30 15:20:28,481 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 16 failures. Retry in 30s.
+2026-05-30 15:20:28,481 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:20:33,738 [INFO] openai._base_client — Retrying request to /chat/completions in 0.477453 seconds
+2026-05-30 15:20:39,221 [INFO] openai._base_client — Retrying request to /chat/completions in 0.928651 seconds
+2026-05-30 15:20:45,157 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 17 failures. Retry in 30s.
+2026-05-30 15:20:45,157 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:20:50,662 [INFO] openai._base_client — Retrying request to /chat/completions in 0.411004 seconds
+2026-05-30 15:20:56,080 [INFO] openai._base_client — Retrying request to /chat/completions in 0.758107 seconds
+2026-05-30 15:21:01,844 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 18 failures. Retry in 30s.
+2026-05-30 15:21:01,844 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: Request timed out.
+2026-05-30 15:21:01,844 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 15:21:06,850 [INFO] openai._base_client — Retrying request to /chat/completions in 0.413568 seconds
+2026-05-30 15:21:12,271 [INFO] openai._base_client — Retrying request to /chat/completions in 0.780956 seconds
+2026-05-30 15:21:18,062 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 16 failures. Retry in 30s.
+2026-05-30 15:21:18,062 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: Request timed out.. Retrying in 0.25s.
+2026-05-30 15:21:23,321 [INFO] openai._base_client — Retrying request to /chat/completions in 0.423728 seconds
+2026-05-30 15:21:28,751 [INFO] openai._base_client — Retrying request to /chat/completions in 0.814824 seconds
+2026-05-30 15:21:34,573 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 17 failures. Retry in 30s.
+2026-05-30 15:21:34,573 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: Request timed out.. Retrying in 0.50s.
+2026-05-30 15:21:40,081 [INFO] openai._base_client — Retrying request to /chat/completions in 0.427779 seconds
+2026-05-30 15:21:45,516 [INFO] openai._base_client — Retrying request to /chat/completions in 0.816566 seconds
+2026-05-30 15:21:51,339 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 18 failures. Retry in 30s.
+2026-05-30 15:21:51,339 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: Request timed out.
+2026-05-30 15:21:51,343 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 15:21:51,343 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=350)
+2026-05-30 15:21:51,343 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 15:29:59,422 [INFO] heimdall.guardian — ============================================================
+2026-05-30 15:29:59,422 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 15:29:59,422 [INFO] heimdall.guardian — ============================================================
+2026-05-30 15:29:59,422 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 15:29:59,424 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 15:29:59,424 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 15:29:59,428 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 15:29:59,428 [ERROR] heimdall.ingest — Ingest server failed: [Errno 98] Address already in use
+2026-05-30 15:29:59,429 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 15:29:59,430 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 15:29:59,430 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 15:29:59,430 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 15:29:59,431 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 15:29:59,431 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 15:29:59,431 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 15:29:59,432 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 15:29:59,432 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 15:29:59,432 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 15:29:59,433 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 15:29:59,992 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 15:29:59,993 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 15:30:00,036 [INFO] heimdall.ingest — Ingest server stopped.
+2026-05-30 15:30:00,036 [INFO] heimdall.guardian — Stopping dashboard...
+2026-05-30 15:30:00,222 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 15:30:00,222 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 15:30:00,222 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 15:30:00,434 [INFO] heimdall.guardian — Shutdown summary: processed=350 dropped=0 remaining=0
+2026-05-30 15:30:00,434 [INFO] heimdall.guardian — Final metrics: {"events_received": 350, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 12, "fallbacks": 6, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 1, "live_monitor_events": 350, "live_monitor_incidents": 0, "live_monitor_suppressed": 350, "live_monitor_possible_false_positives": 350, "live_monitor_summaries": 0, "live_monitor_test_passed": 0, "live_monitor_test_failed": 0}
+2026-05-30 15:30:00,434 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 15:30:00,810 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=1376.71 total_ns=1368970370 load_ns=1024767064 prompt_eval_ns=311142681 eval_ns=24753050
+2026-05-30 15:30:00,810 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=1376.71
+2026-05-30 15:30:00,810 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 15:30:00,810 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 15:30:00,810 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 15:30:59,816 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 15:30:59,816 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 15:30:59,816 [INFO] heimdall.guardian — Stopping dashboard...
+2026-05-30 15:30:59,816 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 15:30:59,816 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 15:30:59,816 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 15:30:59,822 [INFO] heimdall.guardian — Shutdown summary: processed=0 dropped=0 remaining=0
+2026-05-30 15:30:59,822 [INFO] heimdall.guardian — Final metrics: {"events_received": 0, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 0, "fallbacks": 0, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 0, "ollama_requests": 1, "ollama_failures": 0, "ollama_last_total_duration_ns": 1368970370, "ollama_last_load_duration_ns": 1024767064, "live_monitor_events": 0, "live_monitor_incidents": 0, "live_monitor_suppressed": 0, "live_monitor_possible_false_positives": 0, "live_monitor_summaries": 0}
+2026-05-30 15:30:59,822 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 15:31:03,530 [INFO] heimdall.guardian — ============================================================
+2026-05-30 15:31:03,530 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 15:31:03,530 [INFO] heimdall.guardian — ============================================================
+2026-05-30 15:31:03,530 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 15:31:03,531 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 15:31:03,532 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 15:31:03,535 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 15:31:03,537 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 15:31:03,537 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 15:31:03,537 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 15:31:03,538 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 15:31:03,538 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 15:31:03,538 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 15:31:03,538 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 15:31:03,538 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 15:31:03,538 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 15:31:03,538 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-30 15:31:03,539 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 15:31:03,539 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 15:31:03,540 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 15:31:03,660 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=119.24 total_ns=113807063 load_ns=62149017 prompt_eval_ns=23652278 eval_ns=22912735
+2026-05-30 15:31:03,660 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=119.24
+2026-05-30 15:31:03,660 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 15:31:03,660 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 15:31:03,660 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 17:03:57,304 [INFO] heimdall.guardian — ============================================================
+2026-05-30 17:03:57,304 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 17:03:57,304 [INFO] heimdall.guardian — ============================================================
+2026-05-30 17:03:57,305 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 17:03:57,306 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 17:03:57,306 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 17:03:57,312 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 17:03:57,312 [ERROR] heimdall.ingest — Ingest server failed: [Errno 98] Address already in use
+2026-05-30 17:03:57,315 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 17:03:57,315 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 17:03:57,315 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 17:03:57,316 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 17:03:57,315 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 17:03:57,315 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 17:03:57,316 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 17:03:57,316 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 17:03:57,317 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 17:03:57,317 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 17:03:57,319 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 17:03:57,850 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 17:03:57,850 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 17:03:58,048 [INFO] heimdall.ingest — Ingest server stopped.
+2026-05-30 17:03:58,048 [INFO] heimdall.guardian — Stopping dashboard...
+2026-05-30 17:03:58,081 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 17:03:58,082 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 17:03:58,082 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 17:03:58,858 [INFO] heimdall.guardian — Shutdown summary: processed=167 dropped=0 remaining=0
+2026-05-30 17:03:58,858 [INFO] heimdall.guardian — Final metrics: {"events_received": 167, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 0, "fallbacks": 0, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 0, "ollama_requests": 1, "ollama_failures": 0, "ollama_last_total_duration_ns": 113807063, "ollama_last_load_duration_ns": 62149017, "live_monitor_events": 167, "live_monitor_incidents": 0, "live_monitor_suppressed": 167, "live_monitor_possible_false_positives": 167, "live_monitor_summaries": 0, "live_monitor_test_passed": 0, "live_monitor_test_failed": 0}
+2026-05-30 17:03:58,858 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 17:04:00,186 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2866.98 total_ns=2851485872 load_ns=2449708828 prompt_eval_ns=355564929 eval_ns=24807637
+2026-05-30 17:04:00,186 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=2866.98
+2026-05-30 17:04:00,186 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 17:04:00,187 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 17:04:00,187 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 17:04:01,187 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 17:04:01,188 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 17:04:01,188 [INFO] heimdall.guardian — Stopping dashboard...
+2026-05-30 17:04:01,189 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 17:04:01,189 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 17:04:01,190 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 17:04:02,188 [INFO] heimdall.guardian — Shutdown summary: processed=0 dropped=0 remaining=0
+2026-05-30 17:04:02,188 [INFO] heimdall.guardian — Final metrics: {"events_received": 0, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 0, "fallbacks": 0, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 0, "ollama_requests": 1, "ollama_failures": 0, "ollama_last_total_duration_ns": 2851485872, "ollama_last_load_duration_ns": 2449708828, "live_monitor_events": 0, "live_monitor_incidents": 0, "live_monitor_suppressed": 0, "live_monitor_possible_false_positives": 0, "live_monitor_summaries": 0}
+2026-05-30 17:04:02,189 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 17:04:06,634 [INFO] heimdall.guardian — ============================================================
+2026-05-30 17:04:06,634 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 17:04:06,634 [INFO] heimdall.guardian — ============================================================
+2026-05-30 17:04:06,635 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 17:04:06,641 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 17:04:06,642 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 17:04:06,649 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 17:04:06,652 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 17:04:06,652 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 17:04:06,652 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 17:04:06,652 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 17:04:06,653 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 17:04:06,654 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 17:04:06,654 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 17:04:06,654 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 17:04:06,654 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 17:04:06,654 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 17:04:06,655 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 17:04:06,654 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-30 17:04:06,656 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 17:04:06,799 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=143.08 total_ns=137455915 load_ns=82584822 prompt_eval_ns=24945727 eval_ns=24121792
+2026-05-30 17:04:06,799 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=143.08
+2026-05-30 17:04:06,800 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 17:04:06,800 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 17:04:06,800 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 18:34:39,346 [INFO] heimdall.guardian — ============================================================
+2026-05-30 18:34:39,346 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 18:34:39,346 [INFO] heimdall.guardian — ============================================================
+2026-05-30 18:34:39,346 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 18:34:39,348 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 18:34:39,348 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 18:34:39,354 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 18:34:39,354 [ERROR] heimdall.ingest — Ingest server failed: [Errno 98] Address already in use
+2026-05-30 18:34:39,357 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 18:34:39,357 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 18:34:39,357 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 18:34:39,357 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 18:34:39,357 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 18:34:39,358 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 18:34:39,358 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 18:34:39,358 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 18:34:39,360 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 18:34:39,360 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 18:34:39,362 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 18:34:39,826 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 18:34:39,826 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 18:34:39,947 [INFO] heimdall.ingest — Ingest server stopped.
+2026-05-30 18:34:39,947 [INFO] heimdall.guardian — Stopping dashboard...
+2026-05-30 18:34:40,178 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 18:34:40,178 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 18:34:40,178 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 18:34:40,503 [INFO] heimdall.guardian — Shutdown summary: processed=87 dropped=0 remaining=0
+2026-05-30 18:34:40,503 [INFO] heimdall.guardian — Final metrics: {"events_received": 87, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 0, "fallbacks": 0, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 0, "ollama_requests": 1, "ollama_failures": 0, "ollama_last_total_duration_ns": 137455915, "ollama_last_load_duration_ns": 82584822, "live_monitor_events": 87, "live_monitor_incidents": 0, "live_monitor_suppressed": 87, "live_monitor_possible_false_positives": 87, "live_monitor_summaries": 0, "live_monitor_test_passed": 0, "live_monitor_test_failed": 0}
+2026-05-30 18:34:40,503 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 18:34:40,973 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=1610.71 total_ns=1601487255 load_ns=1283476311 prompt_eval_ns=281205270 eval_ns=28156821
+2026-05-30 18:34:40,973 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=1610.71
+2026-05-30 18:34:40,973 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 18:34:40,973 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 18:34:40,974 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 18:34:51,974 [INFO] heimdall.guardian — Stopping collectors...
+2026-05-30 18:34:51,975 [INFO] heimdall.guardian — Stopping ingest server...
+2026-05-30 18:34:51,975 [INFO] heimdall.guardian — Stopping dashboard...
+2026-05-30 18:34:51,975 [INFO] heimdall.guardian — Draining event queue...
+2026-05-30 18:34:51,975 [INFO] heimdall.guardian — Event queue drained successfully.
+2026-05-30 18:34:51,975 [INFO] heimdall.guardian — Stopping router...
+2026-05-30 18:34:52,978 [INFO] heimdall.guardian — Shutdown summary: processed=0 dropped=0 remaining=0
+2026-05-30 18:34:52,979 [INFO] heimdall.guardian — Final metrics: {"events_received": 0, "events_dropped": 0, "queue_full_count": 0, "decisions_made": 0, "llm_errors": 0, "fallbacks": 0, "policy_blocks": 0, "actions_dispatched": 0, "invalid_events": 0, "config_integrity_failures": 0, "ollama_requests": 1, "ollama_failures": 0, "ollama_last_total_duration_ns": 1601487255, "ollama_last_load_duration_ns": 1283476311, "live_monitor_events": 0, "live_monitor_incidents": 0, "live_monitor_suppressed": 0, "live_monitor_possible_false_positives": 0, "live_monitor_summaries": 0}
+2026-05-30 18:34:52,979 [INFO] heimdall.guardian — Heimdall shutdown complete.
+2026-05-30 18:35:02,723 [INFO] heimdall.guardian — ============================================================
+2026-05-30 18:35:02,724 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 18:35:02,724 [INFO] heimdall.guardian — ============================================================
+2026-05-30 18:35:02,724 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 18:35:02,732 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 18:35:02,732 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 18:35:02,739 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 18:35:02,743 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-30 18:35:02,744 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 18:35:02,744 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 18:35:02,744 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 18:35:02,744 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 18:35:02,744 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 18:35:02,744 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 18:35:02,744 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 18:35:02,744 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 18:35:02,745 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 18:35:02,745 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 18:35:02,745 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 18:35:02,746 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 18:35:02,884 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=137.35 total_ns=131099286 load_ns=76355206 prompt_eval_ns=24469994 eval_ns=23404924
+2026-05-30 18:35:02,884 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=137.35
+2026-05-30 18:35:02,884 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 18:35:02,884 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 18:35:02,884 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 19:06:46,458 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 19:06:50,755 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4291.87 total_ns=4288797387 load_ns=1408053487 prompt_eval_ns=1202033213 eval_ns=1600629780
+2026-05-30 19:06:55,760 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 19:06:55,763 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 19:07:01,019 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 19:07:01,019 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: timed out. Retrying in 0.50s.
+2026-05-30 19:07:03,569 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2049.6 total_ns=2048619181 load_ns=72781521 prompt_eval_ns=28025993 eval_ns=1874472289
+2026-05-30 19:07:03,570 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": false,
+  "severity": "INFO",
+  "boundary": "UNKNOWN",
+  "threat_class": "",
+  "confidence": 0.95,
+  "action_required": "LOG | NONE",
+2026-05-30 19:07:03,583 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 19:07:03,583 [CRITICAL] heimdall.guardian — Runtime config integrity failure: config file missing. Blocking all executor dispatch.
+2026-05-30 19:07:03,583 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=709)
+2026-05-30 19:07:03,584 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 19:30:56,927 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting ':' delimiter: line 1 column 64 (char 63)
+2026-05-30 19:30:56,928 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 19:30:56,928 [WARNING] heimdall.guardian — Cowrie JSON parse error: Extra data: line 1 column 18 (char 17)
+2026-05-30 19:30:56,928 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 19:34:53,652 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting property name enclosed in double quotes: line 1 column 43 (char 42)
+2026-05-30 19:34:53,652 [WARNING] heimdall.guardian — Cowrie JSON parse error: Extra data: line 1 column 12 (char 11)
+2026-05-30 19:34:53,652 [WARNING] heimdall.guardian — Cowrie JSON parse error: Extra data: line 1 column 7 (char 6)
+2026-05-30 19:34:53,652 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 20:04:40,931 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:04:45,114 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4179.04 total_ns=4177736221 load_ns=1645304834 prompt_eval_ns=983914362 eval_ns=1480174295
+2026-05-30 20:04:50,122 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:04:50,122 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 20:04:55,379 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:04:55,381 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: timed out. Retrying in 0.50s.
+2026-05-30 20:04:57,955 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2073.2 total_ns=2071667619 load_ns=66178550 prompt_eval_ns=27533309 eval_ns=1902982847
+2026-05-30 20:04:57,956 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": false,
+  "severity": "INFO",
+  "boundary": "UNKNOWN",
+  "threat_class": "EXECUTION",
+  "confidence": 0.95,
+  "action_required": "LOG |
+2026-05-30 20:04:57,958 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:04:57,958 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=980)
+2026-05-30 20:04:57,959 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:06:25,688 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:06:30,705 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:06:30,707 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: timed out. Retrying in 0.25s.
+2026-05-30 20:06:34,620 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=3657.92 total_ns=3581857124 load_ns=176356010 prompt_eval_ns=52242821 eval_ns=3226131440
+2026-05-30 20:06:39,682 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:06:39,775 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 20:06:45,280 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:06:45,283 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: timed out. Retrying in 0.50s.
+2026-05-30 20:06:50,791 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:06:50,791 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 3 failures. Retry in 30s.
+2026-05-30 20:06:50,791 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_analyst. Last error: timed out
+2026-05-30 20:06:50,801 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:06:50,801 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=981)
+2026-05-30 20:06:50,806 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:06:50,808 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:06:55,814 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:06:55,814 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_extractor: timed out. Retrying in 0.25s.
+2026-05-30 20:07:01,076 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:07:01,077 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_extractor: timed out. Retrying in 0.50s.
+2026-05-30 20:07:06,608 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:07:06,608 [ERROR] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN after 3 failures. Retry in 30s.
+2026-05-30 20:07:06,609 [ERROR] heimdall.guardian — All 3 attempts failed for guardian_extractor. Last error: timed out
+2026-05-30 20:07:06,609 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_error
+2026-05-30 20:07:06,609 [WARNING] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN. Skipping guardian_analyst call.
+2026-05-30 20:07:06,622 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:07:06,622 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=982)
+2026-05-30 20:07:06,623 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:07:06,623 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:07:06,623 [WARNING] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN. Skipping guardian_extractor call.
+2026-05-30 20:07:06,623 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_circuit_open
+2026-05-30 20:07:06,623 [WARNING] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN. Skipping guardian_analyst call.
+2026-05-30 20:07:06,624 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:07:06,624 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=983)
+2026-05-30 20:07:06,625 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:07:06,625 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:07:06,625 [WARNING] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN. Skipping guardian_extractor call.
+2026-05-30 20:07:06,625 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_circuit_open
+2026-05-30 20:07:06,626 [WARNING] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN. Skipping guardian_analyst call.
+2026-05-30 20:07:06,628 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:07:06,628 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=984)
+2026-05-30 20:07:06,629 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:07:06,629 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:07:06,629 [WARNING] heimdall.guardian — CircuitBreaker guardian_extractor: OPEN. Skipping guardian_extractor call.
+2026-05-30 20:07:06,629 [WARNING] heimdall.guardian — Extractor degraded mode: extractor_circuit_open
+2026-05-30 20:07:06,630 [WARNING] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN. Skipping guardian_analyst call.
+2026-05-30 20:07:06,633 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:07:06,633 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=985)
+2026-05-30 20:07:06,634 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:20:15,580 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:20:20,183 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4599.81 total_ns=4593005286 load_ns=1632697827 prompt_eval_ns=1449868970 eval_ns=1434475542
+2026-05-30 20:20:25,188 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:20:25,188 [ERROR] heimdall.guardian — CircuitBreaker guardian_analyst: OPEN after 4 failures. Retry in 30s.
+2026-05-30 20:20:25,188 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 20:20:29,695 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4256.21 total_ns=4255067100 load_ns=111880553 prompt_eval_ns=27236550 eval_ns=1717778622
+2026-05-30 20:20:29,695 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST",
+  "threat_class": "Container Escape Attempt",
+  "confidence": 1.0,
+  "action_required": "BLOCK
+2026-05-30 20:20:29,700 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:20:29,700 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=986)
+2026-05-30 20:20:29,702 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:22:03,834 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:22:06,919 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=3078.41 total_ns=3077244416 load_ns=67954925 prompt_eval_ns=1473071746 eval_ns=1469392729
+2026-05-30 20:22:11,924 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:22:11,924 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 20:22:16,252 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4077.75 total_ns=4076701080 load_ns=105925508 prompt_eval_ns=25019808 eval_ns=1640731264
+2026-05-30 20:22:16,252 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST | HONEYPOT | NETWORK | UNKNOWN",
+  "threat_class": "Container Escape Attempt",
+  "confidence": 1.
+2026-05-30 20:22:16,257 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:22:16,257 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=987)
+2026-05-30 20:22:16,258 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:22:16,258 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 20:22:19,325 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=3067.25 total_ns=3066446498 load_ns=57753317 prompt_eval_ns=1503108768 eval_ns=1440575569
+2026-05-30 20:22:24,330 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 20:22:24,330 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 20:22:28,747 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4166.27 total_ns=4165228593 load_ns=122100692 prompt_eval_ns=28854644 eval_ns=1643452153
+2026-05-30 20:22:28,747 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": false,
+  "severity": "LOW",
+  "boundary": "HOST | HONEYPOT | NETWORK | UNKNOWN",
+  "threat_class": "container_escape_attempt",
+  "confidence": 0.9
+2026-05-30 20:22:28,751 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 20:22:28,752 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=988)
+2026-05-30 20:22:28,752 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 20:33:55,190 [INFO] heimdall.guardian — Cowrie log rotated. Reopening.
+2026-05-30 21:18:27,802 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting ',' delimiter: line 1 column 250 (char 249)
+2026-05-30 21:18:27,805 [WARNING] heimdall.guardian — Cowrie JSON parse error: Expecting value: line 1 column 1 (char 0)
+2026-05-30 21:22:58,837 [INFO] heimdall.guardian — ============================================================
+2026-05-30 21:22:58,838 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-30 21:22:58,838 [INFO] heimdall.guardian — ============================================================
+2026-05-30 21:22:58,838 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-30 21:22:58,845 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-30 21:22:58,845 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-30 21:22:58,852 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-30 21:22:58,856 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-30 21:22:58,856 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-30 21:22:58,857 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-30 21:22:58,856 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-30 21:22:58,857 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-30 21:22:58,857 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-30 21:22:58,857 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-30 21:22:58,857 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-30 21:22:58,857 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-30 21:22:58,857 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-30 21:22:58,858 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-30 21:22:58,858 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-30 21:22:58,859 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-30 21:23:00,242 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=1382.85 total_ns=1376843053 load_ns=1098710017 prompt_eval_ns=246497827 eval_ns=25437851
+2026-05-30 21:23:00,243 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=1382.85
+2026-05-30 21:23:00,243 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-30 21:23:00,243 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-30 21:23:00,243 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-30 21:54:23,145 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 21:54:27,325 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4178.59 total_ns=4177760381 load_ns=1110393357 prompt_eval_ns=1530488291 eval_ns=1462898250
+2026-05-30 21:54:32,333 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 21:54:32,334 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 21:54:37,142 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4558.52 total_ns=4557567684 load_ns=129458380 prompt_eval_ns=27493155 eval_ns=1747750815
+2026-05-30 21:54:37,143 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST",
+  "threat_class": "Container Escape Attempt",
+  "confidence": 1.0,
+  "action_required": "BLOCK
+2026-05-30 21:54:37,146 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 21:54:37,147 [CRITICAL] heimdall.guardian — Runtime config integrity failure: config file missing. Blocking all executor dispatch.
+2026-05-30 21:54:37,147 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=1178)
+2026-05-30 21:54:37,147 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 21:54:37,147 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 21:54:40,573 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=3426.21 total_ns=3425384420 load_ns=74860979 prompt_eval_ns=1712177510 eval_ns=1569175728
+2026-05-30 21:54:45,579 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 21:54:45,579 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 21:54:50,521 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4691.57 total_ns=4690585349 load_ns=112761350 prompt_eval_ns=27857213 eval_ns=1738591305
+2026-05-30 21:54:50,521 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST",
+  "threat_class": "Container Escape Attempt",
+  "confidence": 1.0,
+  "action_required": "BLOCK
+2026-05-30 21:54:50,522 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 21:54:50,522 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=1179)
+2026-05-30 21:54:50,522 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 23:30:03,247 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 23:30:07,979 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4731.79 total_ns=4724753863 load_ns=1327542737 prompt_eval_ns=1754447214 eval_ns=1566191184
+2026-05-30 23:30:12,985 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 23:30:12,985 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 23:30:18,241 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 23:30:18,242 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: timed out. Retrying in 0.50s.
+2026-05-30 23:30:20,731 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=1989.56 total_ns=1988574351 load_ns=65409108 prompt_eval_ns=28741750 eval_ns=1816658613
+2026-05-30 23:30:20,732 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST",
+  "threat_class": "Container Escape Attempt",
+  "confidence": 1.0,
+  "action_required": "BLOCK
+2026-05-30 23:30:20,736 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 23:30:20,736 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=1246)
+2026-05-30 23:30:20,737 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-30 23:52:24,336 [INFO] heimdall.guardian — [HOST] [process.watcher] Routing to Heimdall.
+2026-05-30 23:52:28,469 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4131.76 total_ns=4130229985 load_ns=1003115100 prompt_eval_ns=1583123850 eval_ns=1461300156
+2026-05-30 23:52:33,474 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-30 23:52:33,474 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-30 23:52:38,207 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=4482.54 total_ns=4481440481 load_ns=127021477 prompt_eval_ns=26903500 eval_ns=1663711429
+2026-05-30 23:52:38,207 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview=```json
+{
+  "schema_version": "1.0.0",
+  "incident_detected": false,
+  "severity": "INFO",
+  "boundary": "UNKNOWN",
+  "threat_class": "EXECUTION_PATH",
+  "confidence": 0.95,
+  "action_required": "LOG
+2026-05-30 23:52:38,212 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-30 23:52:38,212 [ERROR] heimdall.guardian — Executor dispatch blocked: runtime integrity check failed (event_id=1261)
+2026-05-30 23:52:38,212 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — ============================================================
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — ============================================================
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — Heimdall Guardian v0.1.1 starting.
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — ============================================================
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — ============================================================
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-31 02:09:36,074 [INFO] heimdall.guardian — Config integrity verified.
+2026-05-31 02:09:36,077 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+
+╔══════════════════════════════════════════════════════╗
+║           HEIMDALL GUARDIAN v0.1.1                   ║
+║           Bifrost Security Platform                  ║
+║                                                      ║
+║   Hardware Tier : TIER_3                            ║
+║   Analyst Model : qwen2.5:1.5b-instruct             ║
+║   Extractor     : qwen2.5:1.5b-instruct             ║
+║   Learning Days : 7                                 ║
+║                                                      ║
+║   The Bridge Is Watched. Heimdall Never Sleeps.      ║
+╚══════════════════════════════════════════════════════╝
+
+2026-05-31 02:09:36,077 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-05-31 02:09:36,077 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-31 02:09:36,077 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-05-31 02:09:36,081 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-31 02:09:36,081 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-05-31 02:09:36,083 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-31 02:09:36,083 [INFO] heimdall.guardian — AuditdCollector started.
+2026-05-31 02:09:36,083 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-31 02:09:36,083 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-05-31 02:09:36,083 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-31 02:09:36,083 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-05-31 02:09:36,083 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-31 02:09:36,083 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-05-31 02:09:36,084 [INFO] heimdall.guardian — Collector started: collector.process
+2026-05-31 02:09:36,086 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-31 02:09:36,086 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-05-31 02:09:36,086 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-31 02:09:36,086 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-31 02:09:36,086 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-05-31 02:09:36,086 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-05-31 02:09:36,086 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-31 02:09:36,086 [INFO] heimdall.guardian — Collector started: collector.network
+2026-05-31 02:09:36,088 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-31 02:09:36,088 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-05-31 02:09:38,821 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2732.22 total_ns=2726887449 load_ns=1926880878 prompt_eval_ns=342695083 eval_ns=220588884
+2026-05-31 02:09:38,821 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2732.22 total_ns=2726887449 load_ns=1926880878 prompt_eval_ns=342695083 eval_ns=220588884
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=2732.22
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=2732.22
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-31 02:09:38,824 [INFO] heimdall.guardian — Heimdall is online. The bridge is watched.
+2026-05-31 02:11:13,370 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-31 02:11:13,370 [WARNING] heimdall.ingest — Ingest accepting unauthenticated requests (development mode only)
+2026-05-31 02:11:13,370 [INFO] heimdall.guardian — [HONEYPOT] [cowrie] Routing to Heimdall.
+2026-05-31 02:11:13,370 [INFO] heimdall.guardian — [HONEYPOT] [cowrie] Routing to Heimdall.
+2026-05-31 02:11:15,775 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2404.45 total_ns=2403626596 load_ns=77146972 prompt_eval_ns=606808485 eval_ns=941531760
+2026-05-31 02:11:15,775 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2404.45 total_ns=2403626596 load_ns=77146972 prompt_eval_ns=606808485 eval_ns=941531760
+2026-05-31 02:11:20,781 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-31 02:11:20,781 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-31 02:11:20,781 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-31 02:11:20,781 [WARNING] heimdall.guardian — Attempt 1/3 failed for guardian_analyst: timed out. Retrying in 0.25s.
+2026-05-31 02:11:26,037 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-31 02:11:26,037 [WARNING] heimdall.guardian — Ollama request failed url=http://localhost:11434/api/chat model=qwen2.5:1.5b-instruct error=timed out
+2026-05-31 02:11:26,037 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: timed out. Retrying in 0.50s.
+2026-05-31 02:11:26,037 [WARNING] heimdall.guardian — Attempt 2/3 failed for guardian_analyst: timed out. Retrying in 0.50s.
+2026-05-31 02:11:29,608 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=3070.33 total_ns=3069164062 load_ns=67228368 prompt_eval_ns=27653242 eval_ns=1757793616
+2026-05-31 02:11:29,608 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=3070.33 total_ns=3069164062 load_ns=67228368 prompt_eval_ns=27653242 eval_ns=1757793616
+2026-05-31 02:11:29,608 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview={
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST | HONEYPOT | NETWORK | UNKNOWN",
+  "threat_class": "credential theft attempt",
+  "confidence": 1.0,
+2026-05-31 02:11:29,608 [WARNING] heimdall.guardian — LLM decision parse failed model=qwen2.5:1.5b-instruct preview={
+  "schema_version": "1.0.0",
+  "incident_detected": true,
+  "severity": "CRITICAL",
+  "boundary": "HOST | HONEYPOT | NETWORK | UNKNOWN",
+  "threat_class": "credential theft attempt",
+  "confidence": 1.0,
+2026-05-31 02:11:29,615 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-31 02:11:29,615 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
+2026-05-31 02:11:29,615 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-05-31 02:11:29,615 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.

@@ -38,3 +38,35 @@
 2026-05-30 08:28:21,314 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
 2026-05-30 08:29:04,447 [INFO] [protocol][syn_scan_500] ok | nmap SYN top500
 2026-05-30 08:30:19,470 [INFO] Stopped.
+2026-05-30 12:47:41,053 [INFO] Starting: target=127.0.0.1 duration=48.0h types=58
+2026-05-30 12:47:41,058 [INFO] [persistence][bashrc] ok | .bashrc persistence
+2026-05-30 12:48:23,998 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-05-30 12:48:27,710 [INFO] [lateral][network_recon] ok | full network recon
+2026-05-30 12:48:51,746 [INFO] [lateral][network_recon] ok | full network recon
+2026-05-30 12:51:30,435 [INFO] [persistence][ssh_key] ok | authorized_keys backdoor
+2026-05-30 12:51:43,871 [INFO] [persistence][cron_job] ok | crontab persistence
+2026-05-30 12:52:48,168 [INFO] Stopped.
+2026-05-30 12:52:53,739 [INFO] Starting: target=127.0.0.1 duration=48.0h types=58
+2026-05-30 12:52:57,915 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-05-30 12:55:15,906 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-05-30 12:57:19,839 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-05-30 12:58:11,498 [INFO] [exfil][dns_exfil] ok | hostname in DNS query
+2026-05-30 13:00:38,629 [INFO] [credential][credential_stuffing] ok | root:toor
+2026-05-30 13:01:17,793 [INFO] [credential][credential_stuffing] ok | backup:backup
+2026-05-30 13:04:10,104 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-05-30 13:06:16,459 [INFO] [persistence][ssh_key] ok | authorized_keys backdoor
+2026-05-30 13:06:56,223 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-05-30 13:07:15,640 [INFO] [persistence][ssh_key] ok | authorized_keys backdoor
+2026-05-30 13:14:32,671 [INFO] [credential][credential_stuffing] ok | ubuntu:ubuntu
+2026-05-30 13:14:49,907 [INFO] [evasion][timestamp_manip] ok | touch -t timestamp
+2026-05-30 13:16:36,558 [INFO] [lateral][network_recon] ok | full network recon
+2026-05-30 13:17:00,152 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-05-30 13:17:27,971 [INFO] [privesc][suid_enumeration] ok | find SUID binaries
+2026-05-30 13:17:37,249 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-05-30 13:19:45,185 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-05-30 13:20:24,746 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-05-30 13:20:50,133 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-05-30 13:22:01,256 [INFO] [exhaustion][ingest_flood_500] ok | ok=0 fail=500
+2026-05-30 13:28:14,560 [INFO] [credential][credential_stuffing] ok | test:test
+2026-05-30 13:28:21,149 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-05-30 13:28:45,227 [INFO] [execution][memfd_fileless] ok | memfd_create probe

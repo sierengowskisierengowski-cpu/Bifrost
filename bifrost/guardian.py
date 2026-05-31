@@ -73,6 +73,54 @@ VM_TEST_PROFILE_DEFAULTS = {
     "test_mode_enabled": True,
 }
 
+SUPPORTED_COWRIE_EVENTS = frozenset({
+    "cowrie.command.input",
+    "cowrie.login.success",
+    "cowrie.session.connect",
+    "cowrie.session.file_download",
+    "cowrie.login.failed",
+})
+
+DESTRUCTIVE_ACTIONS = frozenset({"KILL", "BLOCK", "QUARANTINE"})
+
+HONEYPOT_BREAKOUT_ALERTS = frozenset({
+    "honeypot_to_host_connection",
+    "container_escape_detected",
+})
+
+
+def _cowrie_event_id(raw: object) -> str | None:
+    if not isinstance(raw, dict):
+        return None
+    event_id = raw.get("eventid") or raw.get("event_id")
+    if event_id is None:
+        return None
+    return str(event_id)
+
+
+def _is_honeypot_breakout(raw_data: object) -> bool:
+    return (
+        isinstance(raw_data, dict)
+        and raw_data.get("alert") in HONEYPOT_BREAKOUT_ALERTS
+    )
+
+
+def should_route_to_reasoner(event: dict) -> bool:
+    """
+    Return True when an event should run through compress/reason/store.
+    Cowrie honeypot noise is logged-only unless the event type is supported.
+    """
+    boundary = event.get("boundary", "UNKNOWN")
+    raw_data = event.get("raw", {})
+
+    if _is_honeypot_breakout(raw_data):
+        return True
+    if boundary != "HONEYPOT":
+        return True
+
+    eventid = _cowrie_event_id(raw_data)
+    return eventid in SUPPORTED_COWRIE_EVENTS
+
 
 def refresh_runtime_paths(config=None):
     """Resolve paths from env vars and optional config."""
@@ -1255,14 +1303,17 @@ class EventRouter(threading.Thread):
             "hardware_tier": self.config.get("hardware_tier", "TIER_4")
         })
 
-    def check_runtime_integrity(self) -> bool:
-        """Fail closed if config or DB integrity is compromised at runtime."""
+    def check_executor_integrity(self) -> bool:
+        """
+        Fail closed for destructive executor dispatch only.
+        Never marks the DB unhealthy — reasoning and decision writes continue.
+        """
         ok, reason = verify_config_integrity(CONFIG_PATH)
         if not ok:
             if self.config_integrity_ok:
                 self.log.critical(
-                    "Runtime config integrity failure: %s. "
-                    "Blocking all executor dispatch.",
+                    "Executor integrity: config check failed: %s. "
+                    "Blocking destructive dispatch only.",
                     reason,
                 )
                 with METRICS_LOCK:
@@ -1271,25 +1322,101 @@ class EventRouter(threading.Thread):
             return False
 
         self.config_integrity_ok = True
-        if not self.db_healthy:
-            return False
 
         try:
             ok, detail = verify_database_integrity(self.conn)
             if not ok:
-                self.log.critical(
-                    "Runtime DB integrity failure: %s. "
-                    "Blocking all executor dispatch.",
+                self.log.warning(
+                    "Executor integrity: database check failed: %s. "
+                    "Blocking destructive dispatch only.",
                     detail,
                 )
-                self.db_healthy = False
                 return False
         except sqlite3.Error as exc:
-            self.log.critical("Runtime DB check failed: %s", exc)
-            self.db_healthy = False
+            self.log.warning(
+                "Executor integrity: database check error: %s. "
+                "Blocking destructive dispatch only.",
+                exc,
+            )
             return False
 
         return True
+
+    def check_runtime_integrity(self) -> bool:
+        """Backward-compatible alias for executor-only integrity checks."""
+        return self.check_executor_integrity()
+
+    def _reason_event(self, event: dict, compressed: str) -> dict:
+        """Run AI reasoning — never blocked by integrity checks."""
+        try:
+            decision = enrich_decision(self.route_to_heimdall(compressed))
+            decision["model_calls"] = [
+                self._last_extractor_call_meta,
+                self._last_analyst_call_meta,
+            ]
+            return decision
+        except Exception as exc:
+            self.log.error("Reasoner failed: %s", exc, exc_info=True)
+            fallback = self._safe_fallback(f"reasoner error: {exc}")
+            fallback["model_calls"] = [
+                self._last_extractor_call_meta,
+                self._last_analyst_call_meta,
+            ]
+            return fallback
+
+    def _dispatch_enforcement(self, decision: dict, event_id: int) -> str:
+        """
+        Dispatch destructive actions to the Go executor.
+        Integrity checks apply ONLY here — never to reasoning or DB writes.
+        """
+        if event_id < 1:
+            self.log.error(
+                "Executor dispatch blocked: event not persisted (event_id=%s)",
+                event_id,
+            )
+            return "event_not_persisted"
+
+        effective = (
+            decision.get("action_effective")
+            or decision.get("action_required", "NONE")
+        )
+        if effective not in DESTRUCTIVE_ACTIONS:
+            return "no_destructive_action"
+
+        if not decision.get("policy_allowed"):
+            return "blocked_by_policy"
+
+        if not self.check_executor_integrity():
+            self.log.error(
+                "Executor dispatch blocked: runtime integrity check failed "
+                "(event_id=%d) — downgrading to ALERT",
+                event_id,
+            )
+            return "integrity_check_failed"
+
+        from bifrost.router import execute_decision
+
+        dispatch_payload = dict(decision)
+        dispatch_payload["action_required"] = effective
+
+        if execute_decision(dispatch_payload, event_id, self.db_path, self.log):
+            with METRICS_LOCK:
+                METRICS["actions_dispatched"] += 1
+            self.log.warning(
+                "Executor dispatched: %s target=%s event_id=%d",
+                effective,
+                dispatch_payload.get("target"),
+                event_id,
+            )
+            return "dispatch_success"
+
+        self.log.error(
+            "Executor dispatch failed: %s target=%s event_id=%d",
+            effective,
+            dispatch_payload.get("target"),
+            event_id,
+        )
+        return "dispatch_failed"
 
     def apply_policy_gate(self, decision: dict, event: dict) -> dict:
         """Run destructive actions through the policy gate before dispatch."""
@@ -1425,71 +1552,11 @@ class EventRouter(threading.Thread):
         return decision
 
     def maybe_dispatch_to_executor(self, decision: dict, event_id: int) -> str:
-        """Send policy-approved destructive actions to the Go executor.
-
-        Returns one of:
-          event_not_persisted, database_unhealthy, integrity_check_failed,
-          blocked_by_policy, no_destructive_action, dispatch_success,
-          dispatch_failed.
-        """
-        if event_id < 1:
-            self.log.error(
-                "Executor dispatch blocked: event not persisted (event_id=%s)",
-                event_id,
-            )
-            return "event_not_persisted"
-        if not self.db_healthy:
-            self.log.error(
-                "Executor dispatch blocked: database unhealthy (event_id=%d)",
-                event_id,
-            )
-            return "database_unhealthy"
-        if not self.check_runtime_integrity():
-            self.log.error(
-                "Executor dispatch blocked: runtime integrity check failed "
-                "(event_id=%d)",
-                event_id,
-            )
-            return "integrity_check_failed"
-        if not decision.get("policy_allowed"):
-            return "blocked_by_policy"
-
-        effective = (
-            decision.get("action_effective")
-            or decision.get("action_required", "NONE")
-        )
-        if effective not in ("KILL", "BLOCK", "QUARANTINE"):
-            return "no_destructive_action"
-
-        from bifrost.router import execute_decision
-
-        dispatch_payload = dict(decision)
-        dispatch_payload["action_required"] = effective
-
-        if execute_decision(dispatch_payload, event_id, self.db_path, self.log):
-            with METRICS_LOCK:
-                METRICS["actions_dispatched"] += 1
-            self.log.warning(
-                "Executor dispatched: %s target=%s event_id=%d",
-                effective,
-                dispatch_payload.get("target"),
-                event_id,
-            )
-            return "dispatch_success"
-        else:
-            self.log.error(
-                "Executor dispatch failed: %s target=%s event_id=%d",
-                effective,
-                dispatch_payload.get("target"),
-                event_id,
-            )
-            return "dispatch_failed"
+        """Deprecated alias — use _dispatch_enforcement."""
+        return self._dispatch_enforcement(decision, event_id)
 
     def store_event(self, event: dict, compressed=None, decision=None) -> int:
-        if not self.db_healthy:
-            self.log.error("DB store skipped: database marked unhealthy")
-            return -1
-
+        """Persist event and decision. Never blocked by executor integrity checks."""
         stored_event = redact_for_storage(event)
         boundary = stored_event.get("boundary", "UNKNOWN")
         source = stored_event.get("source", "unknown")
@@ -1559,16 +1626,7 @@ class EventRouter(threading.Thread):
                 boundary = event.get("boundary", "UNKNOWN")
                 source = event.get("source", "unknown")
 
-                raw_data = event.get("raw", {})
-                is_breakout = (
-                    isinstance(raw_data, dict) and
-                    raw_data.get("alert") in [
-                        "honeypot_to_host_connection",
-                        "container_escape_detected",
-                    ]
-                )
-
-                if boundary == "HONEYPOT" and not is_breakout:
+                if not should_route_to_reasoner(event):
                     self.store_event(event)
                     self.live_monitor.record_event(event)
                     self.event_count += 1
@@ -1591,17 +1649,17 @@ class EventRouter(threading.Thread):
                     status="ok",
                     details={"model_call": self._last_extractor_call_meta},
                 )
-                decision = enrich_decision(self.route_to_heimdall(compressed))
-                decision["model_calls"] = [
-                    self._last_extractor_call_meta,
-                    self._last_analyst_call_meta,
-                ]
+
+                # Step 1: ALWAYS run AI reasoning — never blocked by integrity
+                decision = self._reason_event(event, compressed)
                 self.live_monitor.record_pipeline_step(
                     event,
                     step="reason_decision",
                     status="ok",
                     details={"model_call": self._last_analyst_call_meta},
                 )
+
+                # Step 2: Policy gate (downgrades destructive actions when needed)
                 decision = self.apply_policy_gate(decision, event)
                 self.live_monitor.record_pipeline_step(
                     event,
@@ -1612,6 +1670,8 @@ class EventRouter(threading.Thread):
                         "policy_rationale": decision.get("policy_rationale"),
                     },
                 )
+
+                # Step 3: ALWAYS write decision to SQLite — never blocked
                 event_id = self.store_event(event, compressed, decision)
                 self.live_monitor.record_pipeline_step(
                     event,
@@ -1619,6 +1679,13 @@ class EventRouter(threading.Thread):
                     status="ok" if event_id > 0 else "error",
                     details={"event_id": event_id},
                 )
+                if event_id < 1:
+                    self.log.error(
+                        "Critical: Failed to persist heimdall_decision for "
+                        "source=%s boundary=%s",
+                        source,
+                        boundary,
+                    )
 
                 severity = decision.get("severity", "UNKNOWN")
                 action = decision.get("action_requested", decision.get("action_required", "NONE"))
@@ -1642,7 +1709,7 @@ class EventRouter(threading.Thread):
                             f"{decision.get('policy_rationale', '')}"
                         )
 
-                execution_result = self.maybe_dispatch_to_executor(decision, event_id)
+                execution_result = self._dispatch_enforcement(decision, event_id)
                 decision["execution_result"] = execution_result
                 self.live_monitor.record_pipeline_step(
                     event,
