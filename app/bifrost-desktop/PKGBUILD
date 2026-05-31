@@ -13,6 +13,7 @@ sha256sums=('SKIP')
 build() {
   cd "$srcdir/Bifrost/app/bifrost-desktop"
   pnpm install --frozen-lockfile
+  # Arch package installs the release binary directly; distro bundles are not needed here.
   pnpm tauri build --bundles none
 }
 

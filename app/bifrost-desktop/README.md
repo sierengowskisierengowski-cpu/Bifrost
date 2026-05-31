@@ -59,7 +59,7 @@ guardian is launched as `python3 <script> --port 8766`.
 
 ## Prerequisites (Linux)
 
-Install the Tauri system dependencies (Debian/Ubuntu shown):
+Install the Tauri system dependencies (Debian/Ubuntu only):
 
 ```bash
 sudo ./scripts/setup-linux-build-env.sh
