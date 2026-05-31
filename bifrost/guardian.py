@@ -434,11 +434,12 @@ def _ensure_actions_columns(conn: sqlite3.Connection) -> None:
     cursor = conn.cursor()
     cursor.execute("PRAGMA table_info(actions)")
     columns = {row[1] for row in cursor.fetchall()}
-    for column_name in ("session_id", "ssh_fingerprint", "command_hash"):
-        if column_name not in columns:
-            cursor.execute(
-                f"ALTER TABLE actions ADD COLUMN {column_name} TEXT"
-            )
+    if "session_id" not in columns:
+        cursor.execute("ALTER TABLE actions ADD COLUMN session_id TEXT")
+    if "ssh_fingerprint" not in columns:
+        cursor.execute("ALTER TABLE actions ADD COLUMN ssh_fingerprint TEXT")
+    if "command_hash" not in columns:
+        cursor.execute("ALTER TABLE actions ADD COLUMN command_hash TEXT")
     conn.commit()
 
 

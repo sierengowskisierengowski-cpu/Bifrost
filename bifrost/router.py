@@ -42,7 +42,7 @@ def _calculate_command_sequence_hash(commands_list: list[str]) -> str:
     ]
     if not normalized:
         return ""
-    return hashlib.md5("|".join(normalized).encode("utf-8")).hexdigest()
+    return hashlib.sha256("|".join(normalized).encode("utf-8")).hexdigest()
 
 
 def _load_action_context(db_path: str, event_id: int) -> dict:

@@ -42,7 +42,7 @@ def calculate_command_sequence_hash(commands_list: list[str]) -> str:
     ]
     if not normalized:
         return ""
-    return hashlib.md5("|".join(normalized).encode("utf-8")).hexdigest()
+    return hashlib.sha256("|".join(normalized).encode("utf-8")).hexdigest()
 
 
 def _safe_json_load(payload):
