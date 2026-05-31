@@ -11,6 +11,8 @@ Manages the full fallback chain:
 import json
 import logging
 import os
+import sqlite3
+import hashlib
 import urllib.request
 import urllib.error
 from typing import Optional
@@ -19,6 +21,78 @@ log = logging.getLogger("heimdall.router")
 
 EXECUTOR_URL = "http://127.0.0.1:8766/execute"
 EXECUTOR_HEALTH = "http://127.0.0.1:8766/health"
+
+
+def _safe_json_load(payload):
+    if payload is None:
+        return None
+    if isinstance(payload, dict):
+        return payload
+    try:
+        return json.loads(payload)
+    except Exception:
+        return None
+
+
+def _calculate_command_sequence_hash(commands_list: list[str]) -> str:
+    normalized = [
+        str(cmd).strip().lower()
+        for cmd in commands_list
+        if cmd is not None and str(cmd).strip()
+    ]
+    if not normalized:
+        return ""
+    return hashlib.md5("|".join(normalized).encode("utf-8")).hexdigest()
+
+
+def _load_action_context(db_path: str, event_id: int) -> dict:
+    if not db_path or not event_id or event_id < 1:
+        return {}
+    conn = None
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT raw_event, compressed_event FROM events WHERE id = ?",
+            (event_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return {}
+        raw_event, compressed_event = row
+        raw_data = _safe_json_load(raw_event) or {}
+        compressed_data = _safe_json_load(compressed_event) or {}
+        session_id = (
+            compressed_data.get("session_id")
+            or compressed_data.get("session")
+            or raw_data.get("session_id")
+            or raw_data.get("session")
+        )
+        ssh_fingerprint = (
+            compressed_data.get("ssh_fingerprint")
+            or raw_data.get("ssh_fingerprint")
+            or raw_data.get("fingerprint")
+        )
+        command = (
+            compressed_data.get("command")
+            or raw_data.get("command")
+            or raw_data.get("input")
+            or raw_data.get("message")
+        )
+        command_hash = _calculate_command_sequence_hash([command]) if command else ""
+        return {
+            "session_id": session_id,
+            "ssh_fingerprint": ssh_fingerprint,
+            "command_hash": command_hash,
+        }
+    except Exception as e:
+        log.warning("Router: failed to load action context: %s", e)
+        return {}
+    finally:
+        if conn:
+            conn.close()
 
 
 def executor_available() -> bool:
@@ -64,6 +138,7 @@ def execute_decision(
         "event_id": event_id,
         "schema_version": decision.get("schema_version", "1.0.0")
     }
+    payload.update(_load_action_context(db_path, event_id))
 
     headers = {"Content-Type": "application/json"}
     token = os.getenv("BIFROST_EXECUTOR_TOKEN", "").strip()
