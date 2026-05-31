@@ -388,7 +388,7 @@ class ThreatAnalysisResponse(BaseModel):
     ]
     mitre_technique: str = Field(description="MITRE ATT&CK technique ID e.g. T1059.004")
     severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
-    action: Literal["KILL", "BLOCK", "QUARANTINE", "ALERT", "LOG", "NONE"]
+    action_required: Literal["KILL", "BLOCK", "QUARANTINE", "ALERT", "LOG", "NONE"]
     reasoning: str = Field(description="One sentence analytical justification.")
 
 
@@ -800,7 +800,7 @@ def validate_and_normalize(
     if severity not in valid_severities:
         severity = "LOW"
 
-    action = decision.get("action_required", "LOG")
+    action = decision.get("action_required") or decision.get("action", "LOG")
     if action not in valid_actions:
         action = "LOG"
 

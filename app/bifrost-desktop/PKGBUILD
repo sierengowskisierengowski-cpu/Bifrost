@@ -5,22 +5,54 @@ pkgdesc="Bifrost AI-powered EDR — Rainbow Bridge"
 arch=('x86_64')
 url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
 license=('custom')
-depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
-makedepends=('git' 'nodejs' 'pnpm' 'rustup')
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'libayatana-appindicator'
+  'python'
+  'python-pydantic'
+  'python-openai'
+  'python-requests'
+  'python-psutil'
+)
+makedepends=('git' 'nodejs' 'pnpm' 'rust')
 source=("git+https://github.com/sierengowskisierengowski-cpu/Bifrost.git")
 sha256sums=('SKIP')
 
 build() {
   cd "$srcdir/Bifrost/app/bifrost-desktop"
   pnpm install --frozen-lockfile
-  # Build only the release binary for pacman packaging; skip Tauri bundle artifacts.
   pnpm tauri build --bundles none
 }
 
 package() {
-  install -Dm755 "$srcdir/Bifrost/app/bifrost-desktop/src-tauri/target/release/bifrost" "$pkgdir/usr/bin/bifrost"
-  install -Dm644 "$srcdir/Bifrost/app/bifrost-desktop/bifrost.desktop" \
+  local root="$srcdir/Bifrost"
+  local pyroot="$pkgdir/usr/lib/bifrost"
+
+  install -Dm755 "$root/app/bifrost-desktop/src-tauri/target/release/bifrost" \
+    "$pkgdir/usr/bin/bifrost"
+
+  install -dm755 "$pyroot"
+  cp -r "$root/bifrost" "$pyroot/bifrost"
+  cp -r "$root/heimdall" "$pyroot/heimdall"
+
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/bifrost-guardian" <<'EOF'
+#!/bin/bash
+export PYTHONPATH=/usr/lib/bifrost${PYTHONPATH:+:$PYTHONPATH}
+export HEIMDALL_CONFIG_PATH="${HEIMDALL_CONFIG_PATH:-/etc/heimdall/heimdall_config.json}"
+exec python3 -m bifrost.guardian "$@"
+EOF
+
+  install -dm755 "$pkgdir/etc/heimdall"
+  install -Dm644 "$root/packaging/heimdall_config.json.default" \
+    "$pkgdir/etc/heimdall/heimdall_config.json"
+  sha256sum "$pkgdir/etc/heimdall/heimdall_config.json" | awk '{print $1}' > \
+    "$pkgdir/etc/heimdall/heimdall_config.sha256"
+
+  install -dm755 "$pkgdir/var/lib/heimdall" "$pkgdir/var/log/heimdall"
+
+  install -Dm644 "$root/app/bifrost-desktop/bifrost.desktop" \
     "$pkgdir/usr/share/applications/bifrost.desktop"
-  install -Dm644 "$srcdir/Bifrost/app/bifrost-desktop/src-tauri/icons/128x128@2x.png" \
+  install -Dm644 "$root/app/bifrost-desktop/src-tauri/icons/128x128@2x.png" \
     "$pkgdir/usr/share/icons/hicolor/256x256/apps/bifrost.png"
 }

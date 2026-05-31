@@ -174,7 +174,7 @@ pub fn run() {
             get_guardian_port
         ])
         .setup(|app| {
-            let script = match guardian_script(app) {
+            let script = match guardian_script(app.handle()) {
                 Some(script) => script,
                 None => {
                     eprintln!("[bifrost] guardian script not found (set BIFROST_GUARDIAN)");

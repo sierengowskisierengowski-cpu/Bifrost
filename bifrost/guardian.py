@@ -79,6 +79,7 @@ SUPPORTED_COWRIE_EVENTS = frozenset({
     "cowrie.session.connect",
     "cowrie.session.file_download",
     "cowrie.login.failed",
+    "cowrie.direct-tcpip.request",
 })
 
 DESTRUCTIVE_ACTIONS = frozenset({"KILL", "BLOCK", "QUARANTINE"})
@@ -1422,6 +1423,14 @@ class EventRouter(threading.Thread):
                 "(event_id=%d) — downgrading to ALERT",
                 event_id,
             )
+            decision["action_effective"] = "ALERT"
+            decision["action_required"] = "ALERT"
+            decision["policy_allowed"] = False
+            decision["policy_rationale"] = (
+                "Downgraded: executor integrity check failed"
+            )
+            decision["execution_result"] = "integrity_check_failed"
+            self.update_stored_decision(event_id, decision)
             return "integrity_check_failed"
 
         from bifrost.router import execute_decision
@@ -1634,6 +1643,44 @@ class EventRouter(threading.Thread):
         except sqlite3.Error as exc:
             self.log.error("DB store error: %s", exc)
             return -1
+
+    def update_stored_decision(self, event_id: int, decision: dict) -> bool:
+        """Update heimdall_decision and action_taken for an existing event row."""
+        if event_id < 1:
+            return False
+
+        action = (
+            decision.get("action_effective")
+            or decision.get("action_required", "NONE")
+        )
+        params = (json.dumps(decision), action, event_id)
+
+        def _update(conn):
+            conn.execute(
+                """
+                UPDATE events
+                SET heimdall_decision = ?, action_taken = ?
+                WHERE id = ?
+                """,
+                params,
+            )
+            conn.commit()
+
+        try:
+            _, self.conn = execute_with_db_retry(
+                self.conn,
+                self.db_path,
+                _update,
+                self.log,
+            )
+            return True
+        except sqlite3.Error as exc:
+            self.log.error(
+                "Failed to update decision for event_id=%s: %s",
+                event_id,
+                exc,
+            )
+            return False
 
     def run(self):
         self.log.info("EventRouter started. Bifrost pipeline active.")

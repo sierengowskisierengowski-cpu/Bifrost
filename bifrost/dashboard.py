@@ -810,6 +810,12 @@ def _build_handler(server: "DashboardServer"):
                 return
 
             if path == "/api/summary":
+                if not _disclaimer_accepted(self):
+                    self.send_response(HTTPStatus.FORBIDDEN)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(b'{"error":"disclaimer_required"}')
+                    return
                 state = server.build_state()
                 tm = state.get("test_mode") or {}
                 self._write_json(

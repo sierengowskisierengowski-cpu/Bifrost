@@ -157,6 +157,7 @@ class GuardianClient {
   }
 
   private scheduleLive() {
+    if (this.conn.source !== "mock") return;
     const delay = 1000 + Math.random() * 2000;
     this.liveTimer = setTimeout(() => {
       const evt = makeLiveEvent(this.state.attackers);
@@ -167,6 +168,7 @@ class GuardianClient {
   }
 
   private tick() {
+    if (this.conn.source !== "mock") return;
     const c = { ...this.state.counters };
     c.eventsPerMin = Math.max(10, c.eventsPerMin + (Math.floor(Math.random() * 21) - 10));
     c.activeAttackers = Math.max(1, c.activeAttackers + (Math.floor(Math.random() * 5) - 2));

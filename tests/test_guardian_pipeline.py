@@ -24,6 +24,11 @@ def test_should_route_supported_cowrie_events():
         assert guardian.should_route_to_reasoner(_cowrie_event(eventid)) is True
 
 
+def test_should_route_cowrie_direct_tcpip_request():
+    event = _cowrie_event("cowrie.direct-tcpip.request")
+    assert guardian.should_route_to_reasoner(event) is True
+
+
 def test_should_skip_unsupported_cowrie_noise():
     event = _cowrie_event("cowrie.client.kex")
     assert guardian.should_route_to_reasoner(event) is False
@@ -150,11 +155,26 @@ def test_dispatch_enforcement_integrity_blocks_executor_only(monkeypatch, tmp_pa
     router.db_healthy = True
     router.config_integrity_ok = True
 
+    event_id = router.store_event(
+        _cowrie_event("cowrie.login.failed"),
+        compressed='{"event_type":"cowrie_login"}',
+        decision={
+            "schema_version": "0.1.0",
+            "action_required": "KILL",
+            "action_effective": "KILL",
+            "policy_allowed": True,
+            "severity": "HIGH",
+            "reasoning": "test kill",
+        },
+    )
+
     decision = {
         "action_required": "KILL",
         "action_effective": "KILL",
         "policy_allowed": True,
         "target": "9999",
+        "severity": "HIGH",
+        "reasoning": "test kill",
     }
 
     calls = []
@@ -163,8 +183,19 @@ def test_dispatch_enforcement_integrity_blocks_executor_only(monkeypatch, tmp_pa
         lambda *args, **kwargs: calls.append(args) or True,
     )
 
-    result = router._dispatch_enforcement(decision, event_id=42)
+    result = router._dispatch_enforcement(decision, event_id=event_id)
 
     assert result == "integrity_check_failed"
     assert calls == []
     assert router.db_healthy is True
+    assert decision["action_effective"] == "ALERT"
+    assert decision["policy_allowed"] is False
+
+    row = router.conn.execute(
+        "SELECT heimdall_decision, action_taken FROM events WHERE id = ?",
+        (event_id,),
+    ).fetchone()
+    stored = json.loads(row[0])
+    assert stored["action_effective"] == "ALERT"
+    assert stored["policy_allowed"] is False
+    assert row[1] == "ALERT"
