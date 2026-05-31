@@ -13,5 +13,4 @@ pacman -S --noconfirm webkit2gtk-4.1 gtk3 base-devel libayatana-appindicator fus
 
 wget -O "${LINUXDEPLOY_BIN}" "${LINUXDEPLOY_URL}"
 chmod +x "${LINUXDEPLOY_BIN}"
-
 echo "Linux build dependencies installed. linuxdeploy path: ${LINUXDEPLOY_BIN}"
