@@ -110,6 +110,7 @@ class GuardianClient {
   start() {
     if (this.started) return;
     this.started = true;
+    fetch(`${baseUrl()}/api/disclaimer/accept`, { method: "POST", credentials: "include" }).catch(() => {});
     this.poll();
     this.pollTimer = setInterval(() => this.poll(), getSettings().refreshIntervalMs);
     this.scheduleLive();
@@ -135,7 +136,7 @@ class GuardianClient {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 2500);
-      const res = await fetch(url, { signal: ctrl.signal });
+      const res = await fetch(url, { signal: ctrl.signal, credentials: "include" });
       clearTimeout(t);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as Partial<GuardianState>;
