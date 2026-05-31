@@ -1,0 +1,23 @@
+[Unit]
+Description=Bifrost Guardian Engine
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 -m bifrost.guardian
+User=bifrost
+WorkingDirectory=/usr/share/bifrost
+
+ProtectSystem=strict
+ProtectHome=tmpfs
+ReadWritePaths=/var/lib/heimdall/ /var/log/heimdall/ /home/cosmic/Projects/honeypot/logs/
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+NoNewPrivileges=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallFilter=~@exec @privileged @swap
+
+[Install]
+WantedBy=multi-user.target

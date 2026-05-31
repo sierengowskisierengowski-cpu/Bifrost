@@ -1,7 +1,9 @@
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
+use sha2::{Digest, Sha256};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
@@ -11,6 +13,8 @@ use tauri::{
 /// Port the Python guardian listens on. The frontend polls
 /// http://127.0.0.1:8766 and this value is handed back via `get_guardian_port`.
 const GUARDIAN_PORT: u16 = 8766;
+const EXPECTED_SECURITY_HASH: &str = "300df99fbcfcb65870aa5dd19630d3fb78d1bca56683abd527f8f16711288364";
+const EXPECTED_REASONER_HASH: &str = "0c39c45ce24a4030a4e58a485fcac36b32969e4d65684e15bef4fcb126be515a";
 
 /// Holds the spawned guardian process so it can be supervised and killed.
 #[derive(Default)]
@@ -55,6 +59,31 @@ fn guardian_script(app: &tauri::AppHandle) -> Option<PathBuf> {
         }
     }
     None
+}
+
+fn resolve_core_paths(script: &Path) -> Option<(PathBuf, PathBuf)> {
+    let base = script.parent()?;
+    let security = base.join("security.py");
+    let reasoner = base.join("reasoner.py");
+    if security.exists() && reasoner.exists() {
+        return Some((security, reasoner));
+    }
+    let security = base.join("bifrost").join("security.py");
+    let reasoner = base.join("bifrost").join("reasoner.py");
+    if security.exists() && reasoner.exists() {
+        return Some((security, reasoner));
+    }
+    None
+}
+
+fn verify_core_integrity(path: &Path, expected: &str) -> bool {
+    match fs::read(path) {
+        Ok(bytes) => {
+            let hash = format!("{:x}", Sha256::digest(&bytes));
+            hash == expected
+        }
+        Err(_) => false,
+    }
 }
 
 /// Start the guardian if it is not already running. Returns true when a live
@@ -145,6 +174,26 @@ pub fn run() {
             get_guardian_port
         ])
         .setup(|app| {
+            let script = match guardian_script(app) {
+                Some(script) => script,
+                None => {
+                    eprintln!("[bifrost] guardian script not found (set BIFROST_GUARDIAN)");
+                    std::process::exit(1);
+                }
+            };
+            let (security_path, reasoner_path) = match resolve_core_paths(&script) {
+                Some(paths) => paths,
+                None => {
+                    eprintln!("Fatal: Core initialization error (0x99)");
+                    std::process::exit(1);
+                }
+            };
+            if !verify_core_integrity(&security_path, EXPECTED_SECURITY_HASH)
+                || !verify_core_integrity(&reasoner_path, EXPECTED_REASONER_HASH)
+            {
+                eprintln!("Fatal: Core initialization error (0x99)");
+                std::process::exit(1);
+            }
             // Launch the guardian as soon as the app boots.
             let handle = app.handle().clone();
             let state = app.state::<GuardianState>();

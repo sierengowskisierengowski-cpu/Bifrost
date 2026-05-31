@@ -66,6 +66,8 @@ Output schema:
   "port": "integer or null",
   "user": "string or null",
   "command": "string or null",
+  "session_id": "string or null",
+  "ssh_fingerprint": "string or null",
   "syscall": "string or null",
   "alert_signal": "string or null",
   "raw_snippet": "string max 100 chars"
@@ -113,6 +115,8 @@ def extract_key_fields(event: dict) -> dict:
         "port": None,
         "user": None,
         "command": None,
+        "session_id": None,
+        "ssh_fingerprint": None,
         "syscall": None,
         "alert_signal": None,
         "raw_snippet": None
@@ -162,6 +166,11 @@ def extract_key_fields(event: dict) -> dict:
         else:
             extracted["alert_signal"] = raw.get("alert")
             extracted["raw_snippet"] = str(raw)[:100]
+
+        extracted["session_id"] = raw.get("session_id") or raw.get("session")
+        extracted["ssh_fingerprint"] = (
+            raw.get("ssh_fingerprint") or raw.get("fingerprint")
+        )
 
     return extracted
 

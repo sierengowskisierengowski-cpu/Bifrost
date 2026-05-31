@@ -1,0 +1,26 @@
+pkgname=bifrost
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Bifrost AI-powered EDR — Rainbow Bridge"
+arch=('x86_64')
+url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
+license=('custom')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
+makedepends=('git' 'nodejs' 'pnpm' 'rustup')
+source=("git+https://github.com/sierengowskisierengowski-cpu/Bifrost.git")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/Bifrost/app/bifrost-desktop"
+  pnpm install --frozen-lockfile
+  # Build only the release binary for pacman packaging; skip Tauri bundle artifacts.
+  pnpm tauri build --bundles none
+}
+
+package() {
+  install -Dm755 "$srcdir/Bifrost/app/bifrost-desktop/src-tauri/target/release/bifrost" "$pkgdir/usr/bin/bifrost"
+  install -Dm644 "$srcdir/Bifrost/app/bifrost-desktop/bifrost.desktop" \
+    "$pkgdir/usr/share/applications/bifrost.desktop"
+  install -Dm644 "$srcdir/Bifrost/app/bifrost-desktop/src-tauri/icons/128x128@2x.png" \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/bifrost.png"
+}

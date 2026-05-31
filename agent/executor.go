@@ -26,14 +26,20 @@ type HeimdallVerdict struct {
 	Reasoning      string `json:"reasoning"`
 	EventID        int64  `json:"event_id"`
 	SchemaVersion  string `json:"schema_version"`
+	SessionID      string `json:"session_id"`
+	SSHFingerprint string `json:"ssh_fingerprint"`
+	CommandHash    string `json:"command_hash"`
 }
 
 type ActionResult struct {
-	Success      bool   `json:"success"`
-	ActionType   string `json:"action_type"`
-	Target       string `json:"target"`
-	RollbackData string `json:"rollback_data"`
-	ExecutedAt   string `json:"executed_at"`
+	Success        bool   `json:"success"`
+	ActionType     string `json:"action_type"`
+	Target         string `json:"target"`
+	RollbackData   string `json:"rollback_data"`
+	ExecutedAt     string `json:"executed_at"`
+	SessionID      string `json:"session_id"`
+	SSHFingerprint string `json:"ssh_fingerprint"`
+	CommandHash    string `json:"command_hash"`
 }
 
 func startExecutor() {
@@ -160,6 +166,9 @@ func dispatchMitigation(v HeimdallVerdict) {
 		return
 	}
 
+	result.SessionID = v.SessionID
+	result.SSHFingerprint = v.SSHFingerprint
+	result.CommandHash = v.CommandHash
 	logAction(v.EventID, result)
 }
 
@@ -305,12 +314,15 @@ func logAction(eventID int64, result ActionResult) {
 
 	_, err = db.Exec(`
 		INSERT INTO actions
-		(event_id, action_type, target, executed_at, success, rollback_data)
-		VALUES (?, ?, ?, ?, ?, ?)
+		(event_id, action_type, target, session_id, ssh_fingerprint, command_hash, executed_at, success, rollback_data)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		eventID,
 		result.ActionType,
 		result.Target,
+		result.SessionID,
+		result.SSHFingerprint,
+		result.CommandHash,
 		result.ExecutedAt,
 		result.Success,
 		result.RollbackData,

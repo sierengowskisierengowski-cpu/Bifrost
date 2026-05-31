@@ -389,6 +389,9 @@ def init_database():
             event_id INTEGER REFERENCES events(id),
             action_type TEXT NOT NULL,
             target TEXT,
+            session_id TEXT,
+            ssh_fingerprint TEXT,
+            command_hash TEXT,
             executed_at TEXT NOT NULL,
             success INTEGER DEFAULT 0,
             rollback_data TEXT,
@@ -418,11 +421,38 @@ def init_database():
             ON actions(event_id);
     """)
 
+    _ensure_actions_columns(conn)
+    _ensure_action_indexes(conn)
     _normalize_compressed_event_rows(conn)
 
     conn.commit()
     conn.close()
     return str(DB_PATH)
+
+
+def _ensure_actions_columns(conn: sqlite3.Connection) -> None:
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(actions)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "session_id" not in columns:
+        cursor.execute("ALTER TABLE actions ADD COLUMN session_id TEXT")
+    if "ssh_fingerprint" not in columns:
+        cursor.execute("ALTER TABLE actions ADD COLUMN ssh_fingerprint TEXT")
+    if "command_hash" not in columns:
+        cursor.execute("ALTER TABLE actions ADD COLUMN command_hash TEXT")
+    conn.commit()
+
+
+def _ensure_action_indexes(conn: sqlite3.Connection) -> None:
+    cursor = conn.cursor()
+    cursor.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_actions_session
+            ON actions(session_id, executed_at);
+        CREATE INDEX IF NOT EXISTS idx_actions_fingerprint
+            ON actions(ssh_fingerprint, executed_at);
+        CREATE INDEX IF NOT EXISTS idx_actions_behavioral_seq
+            ON actions(command_hash, executed_at);
+    """)
 
 
 def _normalize_compressed_event(value):
@@ -1828,6 +1858,7 @@ def main(argv=None):
     log.info("=" * 60)
     log.info(f"Heimdall Guardian v{BIFROST_VERSION} starting.")
     log.info("=" * 60)
+    sanitize_telemetry_for_llm("guardian_init")
 
     config = apply_cli_overrides(load_config(), args)
     refresh_runtime_paths(config)
