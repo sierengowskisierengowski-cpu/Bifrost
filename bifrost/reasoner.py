@@ -22,6 +22,7 @@ import secrets
 import sqlite3
 import hashlib
 from datetime import datetime, timezone
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -376,7 +377,6 @@ def detect_cowrie_dns_pivot_chain(events: list) -> list:
 
 from collections import deque
 from pathlib import Path
-from typing import Literal, Optional
 
 
 class ThreatAnalysisResponse(BaseModel):
