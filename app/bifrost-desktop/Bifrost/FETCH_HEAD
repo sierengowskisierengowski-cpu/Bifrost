@@ -1,0 +1,124 @@
+9a13e0b9374e39897bdd74f94d314e50ce6773d2	not-for-merge	branch 'copilot/add-graceful-shutdown-queue-drain-flush' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f4dc31ac0f1b7a5ad647069f5cbfe782f91b0b2f	not-for-merge	branch 'copilot/add-graceful-shutdown-queue-drain-flush-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+4cb3a55e121b14b03ce49bd25aa0b10bcd2e427e	not-for-merge	branch 'copilot/add-graceful-shutdown-with-queue-drain' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0263f7986af83522851b0604e1d9928a0904c1b0	not-for-merge	branch 'copilot/add-health-readiness-endpoints' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+15028704b5f89692c48e7bea8645d45b47795bb7	not-for-merge	branch 'copilot/add-health-readiness-endpoints-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0c5a871cc98c8a2724dc1e4f54b20d2ba957d628	not-for-merge	branch 'copilot/add-health-readiness-endpoints-another-one' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f8b3c70a8cab723130a52d9ba555d398576fa9b4	not-for-merge	branch 'copilot/add-timeout-retry-circuit-breaker' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+4f2b3f5c68b4bc95998ee3673f73524e0f57958a	not-for-merge	branch 'copilot/add-timeout-retry-circuit-breaker-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+84c6b3d4196a423d1683520373325cde1701991d	not-for-merge	branch 'copilot/add-timeout-retry-circuit-breaker-another-one' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+162b0da274f0a48cfee2b7499f74d9e1754a85c7	not-for-merge	branch 'copilot/authenticate-ingest-endpoint' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+4555efcfc977ff797da8a6bb903ad481dba983dd	not-for-merge	branch 'copilot/authenticate-local-ingest-endpoint' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+395d49a90cd7962693f31b3ab3cf4d3b442a1085	not-for-merge	branch 'copilot/correctly-parse-proc-net-tcp6-addresses' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+b716c78892227efa857540140873ef8474ca11a9	not-for-merge	branch 'copilot/eliminate-broad-except-pass' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+2bda903b1eca132e647c335b757ee539980bc60a	not-for-merge	branch 'copilot/eliminate-broad-exception-pass' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+a43baabc92234ebef00a61c6da31a996eb666c1a	not-for-merge	branch 'copilot/enforce-confidence-policy-guardrails' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+dd3c7edac2b31d58477cad25f4458b8a19fdae7f	not-for-merge	branch 'copilot/enforce-confidence-policy-guardrails-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0370391ce220dec2df7432a5290ebe9e5c0080e5	not-for-merge	branch 'copilot/enforce-confidence-policy-guardrails-another-one' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+c9f481de77759c8ed919c3f1d7140827840069b5	not-for-merge	branch 'copilot/enforce-json-schema-validation' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+13629e0a40cbbf96a01cfab354e20e2b4191fd9d	not-for-merge	branch 'copilot/enforce-strict-json-schema-validation' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+483cd85c7d2e8d37243bf2202d607fa7d281223b	not-for-merge	branch 'copilot/fix-authenticate-ingest-endpoint' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+ff3b0b9923c9fc2048270aa04e29f8f4160376a6	not-for-merge	branch 'copilot/fix-broad-except-exception-pass' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+90a417b65992c032fdde031922b251e48dc4e924	not-for-merge	branch 'copilot/fix-event-queue-silent-loss' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+1b9bfa5a8a0a18ce9aeae749f82b9d0dede1081d	not-for-merge	branch 'copilot/fix-ipv6-parsing-issue' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+e9f4fce8808f57db8d2bdd9dc8a2c9172a0ee41e	not-for-merge	branch 'copilot/fix-json-schema-validation' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+a2da6a59231006d5294db616479fb192934709a9	not-for-merge	branch 'copilot/fix-parse-proc-net-tcp6-addresses' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f75a86a2d190c4555e17b7a8db029dda6140db07	not-for-merge	branch 'copilot/fix-sidebar-navigation' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0851be52c8e70d4adf20de6acc5af3c6782cff54	not-for-merge	branch 'copilot/handle-pid-parsing-errors' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0bf177324aa04ce567d8e217c04f68ba2409ce83	not-for-merge	branch 'copilot/handle-pid-parsing-errors-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+90a417b65992c032fdde031922b251e48dc4e924	not-for-merge	branch 'copilot/handle-pid-parsing-errors-safely' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+bf406e923fcef509e598ec73a2ffb87bd9dcc280	not-for-merge	branch 'copilot/harden-sqlite-configuration' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+2b21ad737c2e28bd88c1d79ab62a76f096dbeca4	not-for-merge	branch 'copilot/harden-sqlite-configuration-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+daf7e2e1961caf23f2f842dccaab6aee8afd64b7	not-for-merge	branch 'copilot/harden-sqlite-configuration-another-one' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+395d49a90cd7962693f31b3ab3cf4d3b442a1085	not-for-merge	branch 'copilot/implement-autonomous-action-execution' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+29118a280856cfed7b68c0ee6e9ccb08d4d7329f	not-for-merge	branch 'copilot/implement-live-monitoring-capability' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+392486bd978805ded8fd04cf9648e9dc997dd0f6	not-for-merge	branch 'copilot/implement-ollama-inference-path' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+ca633427746003ad9504ab5b664a123f8d7e2368	not-for-merge	branch 'copilot/implement-real-autonomous-action-execution' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+e9f4fce8808f57db8d2bdd9dc8a2c9172a0ee41e	not-for-merge	branch 'copilot/implement-real-autonomous-action-execution-path' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+969db8de0c7739b0055627eef4977883e77cd730	not-for-merge	branch 'copilot/implement-vm-testing-profile' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+b639df39d078f6dd64971b827f61fd6ab8a2c1ce	not-for-merge	branch 'copilot/lab-validation-facility-files' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7e89562526d4cc13584a81be36423f1ed1452a1e	not-for-merge	branch 'copilot/make-auditd-log-rotation-robust' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+bf406e923fcef509e598ec73a2ffb87bd9dcc280	not-for-merge	branch 'copilot/make-auditd-log-tailing-robust' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+e70caa263eaeeb82ff2cbda4ff01bdbe76634760	not-for-merge	branch 'copilot/make-auditd-log-tailing-robust-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+dd3c7edac2b31d58477cad25f4458b8a19fdae7f	not-for-merge	branch 'copilot/normalize-compressed-event-storage-format' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+eaa0147ff688ae1a4c21a934f0c28d6d63d16782	not-for-merge	branch 'copilot/normalize-compressed-event-storage-format-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+3e0e8d3ed8e7e32fb1a8a99b67b49ee7c1f74dc4	not-for-merge	branch 'copilot/normalize-compressed-event-storage-format-another-one' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+5999ea5c88c9590e808c2556cdcb49a30d37c661	not-for-merge	branch 'copilot/prevent-silent-event-loss' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f182db45e2e14307a2f4b35746ea828af4c6773c	not-for-merge	branch 'copilot/remove-hardcoded-home-directory-paths' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+d20bb6dfa1280e9b7f996993e52cadcd306546bb	not-for-merge	branch 'copilot/remove-hardcoded-home-directory-paths-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+d9f23dd6de2601d9748ed052d80ab072485392ff	not-for-merge	branch 'copilot/remove-hardcoded-paths' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7c86537e6a102eee889d10d27fd6d6e119e2b0e1	not-for-merge	branch 'copilot/remove-single-thread-bottleneck' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+c9f481de77759c8ed919c3f1d7140827840069b5	not-for-merge	branch 'copilot/remove-single-thread-bottleneck-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+c344df23990067f5781ad42a1a68dd321a4d22e9	not-for-merge	branch 'copilot/remove-single-thread-bottleneck-another-one' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+395d49a90cd7962693f31b3ab3cf4d3b442a1085	not-for-merge	branch 'copilot/replace-string-subnet-matching' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+44df9028b56d64a0f76f379284eff02b46312a0e	not-for-merge	branch 'copilot/replace-string-subnet-matching-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7f74bb26b3b17fe72abce0e3202aec93ff7e12e1	not-for-merge	branch 'copilot/replace-string-subnet-matching-with-cidr-checks' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+fc39f75b00b2b207deb5eba4453f56d58c9a2716	not-for-merge	branch 'copilot/require-config-checksum-file' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f718f84bc063c707dca84a0feb6d987328cddaeb	not-for-merge	branch 'copilot/require-config-checksum-file-again' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7c86537e6a102eee889d10d27fd6d6e119e2b0e1	not-for-merge	branch 'copilot/require-config-checksum-file-production-mode' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+b639df39d078f6dd64971b827f61fd6ab8a2c1ce	not-for-merge	branch 'copilot/security-quality-audit' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+640f8fd8f2f4c7109415e5c14031989ae27dfece	not-for-merge	branch 'docs/readme-positioning-v0.1' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+956628f707e0e8549dd4a6cff0a88ae6c45d8e47	not-for-merge	branch 'main' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+e9f4fce8808f57db8d2bdd9dc8a2c9172a0ee41e	not-for-merge	'refs/pull/100/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+e9f4fce8808f57db8d2bdd9dc8a2c9172a0ee41e	not-for-merge	'refs/pull/101/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+1b9bfa5a8a0a18ce9aeae749f82b9d0dede1081d	not-for-merge	'refs/pull/102/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+90a417b65992c032fdde031922b251e48dc4e924	not-for-merge	'refs/pull/103/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+90a417b65992c032fdde031922b251e48dc4e924	not-for-merge	'refs/pull/104/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+a2da6a59231006d5294db616479fb192934709a9	not-for-merge	'refs/pull/105/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0bf177324aa04ce567d8e217c04f68ba2409ce83	not-for-merge	'refs/pull/106/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+44df9028b56d64a0f76f379284eff02b46312a0e	not-for-merge	'refs/pull/107/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+b639df39d078f6dd64971b827f61fd6ab8a2c1ce	not-for-merge	'refs/pull/108/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+29118a280856cfed7b68c0ee6e9ccb08d4d7329f	not-for-merge	'refs/pull/109/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+969db8de0c7739b0055627eef4977883e77cd730	not-for-merge	'refs/pull/110/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+392486bd978805ded8fd04cf9648e9dc997dd0f6	not-for-merge	'refs/pull/111/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f75a86a2d190c4555e17b7a8db029dda6140db07	not-for-merge	'refs/pull/112/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+bf406e923fcef509e598ec73a2ffb87bd9dcc280	not-for-merge	'refs/pull/55/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f182db45e2e14307a2f4b35746ea828af4c6773c	not-for-merge	'refs/pull/56/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+bf406e923fcef509e598ec73a2ffb87bd9dcc280	not-for-merge	'refs/pull/57/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+b716c78892227efa857540140873ef8474ca11a9	not-for-merge	'refs/pull/58/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+fc39f75b00b2b207deb5eba4453f56d58c9a2716	not-for-merge	'refs/pull/59/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+e70caa263eaeeb82ff2cbda4ff01bdbe76634760	not-for-merge	'refs/pull/60/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+d9f23dd6de2601d9748ed052d80ab072485392ff	not-for-merge	'refs/pull/61/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+4555efcfc977ff797da8a6bb903ad481dba983dd	not-for-merge	'refs/pull/62/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+2bda903b1eca132e647c335b757ee539980bc60a	not-for-merge	'refs/pull/63/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+a43baabc92234ebef00a61c6da31a996eb666c1a	not-for-merge	'refs/pull/64/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+dd3c7edac2b31d58477cad25f4458b8a19fdae7f	not-for-merge	'refs/pull/65/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+dd3c7edac2b31d58477cad25f4458b8a19fdae7f	not-for-merge	'refs/pull/66/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0263f7986af83522851b0604e1d9928a0904c1b0	not-for-merge	'refs/pull/67/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0370391ce220dec2df7432a5290ebe9e5c0080e5	not-for-merge	'refs/pull/68/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+2b21ad737c2e28bd88c1d79ab62a76f096dbeca4	not-for-merge	'refs/pull/69/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+daf7e2e1961caf23f2f842dccaab6aee8afd64b7	not-for-merge	'refs/pull/70/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f8b3c70a8cab723130a52d9ba555d398576fa9b4	not-for-merge	'refs/pull/71/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+d20bb6dfa1280e9b7f996993e52cadcd306546bb	not-for-merge	'refs/pull/72/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+335a78166e791d4531e7fccbcc419fd40e096d82	not-for-merge	'refs/pull/73/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7c86537e6a102eee889d10d27fd6d6e119e2b0e1	not-for-merge	'refs/pull/74/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7c86537e6a102eee889d10d27fd6d6e119e2b0e1	not-for-merge	'refs/pull/75/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7e89562526d4cc13584a81be36423f1ed1452a1e	not-for-merge	'refs/pull/76/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+9a13e0b9374e39897bdd74f94d314e50ce6773d2	not-for-merge	'refs/pull/77/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+162b0da274f0a48cfee2b7499f74d9e1754a85c7	not-for-merge	'refs/pull/78/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+15028704b5f89692c48e7bea8645d45b47795bb7	not-for-merge	'refs/pull/79/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+eaa0147ff688ae1a4c21a934f0c28d6d63d16782	not-for-merge	'refs/pull/80/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+483cd85c7d2e8d37243bf2202d607fa7d281223b	not-for-merge	'refs/pull/81/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+ff3b0b9923c9fc2048270aa04e29f8f4160376a6	not-for-merge	'refs/pull/82/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+f4dc31ac0f1b7a5ad647069f5cbfe782f91b0b2f	not-for-merge	'refs/pull/83/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0c5a871cc98c8a2724dc1e4f54b20d2ba957d628	not-for-merge	'refs/pull/84/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+4cb3a55e121b14b03ce49bd25aa0b10bcd2e427e	not-for-merge	'refs/pull/85/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+3e0e8d3ed8e7e32fb1a8a99b67b49ee7c1f74dc4	not-for-merge	'refs/pull/86/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+c9f481de77759c8ed919c3f1d7140827840069b5	not-for-merge	'refs/pull/87/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+c9f481de77759c8ed919c3f1d7140827840069b5	not-for-merge	'refs/pull/88/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+ca633427746003ad9504ab5b664a123f8d7e2368	not-for-merge	'refs/pull/89/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+4f2b3f5c68b4bc95998ee3673f73524e0f57958a	not-for-merge	'refs/pull/90/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+c344df23990067f5781ad42a1a68dd321a4d22e9	not-for-merge	'refs/pull/91/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+13629e0a40cbbf96a01cfab354e20e2b4191fd9d	not-for-merge	'refs/pull/92/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+84c6b3d4196a423d1683520373325cde1701991d	not-for-merge	'refs/pull/93/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+7f74bb26b3b17fe72abce0e3202aec93ff7e12e1	not-for-merge	'refs/pull/94/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+5999ea5c88c9590e808c2556cdcb49a30d37c661	not-for-merge	'refs/pull/95/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+395d49a90cd7962693f31b3ab3cf4d3b442a1085	not-for-merge	'refs/pull/96/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+395d49a90cd7962693f31b3ab3cf4d3b442a1085	not-for-merge	'refs/pull/97/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+395d49a90cd7962693f31b3ab3cf4d3b442a1085	not-for-merge	'refs/pull/98/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+0851be52c8e70d4adf20de6acc5af3c6782cff54	not-for-merge	'refs/pull/99/head' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+b72d2c26439ac74f2a8c22c8fcc9bad92b1ec10b	not-for-merge	tag 'v0.1.0-rc1' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+04623266a4320259a1db0977232734a5c520ad32	not-for-merge	tag 'v0.2.0' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+ae9b9aa26a7e985f2c7b538c455e16175c5e2383	not-for-merge	tag 'v0.2.1' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+9e87b9742c8c8f94cc36421d310e8d84259e53cf	not-for-merge	tag 'v0.2.2' of https://github.com/sierengowskisierengowski-cpu/Bifrost
+ba327dd75c2af39b366126e35c6c8345cd5b54bd	not-for-merge	tag 'v0.3.0' of https://github.com/sierengowskisierengowski-cpu/Bifrost
