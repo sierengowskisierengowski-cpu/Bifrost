@@ -6,7 +6,7 @@ from bifrost.banner import banner_text, print_startup_banner
 def test_banner_text_contains_branding():
     text = banner_text("0.3.0")
     assert "BIFROST" in text or "██████╗" in text
-    assert "R A I N B O W" in text
+    assert "H E I M D A L L" in text
     assert "v0.3.0" in text
     assert "The Bridge Is Watched" in text
 

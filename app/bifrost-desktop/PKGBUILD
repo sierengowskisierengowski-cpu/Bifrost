@@ -1,7 +1,7 @@
 pkgname=bifrost
 pkgver=1.0.0
 pkgrel=2
-pkgdesc="Bifrost AI-powered EDR — Rainbow Bridge"
+pkgdesc="Bifrost AI-powered EDR — Heimdall Never Sleeps"
 arch=('x86_64')
 url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
 license=('custom')

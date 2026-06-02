@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, urlparse
 
 from bifrost import paths as bifrost_paths
 
-# ── Design tokens (Bifrost rainbow bridge) ──────────────────────────────────
+# ── Design tokens (Bifrost signature gradient) ──────────────────────────────
 RAINBOW_GRADIENT = (
     "linear-gradient(90deg, #8B5CF6, #4F46E5, #3B82F6, #06B6D4, "
     "#22C55E, #EAB308, #D946EF)"
@@ -884,7 +884,7 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
   <aside class="sidebar">
     <div class="logo-wrap">
       <span class="logo">Bifrost</span>
-      <span class="logo-sub">Rainbow Bridge</span>
+      <span class="logo-sub">Heimdall Never Sleeps</span>
     </div>
     <nav class="nav">
       <button type="button" class="nav-item active" data-view="overview">Overview</button>

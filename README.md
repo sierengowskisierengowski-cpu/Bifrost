@@ -36,7 +36,21 @@ It watches your network in real time, ingests attack data from honeypots and hos
 
 ## Screenshots
 
-Coming soon — full screenshots of Overview, Live Monitor, Timeline, and MITRE ATT&CK pages.
+### Overview
+
+![Bifrost overview dashboard](docs/screenshots/overview1.png)
+
+### Live Monitor
+
+![Bifrost live monitor](docs/screenshots/live-monitor1.png)
+
+### Incidents
+
+![Bifrost incidents view](docs/screenshots/incidents1.png)
+
+### Attackers
+
+![Bifrost attackers view](docs/screenshots/attackers1.png)
 
 ## Requirements
 

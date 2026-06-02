@@ -117,7 +117,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                   <h2 className="text-3xl font-extrabold tracking-[0.15em] rainbow-text mt-4">BIFROST</h2>
                   <p className="text-sm text-muted-foreground mt-3 font-mono">The Bridge Is Watched.</p>
                   <p className="text-xs text-muted-foreground/70 mt-6 max-w-md">
-                    Welcome, Heimdall. Let's prepare your watch over the rainbow bridge. This takes about a minute.
+                    Welcome, Heimdall. Let's prepare your watch so Heimdall Never Sleeps. This takes about a minute.
                   </p>
                 </div>
               )}

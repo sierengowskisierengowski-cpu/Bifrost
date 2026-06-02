@@ -18,7 +18,7 @@ _BANNER_TEMPLATE = """\
 ║   ██████╔╝██║██║     ██║  ██║╚██████╔╝███████║   ██║        ║
 ║   ╚═════╝ ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝        ║
 ║                                                              ║
-║              R A I N B O W   B R I D G E                     ║
+║         H E I M D A L L   N E V E R   S L E E P S            ║
 ║                                                              ║
 ║         Local AI-Powered Endpoint Detection & Response       ║
 ║                                                              ║

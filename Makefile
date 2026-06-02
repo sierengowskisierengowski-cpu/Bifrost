@@ -66,10 +66,20 @@ test:
 	.venv/bin/python3 -m pytest tests/ -v
 
 lab-validate:
-	python3 -m lab.validate
+	@test -x .venv/bin/python3 || python3 -m venv .venv
+	@.venv/bin/python3 -c "import pytest" >/dev/null 2>&1 || \
+		(.venv/bin/python3 -m pip install --quiet pytest && echo "[+] Installed pytest in .venv")
+	@.venv/bin/python3 -c "import pydantic" >/dev/null 2>&1 || \
+		(.venv/bin/python3 -m pip install --quiet pydantic && echo "[+] Installed pydantic in .venv")
+	.venv/bin/python3 -m lab.validate
 
 lab-validate-reset:
-	python3 -m lab.validate --reset-lock
+	@test -x .venv/bin/python3 || python3 -m venv .venv
+	@.venv/bin/python3 -c "import pytest" >/dev/null 2>&1 || \
+		(.venv/bin/python3 -m pip install --quiet pytest && echo "[+] Installed pytest in .venv")
+	@.venv/bin/python3 -c "import pydantic" >/dev/null 2>&1 || \
+		(.venv/bin/python3 -m pip install --quiet pydantic && echo "[+] Installed pydantic in .venv")
+	.venv/bin/python3 -m lab.validate --reset-lock
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

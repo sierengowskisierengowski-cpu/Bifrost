@@ -25,7 +25,7 @@ export default function Overview() {
     <div>
       <PageHeader
         title="Overview"
-        desc="Heimdall's watch over the rainbow bridge"
+        desc="Heimdall Never Sleeps"
         right={<RangePills value={range} onChange={setRange} />}
       />
 
