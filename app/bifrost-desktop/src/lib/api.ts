@@ -7,6 +7,7 @@ import type {
   TimeRange,
   TimeBucket,
   OverviewStats,
+  Attacker,
 } from "./types";
 import { generateGuardianState, makeLiveEvent, buildMitre } from "./mockData";
 import { guardianFetch } from "./guardianFetch";
@@ -88,6 +89,34 @@ export function baseUrl(s: AppSettings = getSettings()) {
 /* ---------------- guardian client ---------------- */
 
 const MAX_LIVE = 200;
+const THREAT_LEVELS = new Set(["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]);
+
+function normalizeAttackers(value: unknown, fallback: Attacker[]): Attacker[] {
+  if (!Array.isArray(value)) return fallback;
+  return value
+    .filter((item): item is Attacker => !!item && typeof item === "object")
+    .map((item) => {
+      const raw = item as Partial<Attacker>;
+      const totalHits = Number(raw.totalHits);
+      const threatLevel = String(raw.threatLevel ?? "LOW").toUpperCase();
+      return {
+        ip: String(raw.ip ?? "unknown"),
+        country: String(raw.country ?? "Unknown"),
+        countryCode: String(raw.countryCode ?? "??"),
+        flag: String(raw.flag ?? "🌐"),
+        firstSeen: String(raw.firstSeen ?? ""),
+        lastSeen: String(raw.lastSeen ?? ""),
+        totalHits: Number.isFinite(totalHits) ? totalHits : 0,
+        threatLevel: (THREAT_LEVELS.has(threatLevel) ? threatLevel : "LOW") as Attacker["threatLevel"],
+        attackTypes: Array.isArray(raw.attackTypes) ? raw.attackTypes.map(String) : [],
+        hassh: String(raw.hassh ?? "—"),
+        ja4: String(raw.ja4 ?? "—"),
+        events: Array.isArray(raw.events) ? raw.events : [],
+        credentials: Array.isArray(raw.credentials) ? raw.credentials : [],
+        sessions: Array.isArray(raw.sessions) ? raw.sessions : [],
+      };
+    });
+}
 
 class GuardianClient {
   private state: GuardianState = generateGuardianState();
@@ -145,7 +174,18 @@ class GuardianClient {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as Record<string, unknown>;
       const guardianState = (data.guardianState ?? {}) as Partial<GuardianState>;
-      this.state = { ...this.state, ...guardianState };
+      this.state = {
+        ...this.state,
+        ...guardianState,
+        incidents: Array.isArray(guardianState.incidents) ? guardianState.incidents : this.state.incidents,
+        attackers: normalizeAttackers(guardianState.attackers, this.state.attackers),
+        categories: Array.isArray(guardianState.categories) ? guardianState.categories : this.state.categories,
+        liveEvents: Array.isArray(guardianState.liveEvents) ? guardianState.liveEvents : this.state.liveEvents,
+        counters: guardianState.counters ? { ...this.state.counters, ...guardianState.counters } : this.state.counters,
+        aiModel: guardianState.aiModel ? { ...this.state.aiModel, ...guardianState.aiModel } : this.state.aiModel,
+        hardware: guardianState.hardware ? { ...this.state.hardware, ...guardianState.hardware } : this.state.hardware,
+        config: guardianState.config ? { ...this.state.config, ...guardianState.config } : this.state.config,
+      };
       this.backoff = 1;
       this.setConn({ status: "connected", source: "live", lastUpdated: Date.now(), retryInSec: 0 });
       this.emitState();
