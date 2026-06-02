@@ -2,7 +2,7 @@
         demo-initial-access demo-exec demo-persistence demo-cred \
         demo-lateral demo-suid demo-burst demo-depdown \
         demo-kill-chain demo-kernel \
-        demo-all-attacks test lab-validate lab-validate-reset clean
+        demo-all-attacks ensure-venv test lab-validate lab-validate-reset clean
 
 demo-benign:
 	python3 -m bifrost.demo --scenario examples/replay/benign_web_burst.jsonl
@@ -57,28 +57,20 @@ demo-all-attacks:
 	python3 -m bifrost.demo --scenario examples/replay/full_kill_chain.jsonl
 	python3 -m bifrost.demo --scenario examples/replay/kernel_masquerade.jsonl
 
-test:
+ensure-venv:
 	@test -x .venv/bin/python3 || python3 -m venv .venv
 	@.venv/bin/python3 -c "import pytest" >/dev/null 2>&1 || \
 		(.venv/bin/python3 -m pip install --quiet pytest && echo "[+] Installed pytest in .venv")
 	@.venv/bin/python3 -c "import pydantic" >/dev/null 2>&1 || \
 		(.venv/bin/python3 -m pip install --quiet pydantic && echo "[+] Installed pydantic in .venv")
+
+test: ensure-venv
 	.venv/bin/python3 -m pytest tests/ -v
 
-lab-validate:
-	@test -x .venv/bin/python3 || python3 -m venv .venv
-	@.venv/bin/python3 -c "import pytest" >/dev/null 2>&1 || \
-		(.venv/bin/python3 -m pip install --quiet pytest && echo "[+] Installed pytest in .venv")
-	@.venv/bin/python3 -c "import pydantic" >/dev/null 2>&1 || \
-		(.venv/bin/python3 -m pip install --quiet pydantic && echo "[+] Installed pydantic in .venv")
+lab-validate: ensure-venv
 	.venv/bin/python3 -m lab.validate
 
-lab-validate-reset:
-	@test -x .venv/bin/python3 || python3 -m venv .venv
-	@.venv/bin/python3 -c "import pytest" >/dev/null 2>&1 || \
-		(.venv/bin/python3 -m pip install --quiet pytest && echo "[+] Installed pytest in .venv")
-	@.venv/bin/python3 -c "import pydantic" >/dev/null 2>&1 || \
-		(.venv/bin/python3 -m pip install --quiet pydantic && echo "[+] Installed pydantic in .venv")
+lab-validate-reset: ensure-venv
 	.venv/bin/python3 -m lab.validate --reset-lock
 
 clean:
