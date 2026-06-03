@@ -14,6 +14,7 @@ import { Login } from "@/components/Login";
 import { SetupWizard } from "@/components/SetupWizard";
 import { Screensaver } from "@/components/Screensaver";
 import { AppShell } from "@/components/AppShell";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Overview from "@/pages/Overview";
 import Incidents from "@/pages/Incidents";
@@ -117,7 +118,11 @@ function App() {
           {phase === "splash" && <Splash onDone={onSplashDone} />}
           {phase === "wizard" && <SetupWizard onComplete={() => setPhase("login")} />}
           {phase === "login" && <Login onSuccess={() => setPhase("app")} />}
-          {phase === "app" && <Routes />}
+          {phase === "app" && (
+            <ErrorBoundary>
+              <Routes />
+            </ErrorBoundary>
+          )}
           <AnimatePresence>{idle && phase === "app" && <Screensaver onWake={wake} />}</AnimatePresence>
         </WouterRouter>
         <Toaster />
