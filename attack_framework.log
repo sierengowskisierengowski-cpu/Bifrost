@@ -70,3 +70,278 @@
 2026-05-30 13:28:14,560 [INFO] [credential][credential_stuffing] ok | test:test
 2026-05-30 13:28:21,149 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
 2026-05-30 13:28:45,227 [INFO] [execution][memfd_fileless] ok | memfd_create probe
+2026-06-02 07:59:13,725 [INFO] Starting: target=192.168.0.172 duration=172800.0h types=58
+2026-06-02 07:59:16,782 [INFO] [ai_manipulation][schema_confusion] ok | 2 schema attacks
+2026-06-02 07:59:19,855 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 08:00:50,300 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 08:02:29,042 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 08:03:10,504 [INFO] [advanced][ebpf_probe] ok | bpf enumeration
+2026-06-02 08:11:02,750 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-06-02 08:18:15,593 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 08:18:20,276 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-06-02 08:18:26,362 [INFO] [protocol][service_version] ok | nmap -sV
+2026-06-02 08:25:50,716 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-06-02 08:28:19,908 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 08:28:26,957 [INFO] [protocol][syn_scan_500] ok | nmap SYN top500
+2026-06-02 08:31:17,269 [INFO] [credential][ssh_common_password] ok | admin:ubuntu
+2026-06-02 08:44:06,974 [INFO] [exhaustion][ingest_flood_500] ok | ok=0 fail=500
+2026-06-02 08:44:16,375 [INFO] [credential][dns_pivot_mdrfckr] ok | root/admin + DNS tunnel
+2026-06-02 08:44:21,009 [INFO] [privesc][sudo_enumeration] ok | sudo -l
+2026-06-02 08:44:38,222 [INFO] [exfil][http_exfil] ok | HTTP POST exfil
+2026-06-02 08:46:07,113 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 08:47:05,130 [INFO] [exhaustion][connection_exhaust] ok | 15 connections
+2026-06-02 08:47:16,012 [INFO] [c2][reverse_shell] ok | bash reverse shell attempt
+2026-06-02 08:47:23,749 [INFO] [privesc][shadow_read] ok | /etc/shadow read attempt
+2026-06-02 08:49:34,799 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-06-02 08:51:25,425 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 08:54:15,304 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 08:56:03,837 [INFO] [exfil][dns_exfil] ok | hostname in DNS query
+2026-06-02 08:58:21,705 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-06-02 08:58:49,702 [INFO] [protocol][service_version] ok | nmap -sV
+2026-06-02 09:08:01,563 [INFO] [privesc][shadow_read] ok | /etc/shadow read attempt
+2026-06-02 09:08:41,238 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 09:11:45,101 [INFO] [privesc][sudo_enumeration] ok | sudo -l
+2026-06-02 09:17:00,912 [INFO] [exhaustion][ingest_flood_500] ok | ok=0 fail=500
+2026-06-02 09:17:21,349 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-06-02 09:20:03,578 [INFO] [advanced][spectre_probe] ok | CPU vuln probe
+2026-06-02 09:28:13,354 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 09:28:38,311 [INFO] [protocol][raw_socket_probe] ok | 9 ports probed
+2026-06-02 09:28:51,134 [INFO] [exhaustion][oversized_payloads] ok | 100KB to 600KB
+2026-06-02 09:31:07,367 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 09:39:10,217 [INFO] [credential][dns_pivot_mdrfckr] ok | root/admin + DNS tunnel
+2026-06-02 09:41:00,351 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 09:43:27,295 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 09:52:43,477 [INFO] [persistence][systemd_user] ok | systemd user dir
+2026-06-02 09:55:11,135 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-06-02 09:57:15,966 [INFO] [ai_manipulation][schema_confusion] ok | 2 schema attacks
+2026-06-02 10:05:33,568 [INFO] [c2][c2_beacon] ok | 3 beacon intervals
+2026-06-02 10:06:01,669 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 10:06:40,375 [INFO] [execution][python_exec] ok | python3 os.system
+2026-06-02 10:07:27,833 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 10:10:12,927 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 10:23:17,502 [INFO] [exhaustion][ingest_flood_500] ok | ok=0 fail=500
+2026-06-02 10:24:12,228 [INFO] [credential][credential_stuffing] ok | test:test
+2026-06-02 10:26:40,379 [INFO] [credential][ssh_common_password] ok | pi:test
+2026-06-02 10:27:59,826 [INFO] [credential][ssh_common_password] ok | admin:pass
+2026-06-02 10:28:31,211 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-06-02 10:31:40,140 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 10:31:58,876 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-06-02 10:32:21,695 [INFO] [persistence][systemd_user] ok | systemd user dir
+2026-06-02 10:33:56,704 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 10:34:00,589 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-06-02 10:35:29,050 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 10:37:07,044 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-06-02 10:41:44,463 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-06-02 10:50:41,098 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 10:50:48,264 [INFO] [credential][credential_stuffing] ok | admin:admin
+2026-06-02 10:50:55,493 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 10:53:05,496 [INFO] [credential][credential_stuffing] ok | admin:1234
+2026-06-02 10:53:14,284 [INFO] [credential][ssh_common_password] ok | pi:admin123
+2026-06-02 10:56:53,136 [INFO] [exhaustion][connection_exhaust] ok | 15 connections
+2026-06-02 10:56:58,453 [INFO] [privesc][suid_enumeration] ok | find SUID binaries
+2026-06-02 10:57:16,281 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 10:57:43,580 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 11:00:44,589 [INFO] [execution][python_exec] ok | python3 os.system
+2026-06-02 11:01:15,234 [INFO] [credential][ssh_common_password] ok | ubuntu:admin123
+2026-06-02 11:01:25,439 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-06-02 11:03:25,317 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-06-02 11:04:19,693 [INFO] [privesc][sudo_enumeration] ok | sudo -l
+2026-06-02 11:07:46,449 [INFO] [execution][python_exec] ok | python3 os.system
+2026-06-02 11:09:50,667 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-06-02 11:09:58,415 [INFO] [ransomware_sim][ransom_note] ok | ransom note creation
+2026-06-02 11:10:30,762 [INFO] [exfil][dns_exfil] ok | hostname in DNS query
+2026-06-02 11:10:43,181 [INFO] [evasion][timestamp_manip] ok | touch -t timestamp
+2026-06-02 11:18:17,022 [INFO] [c2][reverse_shell] ok | bash reverse shell attempt
+2026-06-02 11:18:31,989 [INFO] [credential][ssh_common_password] ok | ubuntu:guest
+2026-06-02 11:18:39,790 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-06-02 11:19:16,351 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 11:19:20,881 [INFO] [execution][memfd_fileless] ok | memfd_create probe
+2026-06-02 11:21:05,918 [INFO] [exhaustion][oversized_payloads] ok | 100KB to 600KB
+2026-06-02 11:21:41,637 [INFO] [credential][ssh_common_password] ok | root:test
+2026-06-02 11:21:42,719 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 11:22:12,659 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 11:22:24,575 [INFO] [exhaustion][malformed_ingest] ok | 4 malformed payloads
+2026-06-02 11:23:05,159 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-06-02 11:24:42,275 [INFO] [credential][credential_stuffing] ok | admin:1234
+2026-06-02 11:25:51,732 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 11:27:15,727 [INFO] [credential][credential_stuffing] ok | admin:1234
+2026-06-02 11:29:23,603 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 11:37:59,438 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 11:38:54,700 [INFO] [cryptomining][mining_pool_connect] ok | pool connection probe
+2026-06-02 11:40:38,910 [INFO] [exhaustion][oversized_payloads] ok | 100KB to 600KB
+2026-06-02 11:42:11,756 [INFO] [exhaustion][connection_exhaust] ok | 15 connections
+2026-06-02 11:43:54,910 [INFO] [advanced][covert_channel] ok | timing channel
+2026-06-02 11:45:42,407 [INFO] [credential][ssh_common_password] ok | admin:password
+2026-06-02 11:46:31,353 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 11:48:41,421 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-06-02 11:56:59,451 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-06-02 11:57:09,221 [INFO] [execution][history_evasion] ok | HISTFILE=/dev/null
+2026-06-02 11:58:06,655 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 11:59:06,105 [INFO] [persistence][profile] ok | .profile persistence
+2026-06-02 12:00:28,130 [INFO] [cryptomining][mining_pool_connect] ok | pool connection probe
+2026-06-02 12:01:30,403 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 12:03:47,272 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 12:06:31,143 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 12:08:39,597 [INFO] [advanced][covert_channel] ok | timing channel
+2026-06-02 12:08:49,094 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 12:08:58,935 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 12:10:27,775 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 12:16:28,738 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 12:16:45,852 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-06-02 12:16:56,012 [INFO] [evasion][env_injection] ok | PATH/LD_LIBRARY_PATH
+2026-06-02 12:18:04,082 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 12:19:42,183 [INFO] [protocol][raw_socket_probe] ok | 9 ports probed
+2026-06-02 12:20:23,458 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-06-02 12:22:59,718 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 12:24:38,977 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 12:24:53,290 [INFO] [credential][ssh_common_password] ok | user:guest
+2026-06-02 12:25:26,741 [INFO] [persistence][profile] ok | .profile persistence
+2026-06-02 12:27:44,992 [INFO] [evasion][env_injection] ok | PATH/LD_LIBRARY_PATH
+2026-06-02 12:30:23,626 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 12:30:35,679 [INFO] [persistence][cron_job] ok | crontab persistence
+2026-06-02 12:37:52,121 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 12:38:00,167 [INFO] [execution][ld_preload] ok | LD_PRELOAD injection
+2026-06-02 12:40:02,408 [INFO] [exfil][http_exfil] ok | HTTP POST exfil
+2026-06-02 12:42:55,316 [INFO] [exfil][dns_exfil] ok | hostname in DNS query
+2026-06-02 12:44:12,900 [INFO] [evasion][env_injection] ok | PATH/LD_LIBRARY_PATH
+2026-06-02 12:44:47,685 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 12:51:04,119 [INFO] [evasion][log_clearing] ok | bash_history clear
+2026-06-02 12:51:15,642 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 12:53:25,631 [INFO] [privesc][shadow_read] ok | /etc/shadow read attempt
+2026-06-02 12:53:36,463 [INFO] [evasion][timestamp_manip] ok | touch -t timestamp
+2026-06-02 12:54:07,813 [INFO] [credential][credential_stuffing] ok | admin:admin
+2026-06-02 12:54:12,846 [INFO] [persistence][bashrc] ok | .bashrc persistence
+2026-06-02 12:55:25,567 [INFO] [c2][reverse_shell] ok | bash reverse shell attempt
+2026-06-02 12:56:15,359 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 13:02:48,090 [INFO] [privesc][sudo_enumeration] ok | sudo -l
+2026-06-02 13:11:18,290 [INFO] [persistence][bashrc] ok | .bashrc persistence
+2026-06-02 13:13:23,035 [INFO] [credential][ssh_common_password] ok | pi:changeme
+2026-06-02 13:15:07,977 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-06-02 13:15:53,213 [INFO] [persistence][systemd_user] ok | systemd user dir
+2026-06-02 13:16:25,750 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-06-02 13:23:30,826 [INFO] [credential][credential_stuffing] ok | admin:admin
+2026-06-02 13:24:18,772 [INFO] [privesc][sudo_enumeration] ok | sudo -l
+2026-06-02 13:25:38,257 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 13:26:02,703 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 14:57:45,354 [INFO] [execution][python_exec] ok | python3 os.system
+2026-06-02 14:59:39,138 [INFO] [persistence][profile] ok | .profile persistence
+2026-06-02 15:00:25,317 [INFO] [exfil][dns_exfil] ok | hostname in DNS query
+2026-06-02 15:00:28,501 [INFO] [credential][ssh_common_password] ok | root:guest
+2026-06-02 15:06:13,372 [INFO] [credential][dns_pivot_mdrfckr] ok | root/admin + DNS tunnel
+2026-06-02 15:06:29,196 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 15:07:17,122 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 15:07:58,367 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 15:09:22,509 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 15:09:52,263 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 15:16:47,386 [INFO] [credential][dns_pivot_mdrfckr] ok | root/admin + DNS tunnel
+2026-06-02 15:16:56,831 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 15:17:00,649 [INFO] [persistence][bashrc] ok | .bashrc persistence
+2026-06-02 15:17:46,566 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 15:21:50,150 [INFO] [execution][python_exec] ok | python3 os.system
+2026-06-02 15:22:28,159 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 15:24:34,052 [INFO] [persistence][bashrc] ok | .bashrc persistence
+2026-06-02 16:03:04,888 [INFO] [ransomware_sim][shadow_delete] ok | shadow copy probe
+2026-06-02 16:04:41,911 [INFO] [cryptomining][mining_pool_connect] ok | pool connection probe
+2026-06-02 16:08:15,848 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 16:09:15,615 [INFO] [persistence][profile] ok | .profile persistence
+2026-06-02 16:12:07,725 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 16:12:24,493 [INFO] [exfil][tcp_exfil] ok | netcat exfil attempt
+2026-06-02 16:12:54,305 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 16:13:02,816 [INFO] [privesc][sudo_enumeration] ok | sudo -l
+2026-06-02 16:15:26,911 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 16:17:56,864 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 16:39:13,884 [INFO] [exhaustion][ingest_flood_500] ok | ok=0 fail=500
+2026-06-02 16:39:25,604 [INFO] [execution][python_exec] ok | python3 os.system
+2026-06-02 16:40:02,190 [INFO] [advanced][spectre_probe] ok | CPU vuln probe
+2026-06-02 16:40:34,575 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 16:40:37,958 [INFO] [credential][ssh_common_password] ok | root:admin
+2026-06-02 16:40:50,713 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 16:41:17,573 [INFO] [protocol][raw_socket_probe] ok | 9 ports probed
+2026-06-02 16:42:38,818 [INFO] [persistence][ssh_key] ok | authorized_keys backdoor
+2026-06-02 16:43:48,061 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 19:20:58,292 [INFO] [lateral][ssh_agent_enum] ok | SSH agent enumeration
+2026-06-02 19:22:06,448 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 19:23:18,836 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-06-02 19:23:27,451 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 19:26:09,261 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 19:26:13,060 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 19:26:37,733 [INFO] [advanced][namespace_escape] ok | unshare attempt
+2026-06-02 19:27:47,188 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 19:30:16,484 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-06-02 19:31:17,743 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-06-02 19:32:00,630 [INFO] [c2][reverse_shell] ok | bash reverse shell attempt
+2026-06-02 19:36:41,367 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 19:37:14,963 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 19:37:24,053 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 19:38:08,345 [INFO] [privesc][shadow_read] ok | /etc/shadow read attempt
+2026-06-02 19:38:46,852 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 19:39:49,257 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-06-02 19:41:44,008 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 19:42:01,710 [INFO] [protocol][syn_scan_500] ok | nmap SYN top500
+2026-06-02 19:43:00,950 [INFO] [exhaustion][oversized_payloads] ok | 100KB to 600KB
+2026-06-02 19:43:09,749 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 19:43:49,580 [INFO] [lateral][internal_ping_sweep] ok | 192.168.0.0/24
+2026-06-02 19:43:52,604 [INFO] [credential][ssh_common_password] ok | pi:deploy
+2026-06-02 19:48:43,163 [INFO] [evasion][log_clearing] ok | bash_history clear
+2026-06-02 19:52:16,859 [INFO] [ransomware_sim][file_recon] ok | find sensitive files
+2026-06-02 19:52:22,204 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-06-02 19:52:45,270 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 19:52:55,671 [INFO] [cryptomining][xmrig_pattern] ok | XMRig simulation
+2026-06-02 19:55:47,971 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 19:56:31,794 [INFO] [advanced][ebpf_probe] ok | bpf enumeration
+2026-06-02 19:58:59,792 [INFO] [credential][dns_pivot_mdrfckr] ok | root/admin + DNS tunnel
+2026-06-02 20:00:33,047 [INFO] [ai_manipulation][prompt_inject_username] ok | 4 injection payloads
+2026-06-02 20:10:33,578 [INFO] [ransomware_sim][ransom_note] ok | ransom note creation
+2026-06-02 20:12:37,764 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 20:13:21,495 [INFO] [exhaustion][oversized_payloads] ok | 100KB to 600KB
+2026-06-02 20:15:34,639 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 20:16:14,550 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-06-02 20:16:33,687 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 20:16:48,979 [INFO] [advanced][covert_channel] ok | timing channel
+2026-06-02 20:25:47,617 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 20:26:12,750 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-06-02 21:10:45,697 [INFO] [privesc][suid_binary] ok | chmod +s /tmp/rbash
+2026-06-02 21:11:13,646 [INFO] [lateral][network_recon] ok | full network recon
+2026-06-02 21:13:50,551 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 21:15:41,490 [INFO] [credential][credential_stuffing] ok | deploy:deploy
+2026-06-02 21:16:30,514 [INFO] [persistence][bashrc] ok | .bashrc persistence
+2026-06-02 21:19:22,059 [INFO] [privesc][sudoers_write] ok | /etc/sudoers write attempt
+2026-06-02 21:19:40,939 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 21:20:04,162 [INFO] [credential][ssh_common_password] ok | user:changeme
+2026-06-02 21:29:02,766 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 21:31:03,110 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 21:33:55,923 [INFO] [execution][memfd_fileless] ok | memfd_create probe
+2026-06-02 21:34:00,972 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 21:34:11,390 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 21:36:30,509 [INFO] [credential][credential_stuffing] ok | admin:1234
+2026-06-02 21:36:46,068 [INFO] [advanced][covert_channel] ok | timing channel
+2026-06-02 21:40:36,182 [INFO] [persistence][cron_job] ok | crontab persistence
+2026-06-02 21:41:16,016 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 21:42:24,729 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 21:49:11,940 [INFO] [credential][credential_stuffing] ok | ubuntu:ubuntu
+2026-06-02 21:49:49,933 [INFO] [execution][exec_from_shm] ok | /dev/shm/.sc
+2026-06-02 21:50:41,102 [INFO] [execution][exec_from_var_tmp] ok | /var/tmp/.rt
+2026-06-02 21:51:53,833 [INFO] [cryptomining][cpu_spike] ok | 5s CPU burn
+2026-06-02 21:52:04,240 [INFO] [evasion][timestamp_manip] ok | touch -t timestamp
+2026-06-02 21:53:15,381 [INFO] [credential][credential_stuffing] ok | admin:admin
+2026-06-02 21:53:43,334 [INFO] [exfil][http_exfil] ok | HTTP POST exfil
+2026-06-02 21:54:49,491 [INFO] [ai_manipulation][schema_confusion] ok | 2 schema attacks
+2026-06-02 21:54:57,403 [INFO] [privesc][passwd_write] ok | /etc/passwd write attempt
+2026-06-02 22:00:11,220 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 22:00:41,338 [INFO] [c2][reverse_shell] ok | bash reverse shell attempt
+2026-06-02 22:01:01,237 [INFO] [protocol][udp_scan_50] ok | nmap UDP top50
+2026-06-02 22:01:08,698 [INFO] [exfil][http_exfil] ok | HTTP POST exfil
+2026-06-02 22:02:10,655 [INFO] [credential][credential_stuffing] ok | admin:1234
+2026-06-02 22:02:18,873 [INFO] [credential][credential_stuffing] ok | root:toor
+2026-06-02 22:02:43,086 [INFO] [persistence][systemd_user] ok | systemd user dir
+2026-06-02 22:05:00,764 [INFO] [advanced][ptrace_probe] ok | ptrace status check
+2026-06-02 22:05:37,980 [INFO] [lateral][internal_ping_sweep] ok | 192.168.0.0/24
+2026-06-02 22:13:50,805 [INFO] [credential][rapid_auth_failures] ok | 20 rapid failures
+2026-06-02 22:14:39,809 [INFO] [protocol][syn_scan_500] ok | nmap SYN top500
+2026-06-02 22:16:22,358 [INFO] [privesc][shadow_read] ok | /etc/shadow read attempt
+2026-06-02 22:17:15,586 [INFO] [evasion][process_masquerade] ok | kworker/ksoftirqd from /tmp
+2026-06-02 22:21:15,311 [INFO] [evasion][timestamp_manip] ok | touch -t timestamp
+2026-06-02 22:22:59,180 [INFO] [advanced][covert_channel] ok | timing channel
+2026-06-02 22:29:14,853 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
+2026-06-02 22:34:36,762 [INFO] [c2][dns_tunnel] ok | root/admin + DNS pivot
+2026-06-02 22:34:55,000 [INFO] [execution][exec_from_tmp] ok | /tmp/.hbash
