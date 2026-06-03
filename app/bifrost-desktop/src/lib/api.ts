@@ -85,6 +85,30 @@ export function baseUrl(s: AppSettings = getSettings()) {
   return `http://${s.guardianHost}:${s.dashboardPort}`;
 }
 
+export async function saveGuardianConfig(patch: {
+  learningMode: boolean;
+  dryRun: boolean;
+  autonomous: boolean;
+  confidenceThreshold: number;
+}) {
+  const payload = {
+    learning_mode: patch.learningMode,
+    dry_run: patch.dryRun,
+    autonomous_actions_enabled: patch.autonomous,
+    confidence_threshold: patch.confidenceThreshold,
+  };
+  const res = await guardianFetch(`${baseUrl()}/api/config`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(`Config save failed: ${res.status}`);
+  }
+  return res.json().catch(() => ({}));
+}
+
 /* ---------------- guardian client ---------------- */
 
 const MAX_LIVE = 200;
@@ -141,6 +165,11 @@ class GuardianClient {
       this.pollTimer = setInterval(() => this.poll(), getSettings().refreshIntervalMs);
     }
     this.poll();
+    this.pingHeartbeat();
+  }
+
+  async refresh() {
+    await this.poll();
     this.pingHeartbeat();
   }
 

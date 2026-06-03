@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import logging
@@ -17,7 +18,7 @@ from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 from urllib.parse import parse_qs, urlparse
 
 from bifrost import paths as bifrost_paths
@@ -87,6 +88,92 @@ _DISCLAIMER_COOKIE = "bifrost_disclaimer"
 def parse_time_range(value: str | None) -> str:
     key = (value or DEFAULT_TIME_RANGE).strip().lower()
     return key if key in TIME_RANGE_SECONDS else DEFAULT_TIME_RANGE
+
+
+def _bytes_to_gb(value: float) -> float:
+    return max(float(value) / (1024**3), 0.0)
+
+
+def _read_system_metrics(db_path: Path) -> dict[str, float]:
+    metrics = {
+        "ram_used_gb": 0.0,
+        "ram_total_gb": 0.0,
+        "cpu_percent": 0.0,
+        "disk_used_gb": 0.0,
+        "disk_total_gb": 0.0,
+    }
+    try:
+        import psutil
+
+        vm = psutil.virtual_memory()
+        metrics["ram_total_gb"] = _bytes_to_gb(vm.total)
+        metrics["ram_used_gb"] = _bytes_to_gb(vm.used)
+        metrics["cpu_percent"] = float(psutil.cpu_percent(interval=0.1))
+        disk_target = db_path if db_path.exists() else db_path.parent
+        if not disk_target.exists():
+            disk_target = Path("/")
+        disk = psutil.disk_usage(str(disk_target))
+        metrics["disk_total_gb"] = _bytes_to_gb(disk.total)
+        metrics["disk_used_gb"] = _bytes_to_gb(disk.used)
+    except Exception:
+        pass
+    return metrics
+
+
+def _coerce_bool(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        cleaned = value.strip().lower()
+        if cleaned in {"1", "true", "yes", "on"}:
+            return True
+        if cleaned in {"0", "false", "no", "off"}:
+            return False
+    return None
+
+
+def _normalize_config_patch(payload: Mapping[str, Any]) -> dict[str, Any]:
+    normalized: dict[str, Any] = {}
+    if "learning_mode" in payload:
+        value = _coerce_bool(payload.get("learning_mode"))
+        if value is not None:
+            normalized["learning_mode"] = value
+    if "dry_run" in payload:
+        value = _coerce_bool(payload.get("dry_run"))
+        if value is not None:
+            normalized["dry_run"] = value
+    if "autonomous_actions_enabled" in payload:
+        value = _coerce_bool(payload.get("autonomous_actions_enabled"))
+        if value is not None:
+            normalized["autonomous_actions_enabled"] = value
+    if "confidence_threshold" in payload:
+        try:
+            raw = float(payload.get("confidence_threshold"))  # type: ignore[arg-type]
+            if raw > 1.0 and raw <= 100.0:
+                raw = raw / 100.0
+            normalized["confidence_threshold"] = max(min(raw, 1.0), 0.0)
+        except (TypeError, ValueError):
+            pass
+    return normalized
+
+
+def _persist_config_patch(config_path: Path, patch: Mapping[str, Any]) -> None:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config: dict[str, Any] = {}
+    if config_path.exists():
+        try:
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            config = {}
+    config.update(patch)
+    config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+    os.chmod(config_path, 0o600)
+    checksum = hashlib.sha256(config_path.read_bytes()).hexdigest()
+    checksum_path = config_path.with_suffix(".sha256")
+    checksum_path.write_text(checksum, encoding="utf-8")
+    os.chmod(checksum_path, 0o600)
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
@@ -492,6 +579,10 @@ def build_guardian_client_state(state: Mapping[str, Any]) -> dict[str, Any]:
         if tactic and tactic != "—":
             mitre_counts[f"{tactic}|{technique}"] += 1
 
+    ram_total = float(settings.get("ram_total_gb") or 16.0)
+    ram_used = float(settings.get("ram_used_gb") or 0.0)
+    disk_total = float(settings.get("disk_total_gb") or 100.0)
+    disk_used = float(settings.get("disk_used_gb") or 0.0)
     return {
         "incidents": incidents,
         "attackers": attackers,
@@ -520,11 +611,11 @@ def build_guardian_client_state(state: Mapping[str, Any]) -> dict[str, Any]:
         },
         "hardware": {
             "tier": str(settings.get("hardware_tier") or "TIER_4"),
-            "ramUsed": 0.0,
-            "ramTotal": 16.0,
-            "cpuPercent": 0.0,
-            "diskUsed": 0.0,
-            "diskTotal": 100.0,
+            "ramUsed": min(ram_used, ram_total),
+            "ramTotal": ram_total,
+            "cpuPercent": float(settings.get("cpu_percent") or 0.0),
+            "diskUsed": min(disk_used, disk_total),
+            "diskTotal": disk_total,
             "uptimeSec": int(settings.get("uptime_seconds") or 0),
         },
         "config": {
@@ -594,6 +685,7 @@ def build_settings_snapshot(
     started_at: float | None = None,
 ) -> dict[str, Any]:
     uptime_seconds = time.time() - started_at if started_at else 0
+    metrics = _read_system_metrics(db_path)
     return {
         "hardware_tier": config.get("hardware_tier", "unknown"),
         "analyst_model": config.get("analyst_model") or config.get("groq_model") or "n/a",
@@ -612,6 +704,11 @@ def build_settings_snapshot(
         "db_path": str(db_path),
         "log_path": str(log_path),
         "uptime_seconds": int(uptime_seconds),
+        "ram_used_gb": metrics["ram_used_gb"],
+        "ram_total_gb": metrics["ram_total_gb"],
+        "cpu_percent": metrics["cpu_percent"],
+        "disk_used_gb": metrics["disk_used_gb"],
+        "disk_total_gb": metrics["disk_total_gb"],
         "dashboard_host": config.get("dashboard_host", "127.0.0.1"),
         "dashboard_port": config.get("dashboard_port", 8766),
     }
@@ -1077,7 +1174,36 @@ def _build_handler(server: "DashboardServer"):
             self.wfile.write(payload_html)
 
         def do_POST(self) -> None:  # noqa: N802
-            if urlparse(self.path).path == "/api/disclaimer/accept":
+            path = urlparse(self.path).path
+            if path == "/api/config":
+                if not _disclaimer_accepted(self):
+                    self.send_response(HTTPStatus.FORBIDDEN)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(b'{"error":"disclaimer_required"}')
+                    return
+                length = int(self.headers.get("Content-Length", "0") or 0)
+                raw = self.rfile.read(length) if length else b"{}"
+                try:
+                    payload = json.loads(raw.decode("utf-8") or "{}")
+                except json.JSONDecodeError:
+                    self.send_error(HTTPStatus.BAD_REQUEST, "Invalid JSON")
+                    return
+                if not isinstance(payload, Mapping):
+                    self.send_error(HTTPStatus.BAD_REQUEST, "Invalid payload")
+                    return
+                try:
+                    applied = server.apply_config_patch(payload)
+                except ValueError as exc:
+                    self.send_error(HTTPStatus.BAD_REQUEST, str(exc))
+                    return
+                except Exception as exc:  # pragma: no cover - defensive
+                    server.log.error("Config update failed: %s", exc)
+                    self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Config update failed")
+                    return
+                self._write_json({"status": "ok", "applied": applied})
+                return
+            if path == "/api/disclaimer/accept":
                 sid = secrets.token_urlsafe(24)
                 _DISCLAIMER_SESSIONS.add(sid)
                 cookie = SimpleCookie()
@@ -1120,6 +1246,7 @@ class DashboardServer(threading.Thread):
         self.config = dict(config)
         self.log = log
         self.db_path = Path(db_path)
+        self.config_path = bifrost_paths.config_path(self.config)
         self.jsonl_path = Path(
             self.config.get("live_monitor_jsonl_path")
             or bifrost_paths.log_path(self.config).with_name("live_monitor.jsonl")
@@ -1130,6 +1257,7 @@ class DashboardServer(threading.Thread):
         self.monitor_safelist = list(self.config.get("monitor_safelist") or [])
         self._server: ThreadingHTTPServer | None = None
         self._started_at = time.time()
+        self._config_updater: Callable[[Mapping[str, Any]], None] | None = None
 
     def build_state(self, time_range: str = DEFAULT_TIME_RANGE) -> dict[str, Any]:
         return build_dashboard_state(
@@ -1141,6 +1269,21 @@ class DashboardServer(threading.Thread):
             config=self.config,
             started_at=self._started_at,
         )
+
+    def set_config_updater(
+        self, updater: Callable[[Mapping[str, Any]], None] | None
+    ) -> None:
+        self._config_updater = updater
+
+    def apply_config_patch(self, patch: Mapping[str, Any]) -> dict[str, Any]:
+        normalized = _normalize_config_patch(patch)
+        if not normalized:
+            raise ValueError("No valid config fields supplied")
+        _persist_config_patch(self.config_path, normalized)
+        self.config.update(normalized)
+        if self._config_updater:
+            self._config_updater(normalized)
+        return normalized
 
     @property
     def url(self) -> str:
