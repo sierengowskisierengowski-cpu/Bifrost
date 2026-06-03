@@ -50,3 +50,16 @@ tests/attack_framework/
 # Build validation facility artifacts (build-scoped, not committed)
 lab/.build_lock
 lab/reports/
+# PyInstaller build outputs
+build/
+dist/
+*.spec
+app/bifrost-desktop/src-tauri/binaries/guardian-*
+
+# Compiled Go sidecars
+app/bifrost-desktop/src-tauri/binaries/log_agent_router-*
+app/bifrost-desktop/src-tauri/binaries/executor-*
+
+# Local configuration files
+config.json
+config.sha256
