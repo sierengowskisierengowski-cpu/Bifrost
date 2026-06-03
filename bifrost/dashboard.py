@@ -479,10 +479,10 @@ def _map_incident_for_client(incident: Mapping[str, Any], index: int) -> dict[st
         or incident.get("action_required")
         or "LOG"
     )
-    trace_event_id = _coerce_event_id(incident.get("event_id") or incident.get("id"))
+    event_id = _coerce_event_id(incident.get("event_id") or incident.get("id"))
     return {
         "id": str(incident.get("id") or f"inc-{incident.get('timestamp', index)}"),
-        "traceEventId": trace_event_id,
+        "traceEventId": event_id,
         "timestamp": str(incident.get("timestamp") or ""),
         "severity": _normalize_severity(incident.get("severity")),
         "threatClass": str(incident.get("threat_class") or "unknown"),
@@ -689,10 +689,10 @@ def _safe_json_load(value: Any) -> Any:
 
 
 def _coerce_event_id(value: Any) -> int | None:
-    text = str(value or "").strip()
-    if not text.isdigit():
+    try:
+        eid = int(str(value or "").strip())
+    except (TypeError, ValueError):
         return None
-    eid = int(text)
     return eid if eid > 0 else None
 
 

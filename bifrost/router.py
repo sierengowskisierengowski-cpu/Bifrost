@@ -21,6 +21,7 @@ log = logging.getLogger("heimdall.router")
 
 EXECUTOR_URL = "http://127.0.0.1:8766/execute"
 EXECUTOR_HEALTH = "http://127.0.0.1:8766/health"
+DEFAULT_SCHEMA_VERSION = "1.0.0"
 
 
 def _safe_json_load(payload):
@@ -163,7 +164,7 @@ def execute_decision(
         "threat_class": decision.get("threat_class", "unknown"),
         "reasoning": decision.get("reasoning", "")[:200],
         "event_id": event_id,
-        "schema_version": decision.get("schema_version", "1.0.0"),
+        "schema_version": decision.get("schema_version", DEFAULT_SCHEMA_VERSION),
         "session_id": context["session_id"],
         "ssh_fingerprint": context["ssh_fingerprint"],
         "command_hash": context["command_hash"],

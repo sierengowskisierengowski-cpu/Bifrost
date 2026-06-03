@@ -406,16 +406,18 @@ func TestAllowExecutorRequest_RateLimitsBurst(t *testing.T) {
 	rateLimitMu.Lock()
 	rateLimitBuckets = map[string][]time.Time{}
 	rateLimitMu.Unlock()
+	t.Setenv("BIFROST_EXECUTOR_RATE_LIMIT_MAX", "5")
 
 	var blocked bool
-	for i := 0; i < executorRateLimitMax+1; i++ {
+	limit := rateLimitMax()
+	for i := 0; i < limit+1; i++ {
 		r := httptest.NewRequest(http.MethodPost, "/execute", nil)
 		r.RemoteAddr = "127.0.0.1:9999"
 		allowed := allowExecutorRequest(r, "/execute")
-		if i < executorRateLimitMax && !allowed {
+		if i < limit && !allowed {
 			t.Fatalf("request %d unexpectedly blocked before limit", i)
 		}
-		if i == executorRateLimitMax {
+		if i == limit {
 			blocked = !allowed
 		}
 	}

@@ -44,13 +44,13 @@ type ActionResult struct {
 }
 
 const (
-	frontendHeartbeatHeader  = "X-Bifrost-Client"
-	frontendHeartbeatValue   = "tauri"
-	frontendHeartbeatTimeout = 30 * time.Second
-	frontendWatchdogInterval = 3 * time.Second
-	honeypotPort             = "2222/tcp"
-	executorRateLimitWindow  = 10 * time.Second
-	executorRateLimitMax     = 30
+	frontendHeartbeatHeader           = "X-Bifrost-Client"
+	frontendHeartbeatValue            = "tauri"
+	frontendHeartbeatTimeout          = 30 * time.Second
+	frontendWatchdogInterval          = 3 * time.Second
+	honeypotPort                      = "2222/tcp"
+	executorRateLimitWindowDefaultSec = 10
+	executorRateLimitMaxDefault       = 30
 )
 
 var (
@@ -73,6 +73,30 @@ func startExecutor() {
 
 func executorToken() string {
 	return strings.TrimSpace(os.Getenv("BIFROST_EXECUTOR_TOKEN"))
+}
+
+func rateLimitWindow() time.Duration {
+	raw := strings.TrimSpace(os.Getenv("BIFROST_EXECUTOR_RATE_LIMIT_WINDOW_SEC"))
+	if raw == "" {
+		return time.Duration(executorRateLimitWindowDefaultSec) * time.Second
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 1 {
+		return time.Duration(executorRateLimitWindowDefaultSec) * time.Second
+	}
+	return time.Duration(value) * time.Second
+}
+
+func rateLimitMax() int {
+	raw := strings.TrimSpace(os.Getenv("BIFROST_EXECUTOR_RATE_LIMIT_MAX"))
+	if raw == "" {
+		return executorRateLimitMaxDefault
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value < 1 {
+		return executorRateLimitMaxDefault
+	}
+	return value
 }
 
 func authorizeExecutorRequest(r *http.Request) bool {
@@ -167,7 +191,7 @@ func handleRollback(w http.ResponseWriter, r *http.Request) {
 func allowExecutorRequest(r *http.Request, endpoint string) bool {
 	key := endpoint + "|" + r.RemoteAddr
 	now := time.Now()
-	cutoff := now.Add(-executorRateLimitWindow)
+	cutoff := now.Add(-rateLimitWindow())
 
 	rateLimitMu.Lock()
 	defer rateLimitMu.Unlock()
@@ -179,7 +203,7 @@ func allowExecutorRequest(r *http.Request, endpoint string) bool {
 			filtered = append(filtered, ts)
 		}
 	}
-	if len(filtered) >= executorRateLimitMax {
+	if len(filtered) >= rateLimitMax() {
 		rateLimitBuckets[key] = filtered
 		return false
 	}
@@ -190,7 +214,7 @@ func allowExecutorRequest(r *http.Request, endpoint string) bool {
 
 func isValidVerdict(v HeimdallVerdict) bool {
 	action := strings.TrimSpace(strings.ToUpper(v.ActionRequired))
-	if !isAllowedAction(action) && action != "ALERT" && action != "LOG" && action != "NONE" {
+	if !isKnownVerdictAction(action) {
 		return false
 	}
 	if v.EventID < 1 {
@@ -209,6 +233,18 @@ func isValidVerdict(v HeimdallVerdict) bool {
 		return false
 	}
 	return true
+}
+
+func isKnownVerdictAction(action string) bool {
+	if isAllowedAction(action) {
+		return true
+	}
+	switch action {
+	case "ALERT", "LOG", "NONE":
+		return true
+	default:
+		return false
+	}
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {

@@ -16,7 +16,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bifrost import __version__
 from bifrost import paths as bifrost_paths
+
+DEFAULT_LOG_TAIL_LINES = 200
 
 
 def _run(cmd: list[str]) -> str:
@@ -27,12 +30,14 @@ def _run(cmd: list[str]) -> str:
         return f"unavailable ({exc})"
 
 
-def _tail_lines(path: Path, limit: int = 200) -> list[str]:
+def _tail_lines(path: Path, limit: int = DEFAULT_LOG_TAIL_LINES) -> list[str]:
     if not path.exists():
+        return []
+    if limit < 1:
         return []
     try:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        return lines[-max(limit, 1):]
+        return lines[-limit:]
     except Exception:
         return []
 
@@ -73,7 +78,7 @@ def build_support_bundle(output_dir: str | Path | None = None) -> Path:
     diagnostics: dict[str, Any] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "versions": {
-            "bifrost": "0.3.0",
+            "bifrost": __version__,
             "python": platform.python_version(),
             "go": _run(["go", "version"]),
             "node": _run(["node", "--version"]),
@@ -105,8 +110,8 @@ def build_support_bundle(output_dir: str | Path | None = None) -> Path:
             },
         },
         "logs_tail": {
-            "guardian_log_last_200": _tail_lines(log_path, 200),
-            "live_monitor_last_200": _tail_lines(live_monitor_path, 200),
+            "guardian_log_last_200": _tail_lines(log_path, DEFAULT_LOG_TAIL_LINES),
+            "live_monitor_last_200": _tail_lines(live_monitor_path, DEFAULT_LOG_TAIL_LINES),
         },
     }
 
