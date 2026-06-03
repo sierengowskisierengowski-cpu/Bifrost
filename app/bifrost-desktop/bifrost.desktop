@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Bifrost
-Comment=Norse rainbow-bridge security dashboard
+Comment=Heimdall Never Sleeps.
 Exec=/usr/bin/bifrost
 Icon=bifrost
 Terminal=false

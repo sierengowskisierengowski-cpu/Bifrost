@@ -11,7 +11,7 @@ func main() {
 
 	log.Println("╔══════════════════════════════════════════╗")
 	log.Println("║        BIFROST GO AGENT v0.1.0           ║")
-	log.Println("║        The Bridge Is Watched             ║")
+	log.Println("║        Heimdall Never Sleeps.            ║")
 	log.Println("╚══════════════════════════════════════════╝")
 
 	switch *mode {

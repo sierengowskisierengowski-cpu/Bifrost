@@ -86,9 +86,37 @@ export function baseUrl(s: AppSettings = getSettings()) {
   return `http://${s.guardianHost}:${s.dashboardPort}`;
 }
 
+export async function saveGuardianConfig(patch: {
+  learningMode: boolean;
+  dryRun: boolean;
+  autonomous: boolean;
+  confidenceThreshold: number;
+}) {
+  const payload = {
+    learning_mode: patch.learningMode,
+    dry_run: patch.dryRun,
+    autonomous_actions_enabled: patch.autonomous,
+    confidence_threshold: patch.confidenceThreshold,
+  };
+  const res = await guardianFetch(`${baseUrl()}/api/config`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(`Config save failed: ${res.status}`);
+  }
+  return res.json().catch(() => ({}));
+}
+
 /* ---------------- guardian client ---------------- */
 
 const MAX_LIVE = 200;
+const HEARTBEAT_INTERVAL_MS = 5000;
+const HANDSHAKE_INTERVAL_MS = 3000;
+const HEARTBEAT_TIMEOUT_MS = 2000;
+const DISCONNECT_AFTER_MS = 30000;
 const THREAT_LEVELS = new Set(["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]);
 
 function normalizeAttackers(value: unknown, fallback: Attacker[]): Attacker[] {
@@ -121,7 +149,7 @@ function normalizeAttackers(value: unknown, fallback: Attacker[]): Attacker[] {
 class GuardianClient {
   private state: GuardianState = generateGuardianState();
   private conn: ConnectionInfo = {
-    status: "connecting",
+    status: "reconnecting",
     source: "mock",
     lastUpdated: Date.now(),
     retryInSec: 0,
@@ -134,7 +162,10 @@ class GuardianClient {
   private liveTimer: ReturnType<typeof setTimeout> | null = null;
   private tickTimer: ReturnType<typeof setInterval> | null = null;
   private retryTimer: ReturnType<typeof setInterval> | null = null;
-  private backoff = 1;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private handshakeTimer: ReturnType<typeof setInterval> | null = null;
+  private heartbeatInFlight = false;
+  private lastHeartbeatOk = Date.now();
   private started = false;
 
   start() {
@@ -148,8 +179,9 @@ class GuardianClient {
     this.pollTimer = setInterval(() => this.poll(), getSettings().refreshIntervalMs);
     this.scheduleLive();
     this.tickTimer = setInterval(() => this.tick(), 4000);
+    this.startHeartbeat();
     this.retryTimer = setInterval(() => {
-      if (this.conn.status === "disconnected" && this.conn.retryInSec > 0) {
+      if (this.conn.status === "reconnecting" && this.conn.retryInSec > 0) {
         this.setConn({ retryInSec: this.conn.retryInSec - 1 });
       }
     }, 1000);
@@ -162,6 +194,81 @@ class GuardianClient {
       this.pollTimer = setInterval(() => this.poll(), getSettings().refreshIntervalMs);
     }
     this.poll();
+    this.pingHeartbeat();
+  }
+
+  async refresh() {
+    await this.poll();
+    this.pingHeartbeat();
+  }
+
+  private startHeartbeat() {
+    if (this.heartbeatTimer) return;
+    this.pingHeartbeat();
+    this.heartbeatTimer = setInterval(() => this.pingHeartbeat(), HEARTBEAT_INTERVAL_MS);
+  }
+
+  private async pingHeartbeat() {
+    if (this.heartbeatInFlight) return;
+    this.heartbeatInFlight = true;
+    try {
+      const ok = await this.checkHeartbeat();
+      if (ok) {
+        this.noteHeartbeatOk();
+      } else {
+        this.noteHeartbeatFailure();
+      }
+    } finally {
+      this.heartbeatInFlight = false;
+    }
+  }
+
+  private async checkHeartbeat(): Promise<boolean> {
+    const url = `${baseUrl()}/health`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), HEARTBEAT_TIMEOUT_MS);
+    try {
+      const res = await guardianFetch(url, {
+        signal: ctrl.signal,
+        credentials: "include",
+        headers: { "X-Bifrost-Client": "tauri" },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  private noteHeartbeatOk() {
+    this.lastHeartbeatOk = Date.now();
+    if (this.handshakeTimer) {
+      clearInterval(this.handshakeTimer);
+      this.handshakeTimer = null;
+    }
+    if (this.conn.status !== "connected") {
+      this.setConn({ status: "connected", retryInSec: 0, lastUpdated: Date.now() });
+    }
+    this.poll();
+  }
+
+  private noteHeartbeatFailure() {
+    const elapsed = Date.now() - this.lastHeartbeatOk;
+    const status = elapsed > DISCONNECT_AFTER_MS ? "disconnected" : "reconnecting";
+    const retryInSec = status === "reconnecting" ? Math.ceil(HANDSHAKE_INTERVAL_MS / 1000) : 0;
+    this.setConn({ status, retryInSec });
+    if (!this.handshakeTimer) {
+      this.handshakeTimer = setInterval(() => this.retryHandshake(), HANDSHAKE_INTERVAL_MS);
+    }
+  }
+
+  private retryHandshake() {
+    if (this.conn.status === "connected") return;
+    if (this.conn.status === "reconnecting") {
+      this.setConn({ retryInSec: Math.ceil(HANDSHAKE_INTERVAL_MS / 1000) });
+    }
+    void this.pingHeartbeat();
   }
 
   private async poll() {
@@ -186,19 +293,14 @@ class GuardianClient {
         hardware: guardianState.hardware ? { ...this.state.hardware, ...guardianState.hardware } : this.state.hardware,
         config: guardianState.config ? { ...this.state.config, ...guardianState.config } : this.state.config,
       };
-      this.backoff = 1;
       this.setConn({ status: "connected", source: "live", lastUpdated: Date.now(), retryInSec: 0 });
       this.emitState();
       this.emitLive();
     } catch {
       // No guardian reachable — fall back to the rich local model (also powers offline mode).
-      this.backoff = Math.min(this.backoff * 2, 30);
-      this.setConn({
-        status: "disconnected",
-        source: "mock",
-        retryInSec: this.backoff,
-        lastUpdated: this.conn.lastUpdated,
-      });
+      const wasLive = this.conn.source !== "mock";
+      this.setConn({ source: "mock", lastUpdated: this.conn.lastUpdated });
+      if (wasLive) this.scheduleLive();
     }
   }
 

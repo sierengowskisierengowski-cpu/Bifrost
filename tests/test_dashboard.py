@@ -317,6 +317,7 @@ def test_render_dashboard_html_includes_test_run_panel_when_active(tmp_path):
     assert "JetBrains Mono" in html
     assert "favicon" in html.lower() or "image/svg+xml" in html
     assert "test-run-panel" in html
+    assert "Heimdall Never Sleeps" in html
 
 
 def test_render_dashboard_html_shows_inactive_panel_when_no_summaries(tmp_path):

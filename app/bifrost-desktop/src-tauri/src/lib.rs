@@ -35,28 +35,49 @@ fn python_bin() -> String {
     })
 }
 
-/// Locate the guardian entry script. Resolution order:
-/// 1. BIFROST_GUARDIAN env var (absolute path to the script)
-/// 2. bundled resource:  <resources>/guardian/guardian.py
-/// 3. sibling of the executable:  <exe dir>/guardian/guardian.py
-fn guardian_script(app: &tauri::AppHandle) -> Option<PathBuf> {
+struct GuardianEntry {
+    path: PathBuf,
+    use_python: bool,
+}
+
+fn guardian_entry_from_path(path: PathBuf) -> Option<GuardianEntry> {
+    if !path.exists() {
+        return None;
+    }
+    let use_python = path.extension().and_then(|ext| ext.to_str()) == Some("py");
+    Some(GuardianEntry { path, use_python })
+}
+
+/// Locate the guardian entry. Resolution order:
+/// 1. BIFROST_GUARDIAN env var (absolute path to a script/binary)
+/// 2. bundled resource:  <resources>/guardian/guardian (preferred) or guardian.py
+/// 3. sibling of the executable:  <exe dir>/guardian/guardian (preferred) or guardian.py
+fn guardian_entry(app: &tauri::AppHandle) -> Option<GuardianEntry> {
     if let Ok(p) = std::env::var("BIFROST_GUARDIAN") {
         let pb = PathBuf::from(p);
-        if pb.exists() {
-            return Some(pb);
+        if let Some(entry) = guardian_entry_from_path(pb) {
+            return Some(entry);
         }
     }
     if let Ok(res) = app.path().resource_dir() {
-        let pb = res.join("guardian").join("guardian.py");
-        if pb.exists() {
-            return Some(pb);
+        let binary = res.join("guardian").join("guardian");
+        if let Some(entry) = guardian_entry_from_path(binary) {
+            return Some(entry);
+        }
+        let script = res.join("guardian").join("guardian.py");
+        if let Some(entry) = guardian_entry_from_path(script) {
+            return Some(entry);
         }
     }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
-            let pb = dir.join("guardian").join("guardian.py");
-            if pb.exists() {
-                return Some(pb);
+            let binary = dir.join("guardian").join("guardian");
+            if let Some(entry) = guardian_entry_from_path(binary) {
+                return Some(entry);
+            }
+            let script = dir.join("guardian").join("guardian.py");
+            if let Some(entry) = guardian_entry_from_path(script) {
+                return Some(entry);
             }
         }
     }
@@ -100,16 +121,22 @@ fn do_start(app: &tauri::AppHandle, state: &GuardianState) -> bool {
         }
     }
 
-    let script = match guardian_script(app) {
-        Some(s) => s,
+    let entry = match guardian_entry(app) {
+        Some(entry) => entry,
         None => {
-            eprintln!("[bifrost] guardian script not found (set BIFROST_GUARDIAN)");
+            eprintln!("[bifrost] guardian entry not found (set BIFROST_GUARDIAN)");
             return false;
         }
     };
 
-    match Command::new(python_bin())
-        .arg(&script)
+    let mut command = if entry.use_python {
+        let mut cmd = Command::new(python_bin());
+        cmd.arg(&entry.path);
+        cmd
+    } else {
+        Command::new(&entry.path)
+    };
+    match command
         .arg("--port")
         .arg(GUARDIAN_PORT.to_string())
         .stdout(Stdio::null())
@@ -179,14 +206,14 @@ pub fn run() {
             get_guardian_port
         ])
         .setup(|app| {
-            let script = match guardian_script(app.handle()) {
-                Some(script) => script,
+            let entry = match guardian_entry(app.handle()) {
+                Some(entry) => entry,
                 None => {
-                    eprintln!("[bifrost] guardian script not found (set BIFROST_GUARDIAN)");
+                    eprintln!("[bifrost] guardian entry not found (set BIFROST_GUARDIAN)");
                     std::process::exit(1);
                 }
             };
-            let (security_path, reasoner_path) = match resolve_core_paths(&script) {
+            let (security_path, reasoner_path) = match resolve_core_paths(&entry.path) {
                 Some(paths) => paths,
                 None => {
                     eprintln!("Fatal: Core initialization error (0x99)");
@@ -211,7 +238,7 @@ pub fn run() {
 
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("Bifrost — The Bridge Is Watched")
+                .tooltip("Bifrost — Heimdall Never Sleeps.")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id().as_ref() {

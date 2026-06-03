@@ -904,6 +904,12 @@ class EventRouter(threading.Thread):
             self.live_monitor.structured_log_path,
         )
 
+    def apply_config_patch(self, patch: dict) -> None:
+        if not patch:
+            return
+        self.config.update(patch)
+        self.log.info("Guardian config updated: %s", patch)
+
     def setup_db(self):
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         configure_sqlite_connection(self.conn)
@@ -2016,8 +2022,10 @@ def main(argv=None):
     router = EventRouter(EVENT_QUEUE, config, db_path, log)
     router.prewarm_ollama()
     router.start()
+    if dashboard:
+        dashboard.set_config_updater(router.apply_config_patch)
     log.info("Bifrost pipeline active.")
-    log.info("Heimdall is online. The bridge is watched.")
+    log.info("Heimdall is online. Heimdall Never Sleeps.")
 
     while not COLLECTOR_STOP.is_set():
         time.sleep(1.0)
