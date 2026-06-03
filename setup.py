@@ -19,7 +19,7 @@ import hashlib
 from pathlib import Path
 
 HEIMDALL_VERSION = "0.1.0"
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "0.1.0"
 
 EXTRACTOR_MODEL = "qwen2.5:1.5b-instruct"
 

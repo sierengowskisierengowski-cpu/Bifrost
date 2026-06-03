@@ -81,6 +81,21 @@ cd Bifrost
 pip install -r requirements.txt --break-system-packages
 make install
 
+## Monolithic desktop build
+
+To produce the full desktop bundle (guardian + Go sidecars + Tauri app) in one
+step:
+
+./package_monolithic.sh
+
+The release bundles are written to:
+
+- app/bifrost-desktop/src-tauri/target/release/bundle/
+
+GitHub Actions uses the same script for release builds. The desktop icon master
+asset lives at `app/bifrost-desktop/src-tauri/icons/icon.svg` and is used to
+regenerate the bundled platform icons.
+
 ### Starting the Guardian
 
 cd ~/Projects/bifrost

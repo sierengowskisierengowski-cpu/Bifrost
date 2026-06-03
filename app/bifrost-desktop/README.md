@@ -73,9 +73,9 @@ Then install the toolchains:
   ```bash
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
-- **Node.js 18+** and **pnpm**:
+- **Node.js 18+** and **pnpm 11**:
   ```bash
-  npm install -g pnpm
+  npm install -g pnpm@11
   ```
 
 ---
@@ -120,12 +120,15 @@ This builds the desktop binary and installs:
 
 ## Icons
 
-The repo ships a generated icon set in `src-tauri/icons/`. To regenerate from a
-single source image:
+The repo ships a generated icon set in `src-tauri/icons/`. The master vector
+source is `src-tauri/icons/icon.svg`. To regenerate the raster/icon bundle:
 
 ```bash
-pnpm tauri icon path/to/source-1024.png
+pnpm tauri icon src-tauri/icons/icon.svg
 ```
+
+This will refresh the platform assets (including `icon.ico` and `icon.icns`)
+that Tauri bundles into the desktop installers.
 
 ---
 
