@@ -8,6 +8,7 @@ import type {
   TimeBucket,
   OverviewStats,
   Attacker,
+  IncidentTrace,
 } from "./types";
 import { generateGuardianState, makeLiveEvent, buildMitre } from "./mockData";
 import { guardianFetch } from "./guardianFetch";
@@ -366,6 +367,20 @@ class GuardianClient {
 }
 
 export const guardian = new GuardianClient();
+
+export async function fetchIncidentTrace(eventId: number): Promise<IncidentTrace> {
+  const res = await guardianFetch(`${baseUrl()}/api/incidents/${eventId}/trace`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error(`Trace fetch failed: ${res.status}`);
+  }
+  const data = await res.json() as { trace?: IncidentTrace };
+  if (!data.trace) {
+    throw new Error("Trace payload missing");
+  }
+  return data.trace;
+}
 
 /* ---------------- hooks ---------------- */
 

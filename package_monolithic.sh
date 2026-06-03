@@ -134,12 +134,13 @@ install -m 755 "${BUILD_DIR}/executor" \
 log "Building Tauri AppImage..."
 pushd "${ROOT_DIR}/app/bifrost-desktop" >/dev/null
 pnpm install
+bash ./scripts/check-appimage-deps.sh
 if [[ -n "${RUSTFLAGS:-}" ]]; then
   export RUSTFLAGS="${RUSTFLAGS} -C target-cpu=native"
 else
   export RUSTFLAGS="-C target-cpu=native"
 fi
-pnpm tauri build --bundles appimage
+APPIMAGE_EXTRACT_AND_RUN=1 pnpm tauri build --bundles appimage
 popd >/dev/null
 
 log "Monolithic package build complete."

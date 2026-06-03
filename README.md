@@ -22,6 +22,8 @@ It watches your network in real time, ingests attack data from honeypots and hos
 
 **100% local. No cloud. No SaaS. Your data never leaves your machine.**
 
+~17,033 lines of code (tracked text/code files, as of 2026-06-03).
+
 ## Features
 
 - **Local AI Reasoning** — Powered by Ollama, runs entirely on your hardware
@@ -130,6 +132,34 @@ export PYTHONPATH=$PWD
 python3 -m bifrost.guardian
 
 The AppImage starts the guardian automatically on launch.
+
+### Build prerequisites (Arch Linux / AppImage)
+
+From `app/bifrost-desktop`:
+
+```bash
+sudo ./scripts/setup-linux-build-env.sh
+pnpm install
+pnpm desktop:preflight
+APPIMAGE_EXTRACT_AND_RUN=1 pnpm tauri build --bundles appimage
+```
+
+If AppImage bundling fails with `failed to run linuxdeploy`, run
+`pnpm desktop:preflight` again and ensure `~/.local/bin` is in `PATH`.
+
+### Support bundle / diagnostics
+
+Generate a local support bundle tarball for troubleshooting:
+
+```bash
+python3 -m bifrost --support-bundle
+```
+
+Optional output directory:
+
+```bash
+python3 -m bifrost --support-bundle --bundle-output-dir /tmp
+```
 
 ## Configuration
 

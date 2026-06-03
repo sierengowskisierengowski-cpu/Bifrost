@@ -9,8 +9,9 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-pacman -S --noconfirm webkit2gtk-4.1 gtk3 base-devel libayatana-appindicator fuse2
+pacman -S --noconfirm webkit2gtk-4.1 gtk3 base-devel libayatana-appindicator fuse2 patchelf desktop-file-utils appstream
 
 wget -O "${LINUXDEPLOY_BIN}" "${LINUXDEPLOY_URL}"
 chmod +x "${LINUXDEPLOY_BIN}"
 echo "Linux build dependencies installed. linuxdeploy path: ${LINUXDEPLOY_BIN}"
+echo "Tip: run ./scripts/check-appimage-deps.sh before pnpm tauri build for local preflight checks."

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:preflight": "bash ./scripts/check-appimage-deps.sh",
+    "desktop:build": "pnpm desktop:preflight && APPIMAGE_EXTRACT_AND_RUN=1 tauri build"
   },
   "dependencies": {
     "@radix-ui/react-toast": "^1.2.7",

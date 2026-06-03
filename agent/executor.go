@@ -49,12 +49,16 @@ const (
 	frontendHeartbeatTimeout = 30 * time.Second
 	frontendWatchdogInterval = 3 * time.Second
 	honeypotPort             = "2222/tcp"
+	executorRateLimitWindow  = 10 * time.Second
+	executorRateLimitMax     = 30
 )
 
 var (
 	frontendMu             sync.Mutex
 	lastFrontendHeartbeat  time.Time
 	frontendLockdownActive bool
+	rateLimitMu            sync.Mutex
+	rateLimitBuckets       = map[string][]time.Time{}
 )
 
 func startExecutor() {
@@ -91,6 +95,10 @@ func handleVerdict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+	if !allowExecutorRequest(r, "/execute") {
+		http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+		return
+	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -98,11 +106,18 @@ func handleVerdict(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	decoder := json.NewDecoder(strings.NewReader(string(body)))
+	decoder.DisallowUnknownFields()
 	var verdict HeimdallVerdict
-	if err := json.Unmarshal(body, &verdict); err != nil {
+	if err := decoder.Decode(&verdict); err != nil {
 		http.Error(w, "Invalid verdict schema", http.StatusBadRequest)
 		return
 	}
+	if !isValidVerdict(verdict) {
+		http.Error(w, "Invalid verdict payload", http.StatusBadRequest)
+		return
+	}
+	verdict.ActionRequired = strings.ToUpper(strings.TrimSpace(verdict.ActionRequired))
 
 	go dispatchMitigation(verdict)
 
@@ -118,6 +133,10 @@ func handleRollback(w http.ResponseWriter, r *http.Request) {
 
 	if !authorizeExecutorRequest(r) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if !allowExecutorRequest(r, "/rollback") {
+		http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
 
@@ -143,6 +162,53 @@ func handleRollback(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"rolled_back"}`))
+}
+
+func allowExecutorRequest(r *http.Request, endpoint string) bool {
+	key := endpoint + "|" + r.RemoteAddr
+	now := time.Now()
+	cutoff := now.Add(-executorRateLimitWindow)
+
+	rateLimitMu.Lock()
+	defer rateLimitMu.Unlock()
+
+	bucket := rateLimitBuckets[key]
+	filtered := bucket[:0]
+	for _, ts := range bucket {
+		if ts.After(cutoff) {
+			filtered = append(filtered, ts)
+		}
+	}
+	if len(filtered) >= executorRateLimitMax {
+		rateLimitBuckets[key] = filtered
+		return false
+	}
+	filtered = append(filtered, now)
+	rateLimitBuckets[key] = filtered
+	return true
+}
+
+func isValidVerdict(v HeimdallVerdict) bool {
+	action := strings.TrimSpace(strings.ToUpper(v.ActionRequired))
+	if !isAllowedAction(action) && action != "ALERT" && action != "LOG" && action != "NONE" {
+		return false
+	}
+	if v.EventID < 1 {
+		return false
+	}
+	if strings.TrimSpace(v.SchemaVersion) == "" {
+		return false
+	}
+	if strings.TrimSpace(v.SessionID) == "" {
+		return false
+	}
+	if strings.TrimSpace(v.SSHFingerprint) == "" {
+		return false
+	}
+	if strings.TrimSpace(v.CommandHash) == "" {
+		return false
+	}
+	return true
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {

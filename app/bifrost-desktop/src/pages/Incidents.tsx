@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Download, Search, ChevronDown } from "lucide-react";
-import { useGuardian, filterByRange } from "@/lib/api";
-import type { TimeRange, Severity, Incident } from "@/lib/types";
+import { useGuardian, filterByRange, fetchIncidentTrace } from "@/lib/api";
+import type { TimeRange, Severity, Incident, IncidentTrace } from "@/lib/types";
 import { RangePills, PageHeader, SeverityBadge } from "@/components/shared";
 import { fmtDateTime } from "@/lib/format";
 
@@ -25,6 +25,9 @@ export default function Incidents() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
+  const [traceByIncident, setTraceByIncident] = useState<Record<string, IncidentTrace>>({});
+  const [traceErrorByIncident, setTraceErrorByIncident] = useState<Record<string, string>>({});
+  const [loadingTrace, setLoadingTrace] = useState<string | null>(null);
 
   const threatClasses = useMemo(() => Array.from(new Set(incidents.map((i) => i.threatClass))).sort(), [incidents]);
 
@@ -51,6 +54,23 @@ export default function Incidents() {
   };
 
   const selectCls = "bg-black/40 border border-border rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#E040FB]";
+
+  const loadTrace = async (incident: Incident) => {
+    if (!incident.traceEventId || loadingTrace === incident.id) return;
+    setLoadingTrace(incident.id);
+    setTraceErrorByIncident((prev) => ({ ...prev, [incident.id]: "" }));
+    try {
+      const trace = await fetchIncidentTrace(incident.traceEventId);
+      setTraceByIncident((prev) => ({ ...prev, [incident.id]: trace }));
+    } catch (error) {
+      setTraceErrorByIncident((prev) => ({
+        ...prev,
+        [incident.id]: error instanceof Error ? error.message : "Trace unavailable",
+      }));
+    } finally {
+      setLoadingTrace(null);
+    }
+  };
 
   return (
     <div>
@@ -123,6 +143,34 @@ export default function Incidents() {
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Summary</div>
                         <div className="text-muted-foreground">{inc.summary}</div>
                       </div>
+                      <div className="col-span-2 md:col-span-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Explain incident / trace</div>
+                          <button
+                            onClick={() => loadTrace(inc)}
+                            disabled={!inc.traceEventId || loadingTrace === inc.id}
+                            className="px-2 py-1 rounded border border-border text-[10px] font-mono disabled:opacity-40 hover:bg-white/5"
+                          >
+                            {loadingTrace === inc.id ? "Loading..." : "Load trace"}
+                          </button>
+                        </div>
+                        {!inc.traceEventId && (
+                          <div className="text-[11px] text-muted-foreground">Trace unavailable for this incident.</div>
+                        )}
+                        {traceErrorByIncident[inc.id] && (
+                          <div className="text-[11px] text-red-400">{traceErrorByIncident[inc.id]}</div>
+                        )}
+                        {traceByIncident[inc.id] && (
+                          <div className="space-y-3">
+                            <TraceBlock title="Raw event(s)" value={traceByIncident[inc.id].event.rawEvent} />
+                            <TraceBlock title="Extracted/compressed event JSON" value={traceByIncident[inc.id].event.compressedEvent} />
+                            <TraceBlock title="Reasoner verdict" value={traceByIncident[inc.id].reasoner.verdict} />
+                            <TraceBlock title="Policy gate evaluation" value={traceByIncident[inc.id].policyGate} />
+                            <TraceBlock title="Router/executor action request" value={traceByIncident[inc.id].router.actionRequest} />
+                            <TraceBlock title="Executor action result / rollback" value={traceByIncident[inc.id].executor.actionResult} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -149,6 +197,17 @@ function Detail({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
       <div className="font-mono">{value}</div>
+    </div>
+  );
+}
+
+function TraceBlock({ title, value }: { title: string; value: unknown }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{title}</div>
+      <pre className="font-mono text-[11px] bg-black/40 rounded p-2 overflow-auto max-h-48">
+        {JSON.stringify(value ?? null, null, 2)}
+      </pre>
     </div>
   );
 }

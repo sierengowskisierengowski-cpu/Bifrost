@@ -13,6 +13,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from bifrost.support_bundle import build_support_bundle
+
 
 def _default_dashboard_url(port: int | None = None) -> str:
     resolved_port = port or int(os.getenv("BIFROST_DASHBOARD_PORT", "8766") or "8766")
@@ -80,11 +82,25 @@ def main(argv: list[str] | None = None) -> int:
         help="Dashboard listen port (default 8766).",
     )
     parser.add_argument(
+        "--support-bundle",
+        action="store_true",
+        help="Write a diagnostic support bundle (.tar.gz) and exit.",
+    )
+    parser.add_argument(
+        "--bundle-output-dir",
+        default=None,
+        help="Directory where the support bundle is written (default: $HOME).",
+    )
+    parser.add_argument(
         "guardian_args",
         nargs=argparse.REMAINDER,
         help="Extra arguments passed to bifrost.guardian",
     )
     args = parser.parse_args(argv)
+    if args.support_bundle:
+        bundle = build_support_bundle(args.bundle_output_dir)
+        print(f"Support bundle written to {bundle}")
+        return 0
 
     project_root = Path(__file__).resolve().parent.parent
     env = os.environ.copy()

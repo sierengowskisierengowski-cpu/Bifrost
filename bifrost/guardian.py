@@ -1773,6 +1773,7 @@ class EventRouter(threading.Thread):
 
                 execution_result = self._dispatch_enforcement(decision, event_id)
                 decision["execution_result"] = execution_result
+                event["event_id"] = event_id
                 self.live_monitor.record_pipeline_step(
                     event,
                     step="executor_dispatch",

@@ -95,6 +95,28 @@ def _load_action_context(db_path: str, event_id: int) -> dict:
             conn.close()
 
 
+def _normalize_action_context(context: dict, event_id: int, decision: dict) -> dict:
+    normalized = dict(context or {})
+    session_id = str(normalized.get("session_id") or "").strip()
+    ssh_fingerprint = str(normalized.get("ssh_fingerprint") or "").strip()
+    command_hash = str(normalized.get("command_hash") or "").strip()
+    if not command_hash:
+        seed = (
+            f"{event_id}|{decision.get('action_required', '')}|"
+            f"{decision.get('target', '')}"
+        )
+        command_hash = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+    if not session_id:
+        session_id = f"event-{event_id}"
+    if not ssh_fingerprint:
+        ssh_fingerprint = "unknown"
+    return {
+        "session_id": session_id,
+        "ssh_fingerprint": ssh_fingerprint,
+        "command_hash": command_hash,
+    }
+
+
 def executor_available() -> bool:
     """Check if the Go executor is running and reachable."""
     try:
@@ -130,28 +152,30 @@ def execute_decision(
         )
         return False
 
+    context = _normalize_action_context(
+        _load_action_context(db_path, event_id),
+        event_id,
+        decision,
+    )
     payload = {
         "action_required": action,
         "target": str(decision.get("target", "")),
         "threat_class": decision.get("threat_class", "unknown"),
         "reasoning": decision.get("reasoning", "")[:200],
         "event_id": event_id,
-        "schema_version": decision.get("schema_version", "1.0.0")
+        "schema_version": decision.get("schema_version", "1.0.0"),
+        "session_id": context["session_id"],
+        "ssh_fingerprint": context["ssh_fingerprint"],
+        "command_hash": context["command_hash"],
     }
-    payload.update(_load_action_context(db_path, event_id))
 
     headers = {"Content-Type": "application/json"}
     token = os.getenv("BIFROST_EXECUTOR_TOKEN", "").strip()
     if not token:
-        from bifrost.security import is_production_mode
-        if is_production_mode():
-            log_ref.error(
-                "Router: BIFROST_EXECUTOR_TOKEN unset — refusing dispatch."
-            )
-            return False
-        log_ref.warning(
-            "Router: BIFROST_EXECUTOR_TOKEN unset — executor will reject."
+        log_ref.error(
+            "Router: BIFROST_EXECUTOR_TOKEN unset — refusing dispatch."
         )
+        return False
     else:
         headers["X-Bifrost-Token"] = token
 
@@ -193,12 +217,10 @@ def rollback_last_action(action_id: int, log_ref) -> bool:
     headers = {"Content-Type": "application/json"}
     token = os.getenv("BIFROST_EXECUTOR_TOKEN", "").strip()
     if not token:
-        from bifrost.security import is_production_mode
-        if is_production_mode():
-            log_ref.error(
-                "Router: BIFROST_EXECUTOR_TOKEN unset — refusing rollback."
-            )
-            return False
+        log_ref.error(
+            "Router: BIFROST_EXECUTOR_TOKEN unset — refusing rollback."
+        )
+        return False
     else:
         headers["X-Bifrost-Token"] = token
 

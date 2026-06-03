@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from bifrost.dashboard import (
     DISCLAIMER_TEXT,
     API_SLICE_PATHS,
+    build_incident_trace_bundle,
     build_dashboard_state,
     build_guardian_client_state,
     extract_api_slice,
@@ -418,3 +419,93 @@ def test_api_slice_endpoints_return_data(tmp_path):
     assert len(live["liveEvents"]) == 1
     assert isinstance(timeline["timeline"], list)
     assert isinstance(mitre["mitre"], list)
+
+
+def test_build_incident_trace_bundle_redacts_sensitive_fields(tmp_path):
+    db_path = tmp_path / "events.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            """
+            CREATE TABLE events (
+                id INTEGER PRIMARY KEY,
+                timestamp TEXT,
+                source TEXT,
+                boundary TEXT,
+                raw_event TEXT,
+                compressed_event TEXT,
+                heimdall_decision TEXT,
+                action_taken TEXT
+            );
+            CREATE TABLE actions (
+                id INTEGER PRIMARY KEY,
+                event_id INTEGER,
+                action_type TEXT,
+                target TEXT,
+                session_id TEXT,
+                ssh_fingerprint TEXT,
+                command_hash TEXT,
+                executed_at TEXT,
+                success INTEGER,
+                rollback_data TEXT,
+                rolled_back INTEGER
+            );
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO events
+            (id, timestamp, source, boundary, raw_event, compressed_event, heimdall_decision, action_taken)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                7,
+                "2026-05-30T12:00:00Z",
+                "cowrie",
+                "HONEYPOT",
+                json.dumps({"token": "secret-token", "input": "cat /etc/passwd"}),
+                json.dumps({"command": "cat /etc/passwd"}),
+                json.dumps(
+                    {
+                        "severity": "HIGH",
+                        "action_required": "BLOCK",
+                        "policy_allowed": False,
+                        "policy_rationale": "dry_run",
+                        "execution_result": "blocked_by_policy",
+                        "session_id": "sess-1",
+                        "ssh_fingerprint": "fp-1",
+                        "command_hash": "abc123",
+                    }
+                ),
+                "BLOCK",
+            ),
+        )
+        conn.execute(
+            """
+            INSERT INTO actions
+            (id, event_id, action_type, target, session_id, ssh_fingerprint, command_hash, executed_at, success, rollback_data, rolled_back)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                11,
+                7,
+                "BLOCK",
+                "203.0.113.10",
+                "sess-1",
+                "fp-1",
+                "abc123",
+                "2026-05-30T12:01:00Z",
+                1,
+                json.dumps({"token": "dont-show"}),
+                0,
+            ),
+        )
+        conn.commit()
+
+    trace = build_incident_trace_bundle(db_path, 7)
+    assert trace["incidentId"] == "7"
+    assert trace["event"]["id"] == 7
+    assert trace["policyGate"]["allowed"] is False
+    assert trace["router"]["actionRequest"]["actionRequired"] == "BLOCK"
+    assert trace["executor"]["actionResult"]["actionType"] == "BLOCK"
+    assert trace["event"]["rawEvent"]["token"] == "[REDACTED]"
+    assert trace["executor"]["actionResult"]["rollbackData"]["token"] == "[REDACTED]"

@@ -236,8 +236,8 @@ func TestDispatchWorker_OmitsTokenHeaderWhenEnvIsUnset(t *testing.T) {
 	os.Unsetenv("BIFROST_INGEST_TOKEN")
 
 	var (
-		mu           sync.Mutex
-		headerSent   bool
+		mu         sync.Mutex
+		headerSent bool
 	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -264,9 +264,9 @@ func TestDispatchWorker_PostsJSONBody(t *testing.T) {
 	os.Unsetenv("BIFROST_INGEST_TOKEN")
 
 	var (
-		mu          sync.Mutex
-		gotCT       string
-		gotMethod   string
+		mu        sync.Mutex
+		gotCT     string
+		gotMethod string
 	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -372,6 +372,55 @@ func TestAuthorizeExecutorRequest_RejectsEmptyTokenHeader(t *testing.T) {
 
 	if authorizeExecutorRequest(r) {
 		t.Error("expected false for empty token header, got true")
+	}
+}
+
+func TestIsValidVerdict_RequiresContextAndKnownAction(t *testing.T) {
+	valid := HeimdallVerdict{
+		ActionRequired: "BLOCK",
+		Target:         "203.0.113.10",
+		EventID:        5,
+		SchemaVersion:  "1.0.0",
+		SessionID:      "sess-1",
+		SSHFingerprint: "fp-1",
+		CommandHash:    "hash-1",
+	}
+	if !isValidVerdict(valid) {
+		t.Fatal("expected valid verdict to pass validation")
+	}
+
+	invalid := valid
+	invalid.ActionRequired = "DROP_TABLES"
+	if isValidVerdict(invalid) {
+		t.Fatal("expected unknown action to fail validation")
+	}
+
+	missing := valid
+	missing.SessionID = ""
+	if isValidVerdict(missing) {
+		t.Fatal("expected missing context to fail validation")
+	}
+}
+
+func TestAllowExecutorRequest_RateLimitsBurst(t *testing.T) {
+	rateLimitMu.Lock()
+	rateLimitBuckets = map[string][]time.Time{}
+	rateLimitMu.Unlock()
+
+	var blocked bool
+	for i := 0; i < executorRateLimitMax+1; i++ {
+		r := httptest.NewRequest(http.MethodPost, "/execute", nil)
+		r.RemoteAddr = "127.0.0.1:9999"
+		allowed := allowExecutorRequest(r, "/execute")
+		if i < executorRateLimitMax && !allowed {
+			t.Fatalf("request %d unexpectedly blocked before limit", i)
+		}
+		if i == executorRateLimitMax {
+			blocked = !allowed
+		}
+	}
+	if !blocked {
+		t.Fatal("expected rate limiter to block burst over configured max")
 	}
 }
 

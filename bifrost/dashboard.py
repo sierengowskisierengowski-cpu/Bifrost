@@ -8,6 +8,7 @@ import html
 import json
 import logging
 import os
+import re
 import secrets
 import sqlite3
 import threading
@@ -22,6 +23,7 @@ from typing import Any, Callable, Mapping
 from urllib.parse import parse_qs, urlparse
 
 from bifrost import paths as bifrost_paths
+from bifrost.security import redact_sensitive_data
 
 # ── Design tokens (Bifrost signature gradient) ──────────────────────────────
 RAINBOW_GRADIENT = (
@@ -477,8 +479,10 @@ def _map_incident_for_client(incident: Mapping[str, Any], index: int) -> dict[st
         or incident.get("action_required")
         or "LOG"
     )
+    trace_event_id = _coerce_event_id(incident.get("event_id") or incident.get("id"))
     return {
         "id": str(incident.get("id") or f"inc-{incident.get('timestamp', index)}"),
+        "traceEventId": trace_event_id,
         "timestamp": str(incident.get("timestamp") or ""),
         "severity": _normalize_severity(incident.get("severity")),
         "threatClass": str(incident.get("threat_class") or "unknown"),
@@ -666,6 +670,133 @@ def extract_api_slice(state: Mapping[str, Any], path: str) -> dict[str, Any]:
     if path == "/api/mitre":
         return {"mitre": client["mitreTacticCounts"]}
     raise KeyError(path)
+
+
+def _safe_json_load(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return value
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return value
+
+
+def _coerce_event_id(value: Any) -> int | None:
+    text = str(value or "").strip()
+    if not text.isdigit():
+        return None
+    eid = int(text)
+    return eid if eid > 0 else None
+
+
+def build_incident_trace_bundle(db_path: Path, event_id: int) -> dict[str, Any]:
+    if event_id < 1 or not db_path.exists():
+        return {}
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        event_row = conn.execute(
+            """
+            SELECT id, timestamp, source, boundary, raw_event, compressed_event, heimdall_decision, action_taken
+            FROM events
+            WHERE id = ?
+            LIMIT 1
+            """,
+            (event_id,),
+        ).fetchone()
+        if not event_row:
+            return {}
+        action_row = conn.execute(
+            """
+            SELECT id, action_type, target, session_id, ssh_fingerprint, command_hash,
+                   executed_at, success, rollback_data, rolled_back
+            FROM actions
+            WHERE event_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (event_id,),
+        ).fetchone()
+
+    decision = _safe_json_load(event_row["heimdall_decision"]) or {}
+    raw_event = _safe_json_load(event_row["raw_event"])
+    compressed_event = _safe_json_load(event_row["compressed_event"])
+    policy_allowed = decision.get("policy_allowed") if isinstance(decision, Mapping) else None
+    policy_rationale = decision.get("policy_rationale") if isinstance(decision, Mapping) else None
+    action_required = (
+        decision.get("action_requested")
+        or decision.get("action_required")
+        or event_row["action_taken"]
+        or "NONE"
+    ) if isinstance(decision, Mapping) else (event_row["action_taken"] or "NONE")
+    action_target = decision.get("target") if isinstance(decision, Mapping) else None
+    dispatch_result = decision.get("execution_result") if isinstance(decision, Mapping) else None
+    session_id = decision.get("session_id") if isinstance(decision, Mapping) else None
+    ssh_fingerprint = decision.get("ssh_fingerprint") if isinstance(decision, Mapping) else None
+    command_hash = decision.get("command_hash") if isinstance(decision, Mapping) else None
+
+    if action_row:
+        action_payload: dict[str, Any] | None = {
+            "actionId": int(action_row["id"]),
+            "success": bool(action_row["success"]),
+            "actionType": str(action_row["action_type"] or "NONE"),
+            "target": str(action_row["target"] or ""),
+            "sessionId": str(action_row["session_id"] or ""),
+            "sshFingerprint": str(action_row["ssh_fingerprint"] or ""),
+            "commandHash": str(action_row["command_hash"] or ""),
+            "executedAt": str(action_row["executed_at"] or ""),
+            "rollbackData": _safe_json_load(action_row["rollback_data"]),
+            "rolledBack": bool(action_row["rolled_back"]),
+        }
+        if not session_id:
+            session_id = action_payload["sessionId"]
+        if not ssh_fingerprint:
+            ssh_fingerprint = action_payload["sshFingerprint"]
+        if not command_hash:
+            command_hash = action_payload["commandHash"]
+    else:
+        action_payload = None
+
+    trace = {
+        "incidentId": str(event_row["id"]),
+        "event": {
+            "id": int(event_row["id"]),
+            "timestamp": str(event_row["timestamp"] or ""),
+            "source": str(event_row["source"] or ""),
+            "boundary": str(event_row["boundary"] or ""),
+            "rawEvent": raw_event,
+            "compressedEvent": compressed_event,
+        },
+        "reasoner": {
+            "verdict": decision if isinstance(decision, Mapping) else {},
+        },
+        "policyGate": {
+            "allowed": bool(policy_allowed) if policy_allowed is not None else None,
+            "rationale": str(policy_rationale or ""),
+        },
+        "router": {
+            "dispatchResult": str(dispatch_result or ""),
+            "actionRequest": {
+                "eventId": int(event_row["id"]),
+                "actionRequired": str(action_required or "NONE"),
+                "target": str(action_target or ""),
+                "sessionId": str(session_id or ""),
+                "sshFingerprint": str(ssh_fingerprint or ""),
+                "commandHash": str(command_hash or ""),
+            },
+        },
+        "executor": {
+            "actionResult": action_payload,
+        },
+    }
+    return redact_sensitive_data(trace)
 
 
 API_SLICE_PATHS = frozenset({
@@ -1106,6 +1237,8 @@ def _disclaimer_accepted(handler: BaseHTTPRequestHandler) -> bool:
 
 
 def _build_handler(server: "DashboardServer"):
+    trace_route = re.compile(r"^/api/incidents/(\d+)/trace$")
+
     class DashboardHandler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802
             parsed = urlparse(self.path)
@@ -1159,6 +1292,22 @@ def _build_handler(server: "DashboardServer"):
                 )
                 state = server.build_state(time_range=range_key)
                 self._write_json(extract_api_slice(state, path))
+                return
+
+            trace_match = trace_route.match(path)
+            if trace_match:
+                if not _disclaimer_accepted(self):
+                    self.send_response(HTTPStatus.FORBIDDEN)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.end_headers()
+                    self.wfile.write(b'{"error":"disclaimer_required"}')
+                    return
+                event_id = int(trace_match.group(1))
+                trace = server.build_incident_trace(event_id)
+                if not trace:
+                    self.send_error(HTTPStatus.NOT_FOUND, "Incident not found")
+                    return
+                self._write_json({"trace": trace})
                 return
 
             if path not in {"/", ""}:
@@ -1269,6 +1418,12 @@ class DashboardServer(threading.Thread):
             config=self.config,
             started_at=self._started_at,
         )
+
+    def build_incident_trace(self, incident_id: int | str) -> dict[str, Any]:
+        event_id = _coerce_event_id(incident_id)
+        if event_id is None:
+            return {}
+        return build_incident_trace_bundle(self.db_path, event_id)
 
     def set_config_updater(
         self, updater: Callable[[Mapping[str, Any]], None] | None

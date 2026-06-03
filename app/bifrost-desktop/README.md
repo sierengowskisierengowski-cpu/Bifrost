@@ -66,6 +66,8 @@ sudo ./scripts/setup-linux-build-env.sh
 ```
 
 This installs WebKit/GTK and other native libraries required by Tauri on Arch.
+It also installs `patchelf`, `desktop-file-utils`, and `appstream` used by the
+AppImage toolchain.
 
 Then install the toolchains:
 
@@ -93,8 +95,14 @@ pnpm desktop:dev      # = tauri dev (starts Vite on :5173 + the native window)
 
 ```bash
 pnpm install
-pnpm tauri build --bundles appimage
+pnpm desktop:preflight
+APPIMAGE_EXTRACT_AND_RUN=1 pnpm tauri build --bundles appimage
 ```
+
+`desktop:preflight` installs/validates a linuxdeploy wrapper at
+`~/.local/bin/linuxdeploy` that uses AppImage extract-and-run mode. This avoids
+the common `failed to run linuxdeploy` failure on systems where FUSE is not
+available at bundle time.
 
 Artifact:
 
@@ -122,3 +130,6 @@ that Tauri bundles into the desktop installers.
   `window.__TAURI__` with no extra npm SDK dependency.
 - In a plain browser (no Tauri runtime) every native call no-ops safely and the
   dashboard runs on mock data — handy for frontend-only iteration.
+- For reproducible desktop builds, commit `pnpm-lock.yaml`, prefer fixed Rust
+  toolchains (for example via `rust-toolchain.toml`), and run
+  `pnpm desktop:preflight` before AppImage bundling.

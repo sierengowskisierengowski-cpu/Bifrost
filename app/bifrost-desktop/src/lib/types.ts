@@ -4,6 +4,7 @@ export type ThreatLevel = Severity;
 
 export interface Incident {
   id: string;
+  traceEventId?: number | null;
   timestamp: string;
   severity: Severity;
   threatClass: string;
@@ -16,6 +17,50 @@ export interface Incident {
   summary: string;
   model: string;
   latencyMs: number;
+}
+
+export interface IncidentTrace {
+  incidentId: string;
+  event: {
+    id: number;
+    timestamp: string;
+    source: string;
+    boundary: string;
+    rawEvent: unknown;
+    compressedEvent: unknown;
+  };
+  reasoner: {
+    verdict: Record<string, unknown>;
+  };
+  policyGate: {
+    allowed: boolean | null;
+    rationale: string;
+  };
+  router: {
+    dispatchResult: string;
+    actionRequest: {
+      eventId: number;
+      actionRequired: string;
+      target: string;
+      sessionId: string;
+      sshFingerprint: string;
+      commandHash: string;
+    };
+  };
+  executor: {
+    actionResult: {
+      actionId: number;
+      success: boolean;
+      actionType: string;
+      target: string;
+      sessionId: string;
+      sshFingerprint: string;
+      commandHash: string;
+      executedAt: string;
+      rollbackData: unknown;
+      rolledBack: boolean;
+    } | null;
+  };
 }
 
 export interface CredentialAttempt {
