@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -42,12 +43,27 @@ type ActionResult struct {
 	CommandHash    string `json:"command_hash"`
 }
 
+const (
+	frontendHeartbeatHeader  = "X-Bifrost-Client"
+	frontendHeartbeatValue   = "tauri"
+	frontendHeartbeatTimeout = 30 * time.Second
+	frontendWatchdogInterval = 3 * time.Second
+	honeypotPort             = "2222/tcp"
+)
+
+var (
+	frontendMu             sync.Mutex
+	lastFrontendHeartbeat  time.Time
+	frontendLockdownActive bool
+)
+
 func startExecutor() {
 	port := executorPort()
 	log.Printf("[*] Bifrost Executor starting on port %s...", port)
 	http.HandleFunc("/execute", handleVerdict)
 	http.HandleFunc("/rollback", handleRollback)
 	http.HandleFunc("/health", handleHealth)
+	startFrontendWatchdog()
 	log.Fatal(http.ListenAndServe("127.0.0.1:"+port, nil))
 }
 
@@ -130,8 +146,78 @@ func handleRollback(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
+	if strings.EqualFold(r.Header.Get(frontendHeartbeatHeader), frontendHeartbeatValue) {
+		recordFrontendHeartbeat()
+	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"ok","component":"bifrost_executor"}`))
+}
+
+func startFrontendWatchdog() {
+	frontendMu.Lock()
+	if lastFrontendHeartbeat.IsZero() {
+		lastFrontendHeartbeat = time.Now()
+	}
+	frontendMu.Unlock()
+	ticker := time.NewTicker(frontendWatchdogInterval)
+	go func() {
+		for range ticker.C {
+			evaluateFrontendHeartbeat()
+		}
+	}()
+}
+
+func recordFrontendHeartbeat() {
+	frontendMu.Lock()
+	lastFrontendHeartbeat = time.Now()
+	active := frontendLockdownActive
+	frontendMu.Unlock()
+	if active {
+		exitAutonomousLockdown()
+	}
+}
+
+func evaluateFrontendHeartbeat() {
+	frontendMu.Lock()
+	last := lastFrontendHeartbeat
+	frontendMu.Unlock()
+	if time.Since(last) > frontendHeartbeatTimeout {
+		enterAutonomousLockdown()
+		return
+	}
+	exitAutonomousLockdown()
+}
+
+func enterAutonomousLockdown() {
+	if !setLockdownState(true) {
+		return
+	}
+	log.Printf("[!!!] AUTONOMOUS LOCKDOWN: monitoring interface offline > %s", frontendHeartbeatTimeout)
+	cmd := exec.Command("sudo", "ufw", "deny", honeypotPort)
+	if err := cmd.Run(); err != nil {
+		log.Printf("[!] Lockdown failed for %s: %v", honeypotPort, err)
+	}
+}
+
+func exitAutonomousLockdown() {
+	if !setLockdownState(false) {
+		return
+	}
+	log.Printf("[+] Lockdown cleared: monitoring interface restored")
+	cmd := exec.Command("sudo", "ufw", "allow", honeypotPort)
+	if err := cmd.Run(); err != nil {
+		log.Printf("[!] Restore failed for %s: %v", honeypotPort, err)
+	}
+}
+
+func setLockdownState(active bool) bool {
+	frontendMu.Lock()
+	defer frontendMu.Unlock()
+	if frontendLockdownActive == active {
+		return false
+	}
+	frontendLockdownActive = active
+	return true
 }
 
 func dispatchMitigation(v HeimdallVerdict) {

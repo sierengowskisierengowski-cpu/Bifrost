@@ -23,23 +23,28 @@ const NAV = [
 
 function ConnectionStatus() {
   const conn = useConnection();
-  const ok = conn.status === "connected";
+  const statusMap = {
+    connected: { label: "CONNECTED", color: "#4ECDC4", pulse: false },
+    reconnecting: { label: "RECONNECTING", color: "#FFB347", pulse: true },
+    disconnected: { label: "DISCONNECTED", color: "#FF2D2D", pulse: false },
+  } as const;
+  const current = statusMap[conn.status];
+  const retry = conn.status === "reconnecting" && conn.retryInSec > 0
+    ? ` · retry ${conn.retryInSec}s`
+    : "";
   return (
     <div className="flex items-center gap-2 text-xs font-mono no-drag">
       <span
-        className="w-2 h-2 rounded-full"
+        className={`w-2 h-2 rounded-full ${current.pulse ? "animate-pulse" : ""}`}
         style={{
-          background: ok ? "#4ECDC4" : "#FF2D2D",
-          boxShadow: `0 0 8px ${ok ? "#4ECDC4" : "#FF2D2D"}`,
+          background: current.color,
+          boxShadow: `0 0 8px ${current.color}`,
         }}
       />
-      {ok ? (
-        <span className="text-[#4ECDC4]">Connected</span>
-      ) : (
-        <span className="text-[#FF6B35]">
-          Disconnected{conn.retryInSec > 0 ? ` · retry ${conn.retryInSec}s` : ""}
-        </span>
-      )}
+      <span className="uppercase" style={{ color: current.color }}>
+        {current.label}
+        {retry}
+      </span>
     </div>
   );
 }

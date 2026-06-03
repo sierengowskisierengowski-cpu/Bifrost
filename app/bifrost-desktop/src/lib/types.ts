@@ -156,7 +156,7 @@ export interface GuardianState {
   liveEvents: LiveEvent[];
 }
 
-export type ConnectionStatus = "connected" | "connecting" | "disconnected";
+export type ConnectionStatus = "connected" | "reconnecting" | "disconnected";
 
 export interface ConnectionInfo {
   status: ConnectionStatus;
