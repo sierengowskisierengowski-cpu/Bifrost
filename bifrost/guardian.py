@@ -2017,7 +2017,7 @@ def main(argv=None):
     router.prewarm_ollama()
     router.start()
     log.info("Bifrost pipeline active.")
-    log.info("Heimdall is online. The bridge is watched.")
+    log.info("Heimdall is online. Heimdall Never Sleeps.")
 
     while not COLLECTOR_STOP.is_set():
         time.sleep(1.0)

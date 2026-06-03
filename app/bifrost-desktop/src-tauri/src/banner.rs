@@ -15,8 +15,8 @@ const BANNER_TEMPLATE: &str = r#"╔══════════════�
 ║                                                              ║
 ║         Local AI-Powered Endpoint Detection & Response       ║
 ║                                                              ║
-║                  The Bridge Is Watched                       ║
-║                  Heimdall Never Sleeps                       ║
+║                  Heimdall Never Sleeps.                      ║
+║                  Heimdall Never Sleeps.                      ║
 ║                                                              ║
 ║                       v{version:<8}                          ║
 ║                                                              ║
@@ -58,7 +58,7 @@ fn colorize_line(line: &str, index: usize, total: usize) -> String {
     if line.contains("H E I M D A L L") {
         return format!("{}{}{}", truecolor(PINK.0, PINK.1, PINK.2), line, reset);
     }
-    if line.contains("The Bridge Is Watched") {
+    if line.contains("Heimdall Never Sleeps.") {
         return format!("{}{}{}", truecolor(PURPLE.0, PURPLE.1, PURPLE.2), line, reset);
     }
     if line.contains("Heimdall Never") {

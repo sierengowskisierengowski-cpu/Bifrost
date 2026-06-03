@@ -8,7 +8,7 @@ def test_banner_text_contains_branding():
     assert "BIFROST" in text or "██████╗" in text
     assert "H E I M D A L L" in text
     assert "v0.3.0" in text
-    assert "The Bridge Is Watched" in text
+    assert "Heimdall Never Sleeps" in text
 
 
 def test_banner_skips_when_not_tty(monkeypatch, capsys):

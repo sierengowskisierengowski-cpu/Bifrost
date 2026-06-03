@@ -6,6 +6,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${TMPDIR:-/tmp}/bifrost-monolithic-build"
 PYI_DIR="${BUILD_DIR}/pyinstaller"
 BIN_DIR="${ROOT_DIR}/app/bifrost-desktop/src-tauri/binaries"
+RES_DIR="${ROOT_DIR}/app/bifrost-desktop/src-tauri/resources"
+GUARDIAN_RES_DIR="${RES_DIR}/guardian"
+AGENT_RES_DIR="${RES_DIR}/agent"
+AGENT_DIR="${ROOT_DIR}/agent"
 
 log() {
   echo "[*] $*"
@@ -54,7 +58,7 @@ TARGET_TRIPLE="$(detect_target_triple)"
 log "Using target triple: ${TARGET_TRIPLE}"
 
 rm -rf "${BUILD_DIR}"
-mkdir -p "${BUILD_DIR}" "${PYI_DIR}" "${BIN_DIR}"
+mkdir -p "${BUILD_DIR}" "${PYI_DIR}" "${BIN_DIR}" "${GUARDIAN_RES_DIR}" "${AGENT_RES_DIR}"
 
 export GOOS=linux
 export GOARCH="$(go env GOARCH)"
@@ -68,16 +72,20 @@ export CGO_LDFLAGS="${CGO_LDFLAGS:-} -Wl,-O2"
 GO_LDFLAGS="-s -w"
 
 log "Building log agent router sidecar..."
-go build -trimpath -buildvcs=false -ldflags "${GO_LDFLAGS}" \
+go build -C "${AGENT_DIR}" -trimpath -buildvcs=false -ldflags "${GO_LDFLAGS}" \
   -o "${BUILD_DIR}/log_agent_router" \
-  "${ROOT_DIR}/agent/main.go" \
-  "${ROOT_DIR}/agent/collector.go" \
-  "${ROOT_DIR}/agent/executor.go" \
-  "${ROOT_DIR}/agent/safety.go" \
-  "${ROOT_DIR}/agent/paths.go"
+  ./main.go \
+  ./collector.go \
+  ./executor.go \
+  ./safety.go \
+  ./paths.go
 
 log "Building executor sidecar..."
-EXECUTOR_MAIN="${BUILD_DIR}/executor_main.go"
+EXECUTOR_MAIN="${AGENT_DIR}/executor_main.gen.go"
+cleanup_executor_main() {
+  rm -f "${EXECUTOR_MAIN}"
+}
+trap cleanup_executor_main EXIT
 cat > "${EXECUTOR_MAIN}" <<'EOF'
 package main
 
@@ -86,12 +94,12 @@ func main() {
 }
 EOF
 
-go build -trimpath -buildvcs=false -ldflags "${GO_LDFLAGS}" \
+go build -C "${AGENT_DIR}" -trimpath -buildvcs=false -ldflags "${GO_LDFLAGS}" \
   -o "${BUILD_DIR}/executor" \
-  "${EXECUTOR_MAIN}" \
-  "${ROOT_DIR}/agent/executor.go" \
-  "${ROOT_DIR}/agent/safety.go" \
-  "${ROOT_DIR}/agent/paths.go"
+  ./executor_main.gen.go \
+  ./executor.go \
+  ./safety.go \
+  ./paths.go
 
 log "Packaging guardian sidecar..."
 PYI_DIST="${PYI_DIR}/dist"
@@ -112,7 +120,18 @@ install -m 755 "${BUILD_DIR}/executor" \
 install -m 755 "${PYI_DIST}/guardian" \
   "${BIN_DIR}/guardian-${TARGET_TRIPLE}"
 
-log "Building Tauri installer..."
+install -m 755 "${PYI_DIST}/guardian" \
+  "${GUARDIAN_RES_DIR}/guardian"
+install -m 644 "${ROOT_DIR}/bifrost/security.py" \
+  "${GUARDIAN_RES_DIR}/security.py"
+install -m 644 "${ROOT_DIR}/bifrost/reasoner.py" \
+  "${GUARDIAN_RES_DIR}/reasoner.py"
+install -m 755 "${BUILD_DIR}/log_agent_router" \
+  "${AGENT_RES_DIR}/log_agent_router-${TARGET_TRIPLE}"
+install -m 755 "${BUILD_DIR}/executor" \
+  "${AGENT_RES_DIR}/executor-${TARGET_TRIPLE}"
+
+log "Building Tauri AppImage..."
 pushd "${ROOT_DIR}/app/bifrost-desktop" >/dev/null
 pnpm install
 if [[ -n "${RUSTFLAGS:-}" ]]; then
@@ -120,7 +139,7 @@ if [[ -n "${RUSTFLAGS:-}" ]]; then
 else
   export RUSTFLAGS="-C target-cpu=native"
 fi
-pnpm tauri build
+pnpm tauri build --bundles appimage
 popd >/dev/null
 
 log "Monolithic package build complete."

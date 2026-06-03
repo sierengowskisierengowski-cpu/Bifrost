@@ -7,9 +7,8 @@
 [![Tests](https://img.shields.io/badge/tests-130%20passing-brightgreen)]()
 [![Version](https://img.shields.io/badge/version-v0.3.0-purple)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
-[![Arch Linux](https://img.shields.io/badge/Arch%20Linux-supported-1793D1?logo=arch-linux)]()
 
-*The Bridge Is Watched. Heimdall Never Sleeps.*
+*Heimdall Never Sleeps.*
 
 </div>
 
@@ -36,27 +35,49 @@ It watches your network in real time, ingests attack data from honeypots and hos
 
 ## Screenshots
 
+### Login
+
+![Bifrost login](screenshots/login.png)
+
 ### Overview
 
-![Bifrost overview dashboard](docs/screenshots/overview1.png)
-
-### Live Monitor
-
-![Bifrost live monitor](docs/screenshots/live-monitor1.png)
+![Bifrost overview dashboard](screenshots/overview.png)
 
 ### Incidents
 
-![Bifrost incidents view](docs/screenshots/incidents1.png)
+![Bifrost incidents view](screenshots/incidents.png)
 
 ### Attackers
 
-![Bifrost attackers view](docs/screenshots/attackers1.png)
+![Bifrost attackers view](screenshots/attackers.png)
+
+### Live Monitor
+
+![Bifrost live monitor](screenshots/live-monitor.png)
+
+### Timeline
+
+![Bifrost timeline view](screenshots/timeline.png)
+
+### MITRE
+
+![Bifrost MITRE mapping](screenshots/mitre.png)
+
+### Settings
+
+![Bifrost settings](screenshots/settings.png)
+
+### Legal
+
+![Bifrost legal disclaimer](screenshots/legal.png)
+
+### Screensaver
+
+![Bifrost screensaver](screenshots/screensaver.png)
 
 ## Requirements
 
-- Arch Linux (other distros may work but are not officially supported)
-- Python 3.11+
-- Go 1.21+
+- Linux with AppImage support (glibc-based distros recommended)
 - Ollama with a compatible model (default: qwen2.5:1.5b-instruct)
 - 8GB RAM minimum, 16GB recommended
 - SQLite 3
@@ -64,20 +85,26 @@ It watches your network in real time, ingests attack data from honeypots and hos
 
 ## Installation
 
-### Arch Linux (recommended)
+### AppImage (Linux)
 
-git clone https://github.com/sierengowskisierengowski-cpu/Bifrost.git
-cd Bifrost/app/bifrost-desktop
-makepkg -si
+1. Download the **Bifrost v0.3.0 AppImage** from GitHub Releases.
+2. Make it executable:
+   ```
+   chmod +x Bifrost-v0.3.0.AppImage
+   ```
+3. Run it:
+   ```
+   ./Bifrost-v0.3.0.AppImage
+   ```
 
-After install:
-
-bifrost
+The AppImage bundles the desktop app, guardian, and Go sidecars — no additional installs required.
 
 ### From Source
 
 git clone https://github.com/sierengowskisierengowski-cpu/Bifrost.git
 cd Bifrost
+python3 --version  # requires Python 3.11+
+go version         # requires Go 1.21+
 pip install -r requirements.txt --break-system-packages
 make install
 
@@ -90,22 +117,19 @@ step:
 
 The release bundles are written to:
 
-- app/bifrost-desktop/src-tauri/target/release/bundle/
+- app/bifrost-desktop/src-tauri/target/release/bundle/appimage/*.AppImage
 
 GitHub Actions uses the same script for release builds. The desktop icon master
 asset lives at `app/bifrost-desktop/src-tauri/icons/icon.svg` and is used to
 regenerate the bundled platform icons.
 
-### Starting the Guardian
+### Starting the Guardian (standalone)
 
-cd ~/Projects/bifrost
-source bifrost_tokens.env
-export PYTHONPATH=$PWD HEIMDALL_ENV=development
+cd /path/to/Bifrost
+export PYTHONPATH=$PWD
 python3 -m bifrost.guardian
 
-Then launch the desktop app:
-
-bifrost
+The AppImage starts the guardian automatically on launch.
 
 ## Configuration
 
@@ -139,13 +163,14 @@ Bifrost is composed of:
 - eBPF kernel probes
 - Direct ingest via REST API
 
-## Important Notice
+## Legal Disclaimer
 
-Bifrost is intended for use on infrastructure you own or are explicitly authorized to defend. You are solely responsible for ensuring your deployment complies with applicable laws and regulations.
-
-This software is designed for research, laboratory, and honeypot environments. It is not a substitute for professional security operations and should not be deployed on production systems carrying real user traffic without thorough review of its behavior.
-
-When autonomous mode is enabled, Bifrost may take active defensive actions including blocking, isolating, throttling, and tarpitting connections without human approval. These actions are driven by AI decisions and confidence thresholds. You accept full responsibility for any action taken on your behalf.
+1. **Authorized Use Only** — Bifrost is an autonomous intrusion-detection and active-defense system intended exclusively for use on infrastructure you own or are explicitly authorized to defend. You are solely responsible for ensuring that your deployment complies with all applicable laws and regulations in your jurisdiction.
+2. **Research, Lab & Honeypot Environments** — This software is designed for research, laboratory, and honeypot environments. Bifrost ingests and analyzes adversary activity captured by deception infrastructure (such as Cowrie). Do not deploy Bifrost on production systems carrying real user traffic without a thorough review of its autonomous response behavior.
+3. **Autonomous Actions Warning** — When Autonomous Mode is enabled, Bifrost may take active defensive actions — including blocking, isolating, throttling, and tarpitting connections — without human approval. These actions are driven by AI model decisions and confidence thresholds. You accept full responsibility for any action taken on your behalf. Use Dry Run mode to observe decisions without enforcement.
+4. **Data Handling** — Bifrost stores captured session data, attacker fingerprints, attempted credentials, and command transcripts in a local database. Attempted credentials are redacted in the interface. You are responsible for the secure storage, retention, and disposal of all collected data in accordance with your privacy obligations.
+5. **No Warranty** — This software is provided "as is", without warranty of any kind, express or implied. In no event shall the authors be liable for any claim, damages, or other liability arising from the use of this software. Detection is probabilistic and may produce false positives and false negatives.
+6. **Acknowledgement** — By accepting this disclaimer you confirm that you understand the autonomous nature of this system, that you are authorized to deploy it on the target environment, and that you accept all associated risk.
 
 ## Contributing
 

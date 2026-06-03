@@ -1,7 +1,7 @@
 [package]
 name = "bifrost"
-version = "1.0.0"
-description = "Bifrost — Norse rainbow-bridge security dashboard"
+version = "0.3.0"
+description = "Bifrost — Heimdall Never Sleeps."
 authors = ["Bifrost"]
 edition = "2021"
 rust-version = "1.77.2"

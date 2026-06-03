@@ -414,4 +414,4 @@ sed -i 's/192\.168\.[0-9]\+\.[0-9]\+/10.0.0.1/g' examples/replay/my_attacker_*.j
 
 ---
 
-*Bifrost — The Bridge Is Watched.*
+*Bifrost — Heimdall Never Sleeps.*

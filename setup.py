@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Heimdall Setup Engine v0.1.0
+Heimdall Setup Engine v0.3.0
 Bifrost Security Platform
 
 One command deployment. Zero configuration required.
@@ -18,7 +18,7 @@ import platform
 import hashlib
 from pathlib import Path
 
-HEIMDALL_VERSION = "0.1.0"
+HEIMDALL_VERSION = "0.3.0"
 SCHEMA_VERSION = "0.1.0"
 
 EXTRACTOR_MODEL = "qwen2.5:1.5b-instruct"
@@ -114,7 +114,7 @@ def banner():
 ╔══════════════════════════════════════════╗
 ║        HEIMDALL SETUP ENGINE             ║
 ║        Bifrost Security Platform         ║
-║        The Bridge Is Watched             ║
+║        Heimdall Never Sleeps.            ║
 ╚══════════════════════════════════════════╝
 """)
 
@@ -458,7 +458,7 @@ def main():
 ║  Learning period: 7 days                 ║
 ║  Active guardian mode after learning     ║
 ║                                          ║
-║  The Bridge Is Watched.                  ║
+║  Heimdall Never Sleeps.                  ║
 ╚══════════════════════════════════════════╝
 """)
 

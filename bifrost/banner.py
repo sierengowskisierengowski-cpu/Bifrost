@@ -22,8 +22,8 @@ _BANNER_TEMPLATE = """\
 ║                                                              ║
 ║         Local AI-Powered Endpoint Detection & Response       ║
 ║                                                              ║
-║                  The Bridge Is Watched                       ║
-║                  Heimdall Never Sleeps                       ║
+║                  Heimdall Never Sleeps.                      ║
+║                  Heimdall Never Sleeps.                      ║
 ║                                                              ║
 ║                       v{version:<8}                          ║
 ║                                                              ║
@@ -68,7 +68,7 @@ def _colorize_line(line: str, index: int, total: int) -> str:
         return _truecolor(*rgb) + line + "\033[0m"
     if "R A I N B O W" in line:
         return _truecolor(*_PINK) + line + "\033[0m"
-    if line.strip().startswith("║                  The Bridge"):
+    if line.strip().startswith("║                  Heimdall Never Sleeps."):
         return _truecolor(*_PURPLE) + line + "\033[0m"
     if "Heimdall Never" in line:
         return _truecolor(*_PINK) + line + "\033[0m"

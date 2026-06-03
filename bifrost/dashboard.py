@@ -884,7 +884,7 @@ def render_dashboard_html(state: Mapping[str, Any]) -> str:
   <aside class="sidebar">
     <div class="logo-wrap">
       <span class="logo">Bifrost</span>
-      <span class="logo-sub">Heimdall Never Sleeps</span>
+      <span class="logo-sub">Heimdall Never Sleeps.</span>
     </div>
     <nav class="nav">
       <button type="button" class="nav-item active" data-view="overview">Overview</button>

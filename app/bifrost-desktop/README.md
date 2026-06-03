@@ -1,6 +1,6 @@
 # Bifrost Desktop
 
-> The Bridge Is Watched.
+> Heimdall Never Sleeps.
 
 A native desktop wrapper for the **Bifrost** security dashboard, built with
 [Tauri v2](https://tauri.app). On launch it starts a local **Python guardian**
@@ -23,7 +23,7 @@ bifrost-desktop/
 └── src-tauri/              # the native Rust shell
     ├── Cargo.toml
     ├── build.rs
-    ├── tauri.conf.json     # window, bundle targets [], withGlobalTauri
+    ├── tauri.conf.json     # window, bundle targets [appimage], withGlobalTauri
     ├── capabilities/       # window + shell + notification permissions
     ├── icons/              # app icons
     └── src/
@@ -43,14 +43,14 @@ bifrost-desktop/
   - `guardian_status` → `bool` (true while the process is alive)
   - `get_guardian_port` → `number` (8766)
 
-**Where the guardian script is found** (first match wins):
+**Where the guardian entry is found** (first match wins):
 
-1. `BIFROST_GUARDIAN` environment variable — absolute path to your `.py` entry.
-2. Bundled resource: `<resources>/guardian/guardian.py`.
-3. Next to the executable: `<exe dir>/guardian/guardian.py`.
+1. `BIFROST_GUARDIAN` environment variable — absolute path to a script or binary.
+2. Bundled resource: `<resources>/guardian/guardian` (preferred) or `guardian.py`.
+3. Next to the executable: `<exe dir>/guardian/guardian` (preferred) or `guardian.py`.
 
-The interpreter defaults to `python3` (override with `BIFROST_PYTHON`). The
-guardian is launched as `python3 <script> --port 8766`.
+The interpreter defaults to `python3` (override with `BIFROST_PYTHON`) for `.py`
+entries. Binary guardians are launched directly with `--port 8766`.
 
 > Bring your own guardian: drop your Python program at one of the paths above,
 > or point `BIFROST_GUARDIAN` at it before launching.
@@ -89,34 +89,16 @@ pnpm desktop:dev      # = tauri dev (starts Vite on :5173 + the native window)
 
 `pnpm dev` alone runs just the web frontend in a browser (mock-data mode).
 
-## Build the release binary
+## Build the AppImage
 
 ```bash
 pnpm install
-pnpm desktop:build    # = tauri build (binary only, no AppImage)
+pnpm tauri build --bundles appimage
 ```
 
 Artifact:
 
-- `src-tauri/target/release/bifrost`
-
-`tauri.conf.json` sets `"targets": []` so the build does not invoke linuxdeploy.
-AppImage is not supported; use the PKGBUILD on Arch Linux.
-
-## Arch Linux install (official)
-
-The supported install path on Arch is `makepkg` using `PKGBUILD`.
-
-```bash
-cd app/bifrost-desktop
-makepkg -si
-```
-
-This builds the desktop binary and installs:
-
-- `/usr/bin/bifrost`
-- `/usr/share/applications/bifrost.desktop`
-- `/usr/share/icons/hicolor/256x256/apps/bifrost.png` (the `@2x` source file is 256x256 pixels: `src-tauri/icons/128x128@2x.png`)
+- `src-tauri/target/release/bundle/appimage/*.AppImage`
 
 ## Icons
 

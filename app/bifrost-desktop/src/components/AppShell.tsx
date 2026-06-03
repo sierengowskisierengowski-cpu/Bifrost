@@ -116,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <BifrostLogo className="w-9 h-9 float-soft" />
               <div>
                 <div className="font-extrabold tracking-wide leading-none">BIFROST</div>
-                <div className="text-[10px] tracking-[0.25em] text-muted-foreground mt-1">RAINBOW BRIDGE</div>
+                <div className="text-[10px] tracking-[0.25em] text-muted-foreground mt-1">HEIMDALL NEVER SLEEPS.</div>
               </div>
             </div>
             <nav className="flex-1 p-3 flex flex-col gap-1 overflow-auto scroll-thin">
@@ -138,11 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               })}
             </nav>
             <div className="p-4 border-t border-border/40">
-              <div className="text-[10px] text-muted-foreground font-mono leading-relaxed">
-                The Bridge Is Watched.
-                <br />
-                Heimdall Never Sleeps.
-              </div>
+              <div className="text-[10px] text-muted-foreground font-mono leading-relaxed">Heimdall Never Sleeps.</div>
             </div>
           </aside>
 
