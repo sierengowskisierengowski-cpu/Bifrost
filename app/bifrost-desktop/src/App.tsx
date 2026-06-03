@@ -64,6 +64,20 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const setActive = (active: boolean) => root.classList.toggle("window-active", active);
+    const handleFocus = () => setActive(true);
+    const handleBlur = () => setActive(false);
+    setActive(document.hasFocus());
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
   const onSplashDone = useCallback(() => {
     setPhase(isSetupComplete() ? "login" : "wizard");
   }, []);
