@@ -90,12 +90,14 @@ export async function saveGuardianConfig(patch: {
   learningMode: boolean;
   dryRun: boolean;
   autonomous: boolean;
+  guardianPersistenceMode: "persistent" | "session_only";
   confidenceThreshold: number;
 }) {
   const payload = {
     learning_mode: patch.learningMode,
     dry_run: patch.dryRun,
     autonomous_actions_enabled: patch.autonomous,
+    guardian_persistence_mode: patch.guardianPersistenceMode,
     confidence_threshold: patch.confidenceThreshold,
   };
   const res = await guardianFetch(`${baseUrl()}/api/config`, {

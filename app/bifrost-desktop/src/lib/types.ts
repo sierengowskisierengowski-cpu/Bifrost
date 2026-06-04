@@ -86,6 +86,7 @@ export interface GuardianConfig {
   learningMode: boolean;
   dryRun: boolean;
   autonomous: boolean;
+  guardianPersistenceMode: "persistent" | "session_only";
   confidenceThreshold: number;
   modelsLoaded: string[];
   hardwareTier: string;

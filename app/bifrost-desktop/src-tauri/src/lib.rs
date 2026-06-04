@@ -1,9 +1,12 @@
 mod banner;
 
 use std::fs;
+use std::io::{Read, Write};
+use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use std::time::Duration;
 
 use sha2::{Digest, Sha256};
 use tauri::{
@@ -15,13 +18,24 @@ use tauri::{
 /// Port the Python guardian listens on. The frontend polls
 /// http://127.0.0.1:8766 and this value is handed back via `get_guardian_port`.
 const GUARDIAN_PORT: u16 = 8766;
-const EXPECTED_SECURITY_HASH: &str = "300df99fbcfcb65870aa5dd19630d3fb78d1bca56683abd527f8f16711288364";
-const EXPECTED_REASONER_HASH: &str = "4e12f51188425c211974c835caf7387ced155f629801c95ef8fef75b3764c703";
+const EXPECTED_SECURITY_HASH: &str =
+    "300df99fbcfcb65870aa5dd19630d3fb78d1bca56683abd527f8f16711288364";
+const EXPECTED_REASONER_HASH: &str =
+    "4e12f51188425c211974c835caf7387ced155f629801c95ef8fef75b3764c703";
 
 /// Holds the spawned guardian process so it can be supervised and killed.
-#[derive(Default)]
 pub struct GuardianState {
     child: Mutex<Option<Child>>,
+    session_only: Mutex<bool>,
+}
+
+impl Default for GuardianState {
+    fn default() -> Self {
+        Self {
+            child: Mutex::new(None),
+            session_only: Mutex::new(false),
+        }
+    }
 }
 
 /// Resolve the python interpreter. Override with the BIFROST_PYTHON env var.
@@ -109,6 +123,31 @@ fn verify_core_integrity(path: &Path, expected: &str) -> bool {
     }
 }
 
+fn guardian_is_reachable() -> bool {
+    let addr = SocketAddr::from(([127, 0, 0, 1], GUARDIAN_PORT));
+    let Ok(mut stream) = TcpStream::connect_timeout(&addr, Duration::from_millis(250)) else {
+        return false;
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(250)));
+    let _ = stream.set_write_timeout(Some(Duration::from_millis(250)));
+    if stream
+        .write_all(b"GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
+        .is_err()
+    {
+        return false;
+    }
+    let mut buf = [0_u8; 128];
+    match stream.read(&mut buf) {
+        Ok(read) if read > 0 => String::from_utf8_lossy(&buf[..read]).contains("200"),
+        Ok(_) => false,
+        Err(_) => false,
+    }
+}
+
+fn should_stop_on_exit(state: &GuardianState) -> bool {
+    *state.session_only.lock().unwrap()
+}
+
 /// Start the guardian if it is not already running. Returns true when a live
 /// process exists after the call.
 fn do_start(app: &tauri::AppHandle, state: &GuardianState) -> bool {
@@ -119,6 +158,10 @@ fn do_start(app: &tauri::AppHandle, state: &GuardianState) -> bool {
             Ok(None) => return true, // already running
             _ => *guard = None,      // exited / errored — clear and respawn
         }
+    }
+
+    if guardian_is_reachable() {
+        return true;
     }
 
     let entry = match guardian_entry(app) {
@@ -190,6 +233,12 @@ fn get_guardian_port() -> u16 {
     GUARDIAN_PORT
 }
 
+#[tauri::command]
+fn set_guardian_session_only(session_only: bool, state: State<GuardianState>) -> bool {
+    *state.session_only.lock().unwrap() = session_only;
+    true
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     banner::print_startup_banner();
@@ -203,7 +252,8 @@ pub fn run() {
             start_guardian,
             stop_guardian,
             guardian_status,
-            get_guardian_port
+            get_guardian_port,
+            set_guardian_session_only
         ])
         .setup(|app| {
             let entry = match guardian_entry(app.handle()) {
@@ -250,7 +300,9 @@ pub fn run() {
                     }
                     "quit" => {
                         let state = app.state::<GuardianState>();
-                        do_stop(&state);
+                        if should_stop_on_exit(&state) {
+                            do_stop(&state);
+                        }
                         app.exit(0);
                     }
                     _ => {}
@@ -262,7 +314,9 @@ pub fn run() {
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { .. } = event {
                 let state = window.state::<GuardianState>();
-                do_stop(&state);
+                if should_stop_on_exit(&state) {
+                    do_stop(&state);
+                }
             }
         })
         .build(tauri::generate_context!())
@@ -270,7 +324,9 @@ pub fn run() {
         .run(|app, event| {
             if let tauri::RunEvent::ExitRequested { .. } = event {
                 let state = app.state::<GuardianState>();
-                do_stop(&state);
+                if should_stop_on_exit(&state) {
+                    do_stop(&state);
+                }
             }
         });
 }

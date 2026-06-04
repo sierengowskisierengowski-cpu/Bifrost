@@ -31,6 +31,7 @@ export default function Settings() {
     learningMode: config.learningMode,
     dryRun: config.dryRun,
     autonomous: config.autonomous,
+    guardianPersistenceMode: config.guardianPersistenceMode ?? "persistent",
     confidenceThreshold: toThresholdPct(config.confidenceThreshold),
   }));
 
@@ -39,9 +40,10 @@ export default function Settings() {
       learningMode: config.learningMode,
       dryRun: config.dryRun,
       autonomous: config.autonomous,
+      guardianPersistenceMode: config.guardianPersistenceMode ?? "persistent",
       confidenceThreshold: toThresholdPct(config.confidenceThreshold),
     });
-  }, [config.autonomous, config.confidenceThreshold, config.dryRun, config.learningMode]);
+  }, [config.autonomous, config.confidenceThreshold, config.dryRun, config.guardianPersistenceMode, config.learningMode]);
 
   const changePw = async () => {
     if (pw.length < 4 || pw !== pw2) {
@@ -60,6 +62,7 @@ export default function Settings() {
     behavior.learningMode !== config.learningMode ||
     behavior.dryRun !== config.dryRun ||
     behavior.autonomous !== config.autonomous ||
+    behavior.guardianPersistenceMode !== (config.guardianPersistenceMode ?? "persistent") ||
     behavior.confidenceThreshold !== currentThreshold;
 
   const saveBehavior = async () => {
@@ -69,6 +72,7 @@ export default function Settings() {
         learningMode: behavior.learningMode,
         dryRun: behavior.dryRun,
         autonomous: behavior.autonomous,
+        guardianPersistenceMode: behavior.guardianPersistenceMode,
         confidenceThreshold: toThresholdValue(behavior.confidenceThreshold),
       });
       setSaveState("saved");
@@ -88,6 +92,21 @@ export default function Settings() {
             <Toggle checked={behavior.learningMode} onChange={(v) => { setBehavior((prev) => ({ ...prev, learningMode: v })); setSaveState("idle"); }} label="Learning Mode" accent="#9D4EDD" />
             <Toggle checked={behavior.dryRun} onChange={(v) => { setBehavior((prev) => ({ ...prev, dryRun: v })); setSaveState("idle"); }} label="Dry Run (observe, do not enforce)" accent="#FFD166" />
             <Toggle checked={behavior.autonomous} onChange={(v) => { setBehavior((prev) => ({ ...prev, autonomous: v })); setSaveState("idle"); }} label="Autonomous Mode" accent="#E040FB" />
+            <Toggle
+              checked={behavior.guardianPersistenceMode === "session_only"}
+              onChange={(v) => {
+                setBehavior((prev) => ({
+                  ...prev,
+                  guardianPersistenceMode: v ? "session_only" : "persistent",
+                }));
+                setSaveState("idle");
+              }}
+              label="Session-only mode (stop Guardian when the app closes)"
+              accent="#4ECDC4"
+            />
+            <div className="text-[11px] font-mono text-muted-foreground">
+              Default is always-on background monitoring with boot auto-start.
+            </div>
             <div>
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-muted-foreground">Confidence threshold</span>

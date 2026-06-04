@@ -3,8 +3,9 @@
 > Heimdall Never Sleeps.
 
 A native desktop wrapper for the **Bifrost** security dashboard, built with
-[Tauri v2](https://tauri.app). On launch it starts a local **Python guardian**
-process; on exit it shuts the guardian down. The React frontend polls the
+[Tauri v2](https://tauri.app). By default it connects to the persistent
+systemd-managed **Python guardian** service; session-only mode falls back to an
+app-managed guardian that stops when the app closes. The React frontend polls the
 guardian's HTTP API at `http://127.0.0.1:8766` and falls back to mock data when
 the guardian is unavailable.
 
@@ -33,15 +34,16 @@ bifrost-desktop/
 
 ### Guardian lifecycle (Rust → Python)
 
-`src-tauri/src/lib.rs` owns the guardian process:
+`src-tauri/src/lib.rs` manages guardian lifecycle hints for the desktop shell:
 
-- **start** automatically in `setup()` when the app launches.
-- **stop** automatically on window close, tray "Quit", and app exit.
-- Exposes four commands the frontend calls over `window.__TAURI__`:
+- **default**: leave Guardian running when the app closes, so the systemd service stays persistent.
+- **session-only mode**: stop the app-managed guardian on window close, tray "Quit", and app exit.
+- Exposes five commands the frontend calls over `window.__TAURI__`:
   - `start_guardian` → `bool`
   - `stop_guardian` → `bool`
   - `guardian_status` → `bool` (true while the process is alive)
   - `get_guardian_port` → `number` (8766)
+  - `set_guardian_session_only` → `bool`
 
 **Where the guardian entry is found** (first match wins):
 

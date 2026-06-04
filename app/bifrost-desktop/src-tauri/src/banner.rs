@@ -48,7 +48,12 @@ fn colorize_line(line: &str, index: usize, total: usize) -> String {
         return line.to_string();
     }
     if stripped.starts_with('╔') || stripped.starts_with('╚') {
-        return format!("{}{}{}", truecolor(BORDER.0, BORDER.1, BORDER.2), line, reset);
+        return format!(
+            "{}{}{}",
+            truecolor(BORDER.0, BORDER.1, BORDER.2),
+            line,
+            reset
+        );
     }
     if line.contains('█') || line.contains("██╔") {
         let t = index as f32 / (total.saturating_sub(1).max(1) as f32);
@@ -59,7 +64,12 @@ fn colorize_line(line: &str, index: usize, total: usize) -> String {
         return format!("{}{}{}", truecolor(PINK.0, PINK.1, PINK.2), line, reset);
     }
     if line.contains("Heimdall Never Sleeps.") {
-        return format!("{}{}{}", truecolor(PURPLE.0, PURPLE.1, PURPLE.2), line, reset);
+        return format!(
+            "{}{}{}",
+            truecolor(PURPLE.0, PURPLE.1, PURPLE.2),
+            line,
+            reset
+        );
     }
     if line.contains("Heimdall Never") {
         return format!("{}{}{}", truecolor(PINK.0, PINK.1, PINK.2), line, reset);

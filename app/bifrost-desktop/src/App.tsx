@@ -5,9 +5,9 @@ import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { guardian, useSettings } from "@/lib/api";
+import { guardian, useGuardian, useSettings } from "@/lib/api";
 import { isSetupComplete } from "@/lib/app-state";
-import { startGuardian, stopGuardian } from "@/lib/tauri";
+import { setGuardianSessionOnly, startGuardian, stopGuardian } from "@/lib/tauri";
 
 import { Splash } from "@/components/Splash";
 import { Login } from "@/components/Login";
@@ -53,6 +53,7 @@ function Routes() {
 function App() {
   const [phase, setPhase] = useState<Phase>("splash");
   const [idle, setIdle] = useState(false);
+  const { config } = useGuardian();
   const settings = useSettings();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,6 +65,10 @@ function App() {
       stopGuardian();
     };
   }, []);
+
+  useEffect(() => {
+    void setGuardianSessionOnly(config.guardianPersistenceMode === "session_only");
+  }, [config.guardianPersistenceMode]);
 
   useEffect(() => {
     const root = document.documentElement;

@@ -41,6 +41,8 @@ export const startGuardian = () => invokeGuardian<boolean>("start_guardian");
 export const stopGuardian = () => invokeGuardian<boolean>("stop_guardian");
 export const guardianStatus = () => invokeGuardian<boolean>("guardian_status");
 export const getGuardianPort = () => invokeGuardian<number>("get_guardian_port");
+export const setGuardianSessionOnly = (sessionOnly: boolean) =>
+  invokeGuardian<boolean>("set_guardian_session_only", { sessionOnly });
 
 export async function openExternal(url: string): Promise<void> {
   const t = tauri();

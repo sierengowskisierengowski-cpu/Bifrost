@@ -344,6 +344,7 @@ def generate_config(tier, analyst_model, extractor_model, ollama_ok, paths):
         "learning_mode": True,
         "dry_run": True,
         "autonomous_actions_enabled": False,
+        "guardian_persistence_mode": "persistent",
         "confidence_threshold": 0.85,
         "min_evidence_count": 2,
         "never_block_rfc1918": True,
