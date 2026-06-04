@@ -7,6 +7,7 @@ import type {
   TimeRange,
   TimeBucket,
   OverviewStats,
+  GuardianConfig,
 } from "./types";
 import { generateGuardianState, makeLiveEvent, buildMitre } from "./mockData";
 
@@ -122,6 +123,21 @@ function clearPersistedConfig() {
 
 const MAX_LIVE = 200;
 
+// Defensive JSON shape helpers for enriching state from the guardian's
+// dedicated endpoints, which may return a bare array or a wrapped object.
+function asArray(v: unknown, key: string): unknown[] | null {
+  if (Array.isArray(v)) return v;
+  if (v && typeof v === "object") {
+    const inner = (v as Record<string, unknown>)[key];
+    if (Array.isArray(inner)) return inner;
+  }
+  return null;
+}
+
+function asObject(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+}
+
 class GuardianClient {
   private state: GuardianState = generateGuardianState();
   private conn: ConnectionInfo = {
@@ -170,21 +186,40 @@ class GuardianClient {
     this.poll();
   }
 
-  private async poll() {
-    const url = `${baseUrl()}/api/state`;
+  // Throws on timeout / network error / non-2xx. Used for the /api/state probe.
+  private async fetchJson(url: string, timeoutMs = 2500): Promise<unknown> {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 2500);
       const res = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(t);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as Partial<GuardianState>;
-      this.state = { ...this.state, ...data };
-      this.backoff = 1;
-      this.setConn({ status: "connected", source: "live", lastUpdated: Date.now(), retryInSec: 0 });
-      this.emitState();
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  // Best-effort: never throws, returns null on any failure. Used to enrich the
+  // core snapshot from the guardian's dedicated endpoints without ever flipping
+  // the connection to "disconnected".
+  private async tryJson(url: string): Promise<unknown | null> {
+    try {
+      return await this.fetchJson(url);
     } catch {
-      // No guardian reachable — fall back to the rich local model (also powers offline mode).
+      return null;
+    }
+  }
+
+  private async poll() {
+    const root = baseUrl();
+
+    // /api/state is BOTH the connection probe and the primary snapshot. The
+    // Python guardian (dashboard.py) serves it; if it's unreachable we are
+    // disconnected and fall back to the rich local simulated model.
+    let core: unknown;
+    try {
+      core = await this.fetchJson(`${root}/api/state`);
+    } catch {
       this.backoff = Math.min(this.backoff * 2, 30);
       this.setConn({
         status: "disconnected",
@@ -192,7 +227,52 @@ class GuardianClient {
         retryInSec: this.backoff,
         lastUpdated: this.conn.lastUpdated,
       });
+      return;
     }
+
+    let next: GuardianState = { ...this.state };
+    if (core && typeof core === "object") {
+      next = { ...next, ...(core as Partial<GuardianState>) };
+    }
+
+    // Enrich from the guardian's dedicated endpoints. Each is optional: a
+    // guardian that returns everything inside /api/state just re-applies the
+    // same data here (or 404s → ignored), while one that splits its data across
+    // endpoints (dashboard.py: /api/attackers, /api/incidents, /api/live,
+    // /api/config) gets those slices populated. We accept both bare arrays
+    // (e.g. `[...]`) and wrapped objects (e.g. `{ "attackers": [...] }`).
+    // MITRE, the timeline and the overview are derived locally from incidents,
+    // so /api/mitre, /api/timeline and /api/summary need no separate wiring —
+    // once the incident feed is live they stay in sync automatically.
+    const [attackers, incidents, live, config] = await Promise.all([
+      this.tryJson(`${root}/api/attackers`),
+      this.tryJson(`${root}/api/incidents`),
+      this.tryJson(`${root}/api/live`),
+      this.tryJson(`${root}/api/config`),
+    ]);
+
+    const a = asArray(attackers, "attackers");
+    if (a) next.attackers = a as GuardianState["attackers"];
+    const i = asArray(incidents, "incidents");
+    if (i) next.incidents = i as GuardianState["incidents"];
+    const l =
+      asArray(live, "liveEvents") ?? asArray(live, "events") ?? asArray(live, "live");
+    let liveChanged = false;
+    if (l) {
+      next.liveEvents = (l as GuardianState["liveEvents"]).slice(0, MAX_LIVE);
+      liveChanged = true;
+    }
+    const cfgObj = asObject(config);
+    if (cfgObj) {
+      const c = asObject(cfgObj.config) ?? cfgObj;
+      next.config = { ...next.config, ...(c as Partial<GuardianConfig>) };
+    }
+
+    this.state = next;
+    this.backoff = 1;
+    this.setConn({ status: "connected", source: "live", lastUpdated: Date.now(), retryInSec: 0 });
+    this.emitState();
+    if (liveChanged) this.emitLive();
   }
 
   private scheduleLive() {
