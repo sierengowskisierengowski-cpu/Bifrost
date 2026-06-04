@@ -46,6 +46,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   sessionTimeoutMin: 30,
   desktopNotifications: true,
 };
+const DEFAULT_GUARDIAN_BEHAVIOR: GuardianBehaviorSettings = {
+  learningMode: false,
+  dryRun: false,
+  autonomous: true,
+  confidenceThreshold: 0.75,
+};
 
 // Cache a stable snapshot so useSyncExternalStore doesn't loop: only return a
 // new object reference when the persisted value actually changes.
@@ -96,17 +102,18 @@ export function getGuardianBehavior(): GuardianBehaviorSettings | null {
   }
   try {
     const parsed = JSON.parse(raw) as Partial<GuardianBehaviorSettings>;
-    const confidenceThreshold = Number(parsed.confidenceThreshold);
-    if (!Number.isFinite(confidenceThreshold)) {
-      cachedBehavior = null;
-    } else {
-      cachedBehavior = {
-        learningMode: !!parsed.learningMode,
-        dryRun: !!parsed.dryRun,
-        autonomous: !!parsed.autonomous,
-        confidenceThreshold,
-      };
+    const rawThreshold = Number(parsed.confidenceThreshold);
+    let confidenceThreshold = Number.isFinite(rawThreshold) ? rawThreshold : DEFAULT_GUARDIAN_BEHAVIOR.confidenceThreshold;
+    if (confidenceThreshold > 1) confidenceThreshold /= 100;
+    if (confidenceThreshold <= 0 || confidenceThreshold > 1) {
+      confidenceThreshold = DEFAULT_GUARDIAN_BEHAVIOR.confidenceThreshold;
     }
+    cachedBehavior = {
+      learningMode: !!parsed.learningMode,
+      dryRun: !!parsed.dryRun,
+      autonomous: !!parsed.autonomous,
+      confidenceThreshold,
+    };
   } catch {
     cachedBehavior = null;
   }

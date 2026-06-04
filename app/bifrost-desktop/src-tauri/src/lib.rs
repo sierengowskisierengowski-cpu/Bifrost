@@ -48,7 +48,7 @@ struct SystemMetrics {
 }
 
 fn kib_to_gb(value: u64) -> f32 {
-    (value as f64 / 1024.0 / 1024.0) as f32
+    (value as f64 * 1024.0 / 1_000_000_000.0) as f32
 }
 
 /// Resolve the python interpreter. Override with the BIFROST_PYTHON env var.

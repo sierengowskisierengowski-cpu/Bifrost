@@ -58,9 +58,13 @@ function StatusBar() {
     if (!isTauri()) return;
     let active = true;
     const poll = async () => {
-      const data = await getSystemMetrics();
-      if (!active || !data) return;
-      setMetrics(data);
+      try {
+        const data = await getSystemMetrics();
+        if (!active || !data) return;
+        setMetrics(data);
+      } catch {
+        /* ignore */
+      }
     };
     poll();
     const timer = setInterval(poll, 4000);
