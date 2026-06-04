@@ -13,7 +13,7 @@
 
 ## What is Bifrost?
 
-Bifrost is an open-source, locally run endpoint detection and response platform focused on Linux security labs and authorized defense environments. It ingests host, honeypot, and network telemetry, performs local AI-assisted analysis, maps behavior to MITRE ATT&CK, and exposes a native desktop command center.
+Bifrost is an open-source, locally run endpoint detection and response platform focused on Linux security labs and authorized defense environments. It ingests host, honeypot, and network telemetry, applies local AI-assisted analysis, and presents findings through a desktop command center backed by Guardian.
 
 ## Purpose
 
@@ -33,13 +33,19 @@ Bifrost is built for operators who want local-first security telemetry and respo
 - **Mjolnir (`bifrost/mjolnir.py`):** active deception asset deployment helpers
 - **Analyst Matrix (`bifrost/analyst_matrix.py`):** model tier selection by RAM + structured AI analysis
 
-> Note: Gjallarhorn, Mjolnir, and Analyst Matrix are implemented backend modules and are referenced from the Guardian orchestration layer. Current UI surfaces their outputs through incident/live monitoring views rather than dedicated standalone pages.
+> Note: Gjallarhorn, Mjolnir, and Analyst Matrix are implemented backend modules and are referenced from the Guardian orchestration layer. Current UI surfaces their outputs through incident/live monitoring workflows.
 
 ## Operating Modes
 
 - **Learning Mode:** observe and log only
 - **Active Mode:** observe + alerting
 - **Autonomous Mode:** observe + alert + defensive action when policy allows
+
+## Production Validation Stats
+
+- v0.3.0 validation assets and screenshots are being finalized before public release.
+- Repository documentation reflects the audited pre-release desktop/guardian packaging flow.
+- Screenshot refresh remains pending Joey's validated capture set.
 
 ## Key Features
 
