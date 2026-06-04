@@ -101,16 +101,17 @@ fi
 exec python3 -m bifrost.guardian "$@"
 EOF
 
-  # Default Heimdall config (installed once; not overwritten on upgrade)
+  # Default Heimdall config + environment templates (installed in package payload)
   install -dm755 "$pkgdir/etc/heimdall"
   install -Dm644 "$root/packaging/heimdall_config.json.default" \
     "$pkgdir/etc/heimdall/heimdall_config.json"
-  # Guardian compares this checksum at startup to detect config tampering
-  sha256sum "$pkgdir/etc/heimdall/heimdall_config.json" | awk '{print $1}' \
-    > "$pkgdir/etc/heimdall/heimdall_config.sha256"
+  # Placeholder checksum file; real checksum is generated in post-install from target machine file.
+  printf '%s\n' 'PENDING_POST_INSTALL_CHECKSUM' > "$pkgdir/etc/heimdall/heimdall_config.sha256"
+  install -Dm644 "$root/packaging/bifrost_tokens.env" \
+    "$pkgdir/etc/heimdall/bifrost.env"
 
   # Runtime data / log directories
-  install -dm755 "$pkgdir/var/lib/heimdall" "$pkgdir/var/log/heimdall"
+  install -dm755 "$pkgdir/var/lib/heimdall" "$pkgdir/var/log/heimdall" "$pkgdir/var/log/bifrost"
 
   # Desktop integration
   install -Dm644 "$root/app/bifrost-desktop/bifrost.desktop" \
