@@ -1,6 +1,6 @@
 pkgname=bifrost
 pkgver=0.3.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Bifrost AI-powered EDR — Heimdall Never Sleeps."
 arch=('x86_64')
 url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
@@ -15,6 +15,10 @@ depends=(
   'python-openai'
   'python-requests'
   'python-psutil'
+  'python-aiohttp'
+  'ollama'
+  'sqlite'
+  'nftables'
 )
 makedepends=('git' 'go' 'nodejs' 'pnpm' 'rust' 'python-pip')
 source=("git+https://github.com/sierengowskisierengowski-cpu/Bifrost.git")
