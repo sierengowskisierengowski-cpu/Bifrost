@@ -6899,3 +6899,80 @@
   "action_required": "LOG | NONE",
 2026-06-01 23:36:23,078 [INFO] heimdall.guardian — Heimdall: action=LOG effective=LOG severity=LOW confidence=0.00
 2026-06-01 23:36:23,078 [INFO] heimdall.guardian — Gjallarhorn Tier 1 alert queued.
+2026-06-03 23:30:27,460 [INFO] heimdall.guardian — ============================================================
+2026-06-03 23:30:27,461 [INFO] heimdall.guardian — Heimdall Guardian v0.3.0 starting.
+2026-06-03 23:30:27,461 [INFO] heimdall.guardian — ============================================================
+2026-06-03 23:30:27,461 [INFO] heimdall.guardian — Config integrity verified.
+2026-06-03 23:30:27,462 [INFO] heimdall.guardian — Config: tier=TIER_3 analyst=qwen2.5:1.5b-instruct extractor=qwen2.5:1.5b-instruct learning_days=7
+2026-06-03 23:30:27,697 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-06-03 23:30:27,697 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-06-03 23:30:27,704 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-06-03 23:30:27,704 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-06-03 23:30:27,714 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-06-03 23:30:27,714 [INFO] heimdall.guardian — AuditdCollector started.
+2026-06-03 23:30:27,714 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-06-03 23:30:27,714 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-06-03 23:30:27,714 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-06-03 23:30:27,714 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-06-03 23:30:27,714 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-06-03 23:30:27,715 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-06-03 23:30:27,715 [INFO] heimdall.guardian — Collector started: collector.process
+2026-06-03 23:30:27,715 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-06-03 23:30:27,715 [INFO] heimdall.guardian — Collector started: collector.network
+2026-06-03 23:30:27,720 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-06-03 23:30:30,033 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=2313.45 total_ns=2300591953 load_ns=1671591359 prompt_eval_ns=246462288 eval_ns=201689109
+2026-06-03 23:30:30,034 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=2313.45
+2026-06-03 23:30:30,034 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-06-03 23:30:30,034 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-06-03 23:30:30,034 [INFO] heimdall.guardian — Heimdall is online. Heimdall Never Sleeps.
+2026-06-03 23:31:21,567 [INFO] heimdall.guardian — ============================================================
+2026-06-03 23:31:21,567 [INFO] heimdall.guardian — Heimdall Guardian v0.3.0 starting.
+2026-06-03 23:31:21,567 [INFO] heimdall.guardian — ============================================================
+2026-06-03 23:31:21,570 [INFO] heimdall.guardian — Config integrity verified.
+2026-06-03 23:31:21,570 [INFO] heimdall.guardian — Config: tier=TIER_3 analyst=qwen2.5:1.5b-instruct extractor=qwen2.5:1.5b-instruct learning_days=7
+2026-06-03 23:31:21,587 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-06-03 23:31:21,588 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-06-03 23:31:21,591 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-06-03 23:31:21,592 [ERROR] heimdall.ingest — Ingest server failed: [Errno 98] Address already in use
+2026-06-03 23:31:21,594 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-06-03 23:31:21,595 [INFO] heimdall.guardian — AuditdCollector started.
+2026-06-03 23:31:21,595 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-06-03 23:31:21,595 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-06-03 23:31:21,596 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-06-03 23:31:21,596 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-06-03 23:31:21,596 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-06-03 23:31:21,596 [INFO] heimdall.guardian — Collector started: collector.process
+2026-06-03 23:31:21,597 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-06-03 23:31:21,597 [INFO] heimdall.guardian — Collector started: collector.network
+2026-06-03 23:31:21,602 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-06-03 23:31:22,070 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=468.15 total_ns=462603999 load_ns=60643254 prompt_eval_ns=22928470 eval_ns=199679952
+2026-06-03 23:31:22,070 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=468.15
+2026-06-03 23:31:22,071 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-06-03 23:31:22,071 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-06-03 23:31:22,071 [INFO] heimdall.guardian — Heimdall is online. Heimdall Never Sleeps.
+2026-06-03 23:31:29,996 [INFO] heimdall.guardian — ============================================================
+2026-06-03 23:31:29,996 [INFO] heimdall.guardian — Heimdall Guardian v0.3.0 starting.
+2026-06-03 23:31:29,996 [INFO] heimdall.guardian — ============================================================
+2026-06-03 23:31:29,996 [INFO] heimdall.guardian — Config integrity verified.
+2026-06-03 23:31:29,996 [INFO] heimdall.guardian — Config: tier=TIER_3 analyst=qwen2.5:1.5b-instruct extractor=qwen2.5:1.5b-instruct learning_days=7
+2026-06-03 23:31:30,012 [INFO] heimdall.guardian — Database initialized: /var/lib/heimdall/events.db
+2026-06-03 23:31:30,013 [INFO] heimdall.db_maintenance — WAL checkpoint thread started (interval=60s)
+2026-06-03 23:31:30,016 [INFO] heimdall.ingest — Ingest server listening on http://127.0.0.1:8765/ingest
+2026-06-03 23:31:30,016 [INFO] heimdall.guardian — Ingest server started on http://127.0.0.1:8765/ingest
+2026-06-03 23:31:30,018 [INFO] heimdall.guardian — Bifrost dashboard listening on http://127.0.0.1:8766/
+2026-06-03 23:31:30,018 [INFO] heimdall.guardian — AuditdCollector started.
+2026-06-03 23:31:30,018 [INFO] heimdall.guardian — Collector started: collector.auditd
+2026-06-03 23:31:30,018 [WARNING] heimdall.guardian — pywebview is not installed — desktop window unavailable. Dashboard is accessible at http://127.0.0.1:8766/
+2026-06-03 23:31:30,019 [WARNING] heimdall.guardian — auditd log not found. Is auditd running?
+2026-06-03 23:31:30,019 [INFO] heimdall.guardian — HoneypotLogCollector started.
+2026-06-03 23:31:30,019 [INFO] heimdall.guardian — Collector started: collector.cowrie
+2026-06-03 23:31:30,019 [INFO] heimdall.guardian — ProcessWatcher started.
+2026-06-03 23:31:30,019 [INFO] heimdall.guardian — Collector started: collector.process
+2026-06-03 23:31:30,019 [INFO] heimdall.guardian — NetworkWatcher started.
+2026-06-03 23:31:30,019 [INFO] heimdall.guardian — Collector started: collector.network
+2026-06-03 23:31:30,024 [INFO] heimdall.guardian — Live monitor active: enabled=True human=True test_mode=False structured=/var/log/heimdall/live_monitor.jsonl
+2026-06-03 23:31:30,491 [INFO] heimdall.guardian — Ollama inference model=qwen2.5:1.5b-instruct duration_ms=466.8 total_ns=461772931 load_ns=59345690 prompt_eval_ns=22442926 eval_ns=207234415
+2026-06-03 23:31:30,491 [INFO] heimdall.guardian — Ollama prewarm succeeded model=qwen2.5:1.5b-instruct duration_ms=466.8
+2026-06-03 23:31:30,491 [INFO] heimdall.guardian — EventRouter started. Bifrost pipeline active.
+2026-06-03 23:31:30,491 [INFO] heimdall.guardian — Bifrost pipeline active.
+2026-06-03 23:31:30,492 [INFO] heimdall.guardian — Heimdall is online. Heimdall Never Sleeps.
