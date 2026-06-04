@@ -47,7 +47,8 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            zstd
 
       - name: Install PyInstaller
         run: |
@@ -59,6 +60,11 @@ jobs:
 
       - name: Build monolithic package
         run: ./package_monolithic.sh
+
+      - name: Create Arch Linux package
+        run: |
+          chmod +x scripts/create-arch-pkg.sh
+          scripts/create-arch-pkg.sh
 
       - name: Set release tag
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -72,4 +78,5 @@ jobs:
           name: Bifrost ${{ env.SHORT_SHA }}
           generate_release_notes: true
           files: |
-            app/bifrost-desktop/src-tauri/target/release/bifrost*
+            app/bifrost-desktop/src-tauri/target/release/bifrost
+            bifrost-*.pkg.tar.zst

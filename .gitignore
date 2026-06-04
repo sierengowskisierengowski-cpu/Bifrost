@@ -56,9 +56,8 @@ dist/
 *.spec
 app/bifrost-desktop/src-tauri/binaries/guardian-*
 
-# Compiled Go sidecars
-app/bifrost-desktop/src-tauri/binaries/log_agent_router-*
-app/bifrost-desktop/src-tauri/binaries/executor-*
+# Arch Linux binary package (built locally by scripts/create-arch-pkg.sh)
+*.pkg.tar.zst
 
 # Local configuration files
 config.json

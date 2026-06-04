@@ -77,46 +77,86 @@ Bifrost is built for operators who want local-first security telemetry and respo
 
 ## Installation
 
-### Option 1: Build from source
+### Arch Linux — One-Download Install (Recommended)
+
+Download the pre-built Arch package from [GitHub Releases](https://github.com/sierengowskisierengowski-cpu/Bifrost/releases/latest):
+
+```bash
+# Download the latest .pkg.tar.zst from the Releases page, then:
+sudo pacman -U bifrost-0.3.0-1-x86_64.pkg.tar.zst
+```
+
+After install:
+- **Bifrost appears in your app launcher** (no terminal needed for normal use)
+- Click the **Bifrost** icon to open the dashboard
+- **Guardian starts automatically** when you open the app and stops when you close it
+- To enable **24/7 background monitoring** (optional), run:
+  ```bash
+  sudo systemctl enable --now bifrost-guardian.service
+  ```
+
+> See [docs/arch-install.md](docs/arch-install.md) for the complete installation guide, Guardian persistence details, and upgrade instructions.
+
+### Option 2: Build from source (Arch)
+
+```bash
+git clone https://github.com/sierengowskisierengowski-cpu/Bifrost.git
+cd Bifrost/app/bifrost-desktop
+makepkg -si
+```
+
+### Option 3: Build the desktop app manually
 
 ```bash
 git clone https://github.com/sierengowskisierengowski-cpu/Bifrost.git
 cd Bifrost
 python3 -m pip install -r requirements.txt
-```
-
-Build the desktop app:
-
-```bash
 cd app/bifrost-desktop
 pnpm install
 pnpm tauri build
 ```
 
-### Option 2: Download release binaries
+## Guardian Lifecycle
 
-If release binaries are published in GitHub Releases, download the Linux asset for `v0.3.0`, mark executable if required, and run it.
+**Normal use (desktop app):** Guardian starts automatically when you open the Bifrost desktop app and stops when you close it. No terminal interaction needed.
 
-## Guardian Startup
-
-From repository root:
-
-```bash
-python3 -m bifrost
-```
-
-Standalone Guardian service mode:
+**Standalone mode (terminal):**
 
 ```bash
 python3 -m bifrost.guardian --dashboard --dashboard-port 8766
 ```
 
+Or if installed via pacman:
+
+```bash
+bifrost-guardian --dashboard --dashboard-port 8766
+```
+
+**Persistent background service (optional):**
+
+```bash
+sudo systemctl enable --now bifrost-guardian.service
+```
+
+Guardian will then run at boot and continue running even when the desktop app is closed.
+
 ## Packaging
 
-Monolithic release packaging script:
+### Arch Linux package (CI-produced)
+
+The release workflow automatically builds `bifrost-<ver>-<rel>-x86_64.pkg.tar.zst` using `scripts/create-arch-pkg.sh`. This package is uploaded to GitHub Releases on every push to `main`.
+
+### Manual monolithic build (produces sidecar binaries + Tauri binary)
 
 ```bash
 ./package_monolithic.sh
+```
+
+### Create Arch package from local build
+
+```bash
+./package_monolithic.sh          # build everything first
+scripts/create-arch-pkg.sh       # then package for Arch
 ```
 
 ## Screenshots

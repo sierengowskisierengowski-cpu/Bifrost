@@ -1,8 +1,11 @@
 [Desktop Entry]
 Type=Application
 Name=Bifrost
-Comment=Heimdall Never Sleeps.
+GenericName=Security Monitor
+Comment=Heimdall Never Sleeps — AI-powered endpoint detection and response.
 Exec=/usr/bin/bifrost
 Icon=bifrost
 Terminal=false
-Categories=Utility;
+StartupNotify=true
+Categories=Utility;Security;
+Keywords=security;edr;monitoring;heimdall;guardian;
