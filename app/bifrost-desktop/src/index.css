@@ -97,22 +97,6 @@
   --sidebar-border: 0 0% 12%;
   --sidebar-primary: 272 61% 46%;
   --sidebar-primary-foreground: 0 0% 98%;
-
-  --rainbow-border-speed: 4s;
-  --rainbow-border-opacity: 1;
-  --rainbow-border-glow: 0 0 18px rgba(224, 64, 251, 0.45);
-}
-
-:root:not(.window-active) {
-  --rainbow-border-speed: 8s;
-  --rainbow-border-opacity: 0.65;
-  --rainbow-border-glow: 0 0 10px rgba(224, 64, 251, 0.25);
-}
-
-:root.window-active {
-  --rainbow-border-speed: 3.5s;
-  --rainbow-border-opacity: 1;
-  --rainbow-border-glow: 0 0 22px rgba(224, 64, 251, 0.6);
 }
 
 @layer base {
@@ -139,9 +123,7 @@
     #7B2FBE, #9D4EDD, #C4607A, #E040FB, #E91E8C, #F48FB1, #7B2FBE
   );
   background-size: 200% 200%;
-  animation: rainbow-flow var(--rainbow-border-speed) linear infinite;
-  opacity: var(--rainbow-border-opacity);
-  box-shadow: var(--rainbow-border-glow);
+  animation: rainbow-flow 4s linear infinite;
   z-index: -1;
 }
 

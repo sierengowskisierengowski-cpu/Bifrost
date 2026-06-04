@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ShieldCheck, KeyRound, RotateCcw, Server, MonitorCog, Cpu } from "lucide-react";
-import { useGuardian, useSettings, saveSettings, guardian, saveGuardianConfig } from "@/lib/api";
+import { useGuardian, useSettings, saveSettings, guardian } from "@/lib/api";
 import { PageHeader, Toggle } from "@/components/shared";
 import { setPassword, setSetupComplete, passwordStrength } from "@/lib/app-state";
 
@@ -17,8 +17,6 @@ function Card({ icon, title, children }: { icon: React.ReactNode; title: string;
 }
 
 const inputCls = "bg-black/40 border border-border rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-[#E040FB] w-full";
-const toThresholdPct = (value: number) => (value <= 1 ? Math.round(value * 100) : Math.round(value));
-const toThresholdValue = (value: number) => (value > 1 ? value / 100 : value);
 
 export default function Settings() {
   const { config } = useGuardian();
@@ -26,24 +24,6 @@ export default function Settings() {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [pwMsg, setPwMsg] = useState("");
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [behavior, setBehavior] = useState(() => ({
-    learningMode: config.learningMode,
-    dryRun: config.dryRun,
-    autonomous: config.autonomous,
-    guardianPersistenceMode: config.guardianPersistenceMode ?? "persistent",
-    confidenceThreshold: toThresholdPct(config.confidenceThreshold),
-  }));
-
-  useEffect(() => {
-    setBehavior({
-      learningMode: config.learningMode,
-      dryRun: config.dryRun,
-      autonomous: config.autonomous,
-      guardianPersistenceMode: config.guardianPersistenceMode ?? "persistent",
-      confidenceThreshold: toThresholdPct(config.confidenceThreshold),
-    });
-  }, [config.autonomous, config.confidenceThreshold, config.dryRun, config.guardianPersistenceMode, config.learningMode]);
 
   const changePw = async () => {
     if (pw.length < 4 || pw !== pw2) {
@@ -57,30 +37,6 @@ export default function Settings() {
   };
 
   const strength = passwordStrength(pw);
-  const currentThreshold = toThresholdPct(config.confidenceThreshold);
-  const hasBehaviorChanges =
-    behavior.learningMode !== config.learningMode ||
-    behavior.dryRun !== config.dryRun ||
-    behavior.autonomous !== config.autonomous ||
-    behavior.guardianPersistenceMode !== (config.guardianPersistenceMode ?? "persistent") ||
-    behavior.confidenceThreshold !== currentThreshold;
-
-  const saveBehavior = async () => {
-    setSaveState("saving");
-    try {
-      await saveGuardianConfig({
-        learningMode: behavior.learningMode,
-        dryRun: behavior.dryRun,
-        autonomous: behavior.autonomous,
-        guardianPersistenceMode: behavior.guardianPersistenceMode,
-        confidenceThreshold: toThresholdValue(behavior.confidenceThreshold),
-      });
-      setSaveState("saved");
-      await guardian.refresh();
-    } catch {
-      setSaveState("error");
-    }
-  };
 
   return (
     <div>
@@ -89,52 +45,23 @@ export default function Settings() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card icon={<ShieldCheck className="w-4 h-4" />} title="Guardian Behavior">
           <div className="space-y-4">
-            <Toggle checked={behavior.learningMode} onChange={(v) => { setBehavior((prev) => ({ ...prev, learningMode: v })); setSaveState("idle"); }} label="Learning Mode" accent="#9D4EDD" />
-            <Toggle checked={behavior.dryRun} onChange={(v) => { setBehavior((prev) => ({ ...prev, dryRun: v })); setSaveState("idle"); }} label="Dry Run (observe, do not enforce)" accent="#FFD166" />
-            <Toggle checked={behavior.autonomous} onChange={(v) => { setBehavior((prev) => ({ ...prev, autonomous: v })); setSaveState("idle"); }} label="Autonomous Mode" accent="#E040FB" />
-            <Toggle
-              checked={behavior.guardianPersistenceMode === "session_only"}
-              onChange={(v) => {
-                setBehavior((prev) => ({
-                  ...prev,
-                  guardianPersistenceMode: v ? "session_only" : "persistent",
-                }));
-                setSaveState("idle");
-              }}
-              label="Session-only mode (stop Guardian when the app closes)"
-              accent="#4ECDC4"
-            />
-            <div className="text-[11px] font-mono text-muted-foreground">
-              Default is always-on background monitoring with boot auto-start.
-            </div>
+            <Toggle checked={config.learningMode} onChange={(v) => guardian.patchConfig({ learningMode: v })} label="Learning Mode" accent="#9D4EDD" />
+            <Toggle checked={config.dryRun} onChange={(v) => guardian.patchConfig({ dryRun: v })} label="Dry Run (observe, do not enforce)" accent="#FFD166" />
+            <Toggle checked={config.autonomous} onChange={(v) => guardian.patchConfig({ autonomous: v })} label="Autonomous Mode" accent="#E040FB" />
             <div>
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-muted-foreground">Confidence threshold</span>
-                <span className="font-mono">{behavior.confidenceThreshold}%</span>
+                <span className="font-mono">{config.confidenceThreshold}%</span>
               </div>
               <input
-                type="range" min={50} max={99} value={behavior.confidenceThreshold}
-                onChange={(e) => {
-                  setBehavior((prev) => ({ ...prev, confidenceThreshold: Number(e.target.value) }));
-                  setSaveState("idle");
-                }}
+                type="range" min={50} max={99} value={config.confidenceThreshold}
+                onChange={(e) => guardian.patchConfig({ confidenceThreshold: Number(e.target.value) })}
                 className="w-full accent-[#E040FB]"
               />
             </div>
-            {behavior.autonomous && !behavior.dryRun && (
+            {config.autonomous && !config.dryRun && (
               <div className="text-[11px] text-[#FF6B35] font-mono">⚠ Autonomous enforcement is active. Actions are taken without approval.</div>
             )}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={saveBehavior}
-                disabled={!hasBehaviorChanges || saveState === "saving"}
-                className="rounded-lg px-4 py-2 text-xs font-semibold rainbow-bg text-white disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {saveState === "saving" ? "Saving..." : "Save guardian settings"}
-              </button>
-              {saveState === "saved" && <span className="text-[11px] font-mono text-[#4ECDC4]">Saved.</span>}
-              {saveState === "error" && <span className="text-[11px] font-mono text-[#FF6B35]">Save failed.</span>}
-            </div>
           </div>
         </Card>
 

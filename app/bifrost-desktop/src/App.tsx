@@ -5,16 +5,15 @@ import { AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { guardian, useGuardian, useSettings } from "@/lib/api";
+import { guardian, useSettings } from "@/lib/api";
 import { isSetupComplete } from "@/lib/app-state";
-import { setGuardianSessionOnly, startGuardian, stopGuardian } from "@/lib/tauri";
+import { startGuardian, stopGuardian } from "@/lib/tauri";
 
 import { Splash } from "@/components/Splash";
 import { Login } from "@/components/Login";
 import { SetupWizard } from "@/components/SetupWizard";
 import { Screensaver } from "@/components/Screensaver";
 import { AppShell } from "@/components/AppShell";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Overview from "@/pages/Overview";
 import Incidents from "@/pages/Incidents";
@@ -53,7 +52,6 @@ function Routes() {
 function App() {
   const [phase, setPhase] = useState<Phase>("splash");
   const [idle, setIdle] = useState(false);
-  const { config } = useGuardian();
   const settings = useSettings();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -63,24 +61,6 @@ function App() {
     startGuardian();
     return () => {
       stopGuardian();
-    };
-  }, []);
-
-  useEffect(() => {
-    void setGuardianSessionOnly(config.guardianPersistenceMode === "session_only");
-  }, [config.guardianPersistenceMode]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const setActive = (active: boolean) => root.classList.toggle("window-active", active);
-    const handleFocus = () => setActive(true);
-    const handleBlur = () => setActive(false);
-    setActive(document.hasFocus());
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("blur", handleBlur);
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("blur", handleBlur);
     };
   }, []);
 
@@ -119,15 +99,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base="">
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           {phase === "splash" && <Splash onDone={onSplashDone} />}
           {phase === "wizard" && <SetupWizard onComplete={() => setPhase("login")} />}
           {phase === "login" && <Login onSuccess={() => setPhase("app")} />}
-          {phase === "app" && (
-            <ErrorBoundary>
-              <Routes />
-            </ErrorBoundary>
-          )}
+          {phase === "app" && <Routes />}
           <AnimatePresence>{idle && phase === "app" && <Screensaver onWake={wake} />}</AnimatePresence>
         </WouterRouter>
         <Toaster />

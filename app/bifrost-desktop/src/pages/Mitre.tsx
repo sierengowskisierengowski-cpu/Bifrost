@@ -13,8 +13,7 @@ function heat(count: number, max: number): { bg: string; fg: string } {
 
 export default function Mitre() {
   const { incidents } = useGuardian();
-  const safeIncidents = Array.isArray(incidents) ? incidents : [];
-  const tactics = useMemo(() => buildMitre(safeIncidents), [safeIncidents]);
+  const tactics = useMemo(() => buildMitre(incidents), [incidents]);
   const max = useMemo(
     () => Math.max(1, ...tactics.flatMap((t) => t.techniques.map((x) => x.count))),
     [tactics]

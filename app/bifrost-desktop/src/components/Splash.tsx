@@ -75,7 +75,7 @@ export function Splash({ onDone }: { onDone: () => void }) {
         transition={{ delay: 2.8, duration: 0.8 }}
         className="relative z-10 mt-5 text-sm text-muted-foreground font-mono tracking-wide"
       >
-        Heimdall Never Sleeps.
+        The Bridge Is Watched. Heimdall Never Sleeps.
       </motion.p>
     </div>
   );

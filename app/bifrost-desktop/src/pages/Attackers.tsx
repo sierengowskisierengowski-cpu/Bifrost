@@ -12,7 +12,6 @@ const LEVELS: ThreatLevel[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
 
 export default function Attackers() {
   const { attackers } = useGuardian();
-  const safeAttackers = Array.isArray(attackers) ? attackers : [];
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("hits");
   const [level, setLevel] = useState<ThreatLevel | "ALL">("ALL");
@@ -20,7 +19,7 @@ export default function Attackers() {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo(() => {
-    let r = [...safeAttackers];
+    let r = [...attackers];
     if (q.trim()) {
       const t = q.trim().toLowerCase();
       r = r.filter((a) => a.ip.includes(t) || a.country.toLowerCase().includes(t));
@@ -28,7 +27,7 @@ export default function Attackers() {
     if (level !== "ALL") r = r.filter((a) => a.threatLevel === level);
     r.sort((a, b) => (sort === "hits" ? b.totalHits - a.totalHits : +new Date(b.lastSeen) - +new Date(a.lastSeen)));
     return r;
-  }, [safeAttackers, q, sort, level]);
+  }, [attackers, q, sort, level]);
 
   const v = useVirtualizer({
     count: rows.length,
@@ -70,7 +69,6 @@ export default function Attackers() {
           <div style={{ height: v.getTotalSize(), position: "relative" }}>
             {v.getVirtualItems().map((vi: { index: number; start: number; size: number }) => {
               const a = rows[vi.index];
-              if (!a) return null;
               return (
                 <button
                   key={a.ip}
@@ -85,15 +83,12 @@ export default function Attackers() {
                   </div>
                   <SeverityBadge severity={a.threatLevel} />
                   <span className="text-sm font-mono">{fmtNum(a.totalHits)}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">{a.attackTypes.slice(0, 2).join(", ") || "—"}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">{a.attackTypes.slice(0, 2).join(", ")}</span>
                   <span className="text-[10px] font-mono text-muted-foreground">{fmtRelative(a.lastSeen)}</span>
                 </button>
               );
             })}
           </div>
-          {rows.length === 0 && (
-            <div className="py-12 text-center text-sm text-muted-foreground font-mono">No attackers in this view.</div>
-          )}
         </div>
       </div>
 
@@ -105,11 +100,6 @@ export default function Attackers() {
 }
 
 function AttackerDrawer({ attacker: a, onClose }: { attacker: Attacker; onClose: () => void }) {
-  const credentials = Array.isArray(a.credentials) ? a.credentials : [];
-  const events = Array.isArray(a.events) ? a.events : [];
-  const sessions = Array.isArray(a.sessions) ? a.sessions : [];
-  const attackTypes = Array.isArray(a.attackTypes) ? a.attackTypes : [];
-
   return (
     <>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-40 bg-black/60" />
@@ -141,23 +131,23 @@ function AttackerDrawer({ attacker: a, onClose }: { attacker: Attacker; onClose:
           <Section icon={<Fingerprint className="w-3.5 h-3.5" />} title="Fingerprints">
             <Row k="HASSH" v={a.hassh} />
             <Row k="JA4" v={a.ja4} />
-            <Row k="Attack types" v={attackTypes.join(", ") || "—"} />
+            <Row k="Attack types" v={a.attackTypes.join(", ")} />
           </Section>
 
-          <Section icon={<KeyRound className="w-3.5 h-3.5" />} title={`Credential Attempts (${credentials.length})`}>
+          <Section icon={<KeyRound className="w-3.5 h-3.5" />} title={`Credential Attempts (${a.credentials.length})`}>
             <div className="max-h-44 overflow-auto scroll-thin">
-              {credentials.map((c, i) => (
+              {a.credentials.map((c, i) => (
                 <div key={i} className="flex items-center justify-between py-1.5 text-xs font-mono border-b border-white/5 last:border-0">
                   <span className="text-foreground">{c.username}</span>
-                  <span className="text-muted-foreground">{"•".repeat(Math.min(12, Math.max(4, String(c.password ?? "").length)))}</span>
+                  <span className="text-muted-foreground">{"•".repeat(Math.min(12, Math.max(4, c.password.length)))}</span>
                 </div>
               ))}
             </div>
           </Section>
 
-          <Section icon={<Terminal className="w-3.5 h-3.5" />} title={`Recent Events (${events.length})`}>
+          <Section icon={<Terminal className="w-3.5 h-3.5" />} title={`Recent Events (${a.events.length})`}>
             <div className="max-h-56 overflow-auto scroll-thin space-y-2">
-              {events.map((e, i) => (
+              {a.events.map((e, i) => (
                 <div key={i} className="rounded-lg bg-black/30 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <SeverityBadge severity={e.severity} />
@@ -170,8 +160,8 @@ function AttackerDrawer({ attacker: a, onClose }: { attacker: Attacker; onClose:
             </div>
           </Section>
 
-          <Section icon={<Clock className="w-3.5 h-3.5" />} title={`Sessions (${sessions.length})`}>
-            {sessions.map((s) => (
+          <Section icon={<Clock className="w-3.5 h-3.5" />} title={`Sessions (${a.sessions.length})`}>
+            {a.sessions.map((s) => (
               <div key={s.id} className="flex items-center justify-between py-1.5 text-xs font-mono border-b border-white/5 last:border-0">
                 <span className="text-muted-foreground">{fmtDateTime(s.start)}</span>
                 <span>{fmtDuration(s.durationSec)}</span>

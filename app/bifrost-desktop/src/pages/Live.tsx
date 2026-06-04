@@ -14,12 +14,6 @@ export default function Live() {
   const [paused, setPaused] = useState(false);
   const [filter, setFilter] = useState<Severity | "ALL">("ALL");
   const [frozen, setFrozen] = useState(events);
-  const statusColor = conn.status === "connected"
-    ? "#4ECDC4"
-    : conn.status === "reconnecting"
-      ? "#FFB347"
-      : "#FF2D2D";
-  const statusPulse = conn.status === "reconnecting" || (!paused && conn.status === "connected");
 
   useEffect(() => {
     if (!paused) setFrozen(events);
@@ -47,10 +41,7 @@ export default function Live() {
         right={
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-2 text-xs font-mono">
-              <Radio
-                className={`w-4 h-4 ${statusPulse ? "animate-pulse" : ""}`}
-                style={{ color: statusColor }}
-              />
+              <Radio className={`w-4 h-4 ${conn.status === "connected" ? "text-[#4ECDC4]" : "text-[#FF6B35]"} ${paused ? "" : "animate-pulse"}`} />
               {paused ? "Paused" : "Streaming"} · {conn.source}
             </span>
             <div className="inline-flex rounded-lg border border-border/60 bg-black/30 p-1 gap-1">

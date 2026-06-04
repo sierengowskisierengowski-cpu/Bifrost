@@ -86,7 +86,6 @@ export interface GuardianConfig {
   learningMode: boolean;
   dryRun: boolean;
   autonomous: boolean;
-  guardianPersistenceMode: "persistent" | "session_only";
   confidenceThreshold: number;
   modelsLoaded: string[];
   hardwareTier: string;
@@ -157,7 +156,7 @@ export interface GuardianState {
   liveEvents: LiveEvent[];
 }
 
-export type ConnectionStatus = "connected" | "reconnecting" | "disconnected";
+export type ConnectionStatus = "connected" | "connecting" | "disconnected";
 
 export interface ConnectionInfo {
   status: ConnectionStatus;

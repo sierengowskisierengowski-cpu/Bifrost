@@ -5,7 +5,6 @@ import { BifrostLogo } from "./BifrostLogo";
 import { LegalPanel } from "./Legal";
 import { setPassword, setLegalAccepted, setSetupComplete } from "@/lib/app-state";
 import { getSettings, saveSettings, baseUrl } from "@/lib/api";
-import { guardianFetch } from "@/lib/guardianFetch";
 import { passwordStrength } from "@/lib/app-state";
 
 function BridgeArt() {
@@ -58,10 +57,9 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 2500);
-      const res = await guardianFetch(
-        `${baseUrl({ ...s0, guardianHost: host, dashboardPort: port })}/api/state`,
-        { signal: ctrl.signal, credentials: "include" },
-      );
+      const res = await fetch(`${baseUrl({ ...s0, guardianHost: host, dashboardPort: port })}/api/state`, {
+        signal: ctrl.signal,
+      });
       clearTimeout(t);
       setTestState(res.ok ? "ok" : "fail");
     } catch {
@@ -115,9 +113,9 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                   <BridgeArt />
                   <BifrostLogo className="w-16 h-16 -mt-6 float-soft" />
                   <h2 className="text-3xl font-extrabold tracking-[0.15em] rainbow-text mt-4">BIFROST</h2>
-                  <p className="text-sm text-muted-foreground mt-3 font-mono">Heimdall Never Sleeps.</p>
+                  <p className="text-sm text-muted-foreground mt-3 font-mono">The Bridge Is Watched.</p>
                   <p className="text-xs text-muted-foreground/70 mt-6 max-w-md">
-                    Welcome, Heimdall. Let's prepare your watch so Heimdall Never Sleeps. This takes about a minute.
+                    Welcome, Heimdall. Let's prepare your watch over the rainbow bridge. This takes about a minute.
                   </p>
                 </div>
               )}
@@ -225,7 +223,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                   <BridgeArt />
                   <BifrostLogo className="w-16 h-16 -mt-6 float-soft" />
                   <h2 className="text-2xl font-extrabold rainbow-text mt-4">Heimdall is Online</h2>
-                  <p className="text-sm text-muted-foreground mt-3 font-mono">Heimdall Never Sleeps.</p>
+                  <p className="text-sm text-muted-foreground mt-3 font-mono">The Bridge Is Watched.</p>
                 </div>
               )}
             </motion.div>
