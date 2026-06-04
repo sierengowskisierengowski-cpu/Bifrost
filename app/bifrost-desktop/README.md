@@ -38,11 +38,12 @@ bifrost-desktop/
 
 - **default**: leave Guardian running when the app closes, so the systemd service stays persistent.
 - **session-only mode**: stop the app-managed guardian on window close, tray "Quit", and app exit.
-- Exposes four commands the frontend calls over `window.__TAURI__`:
+- Exposes five commands the frontend calls over `window.__TAURI__`:
   - `start_guardian` → `bool`
   - `stop_guardian` → `bool`
   - `guardian_status` → `bool` (true while the process is alive)
   - `get_guardian_port` → `number` (8766)
+  - `set_guardian_session_only` → `bool`
 
 **Where the guardian entry is found** (first match wins):
 

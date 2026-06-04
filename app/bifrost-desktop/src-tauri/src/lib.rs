@@ -18,8 +18,10 @@ use tauri::{
 /// Port the Python guardian listens on. The frontend polls
 /// http://127.0.0.1:8766 and this value is handed back via `get_guardian_port`.
 const GUARDIAN_PORT: u16 = 8766;
-const EXPECTED_SECURITY_HASH: &str = "300df99fbcfcb65870aa5dd19630d3fb78d1bca56683abd527f8f16711288364";
-const EXPECTED_REASONER_HASH: &str = "4e12f51188425c211974c835caf7387ced155f629801c95ef8fef75b3764c703";
+const EXPECTED_SECURITY_HASH: &str =
+    "300df99fbcfcb65870aa5dd19630d3fb78d1bca56683abd527f8f16711288364";
+const EXPECTED_REASONER_HASH: &str =
+    "4e12f51188425c211974c835caf7387ced155f629801c95ef8fef75b3764c703";
 
 /// Holds the spawned guardian process so it can be supervised and killed.
 pub struct GuardianState {
