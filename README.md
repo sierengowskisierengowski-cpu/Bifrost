@@ -89,11 +89,8 @@ sudo pacman -U bifrost-0.3.0-1-x86_64.pkg.tar.zst
 After install:
 - **Bifrost appears in your app launcher** (no terminal needed for normal use)
 - Click the **Bifrost** icon to open the dashboard
-- **Guardian starts automatically** when you open the app and stops when you close it
-- To enable **24/7 background monitoring** (optional), run:
-  ```bash
-  sudo systemctl enable --now bifrost-guardian.service
-  ```
+- **Guardian runs as a persistent background service by default**
+- **Guardian auto-starts on boot** unless you switch to session-only mode in Settings
 
 > See [docs/arch-install.md](docs/arch-install.md) for the complete installation guide, Guardian persistence details, and upgrade instructions.
 
@@ -118,7 +115,9 @@ pnpm tauri build
 
 ## Guardian Lifecycle
 
-**Normal use (desktop app):** Guardian starts automatically when you open the Bifrost desktop app and stops when you close it. No terminal interaction needed.
+**Default desktop behavior:** Guardian runs as a persistent background service, so monitoring stays active even when the app window is closed.
+
+**Session-only mode:** In **Settings → Guardian Behavior**, enable **Session-only mode** to stop Guardian when the app closes and skip persistent background startup on reboot.
 
 **Standalone mode (terminal):**
 
@@ -132,13 +131,13 @@ Or if installed via pacman:
 bifrost-guardian --dashboard --dashboard-port 8766
 ```
 
-**Persistent background service (optional):**
+**Persistent background service (default):**
 
 ```bash
 sudo systemctl enable --now bifrost-guardian.service
 ```
 
-Guardian will then run at boot and continue running even when the desktop app is closed.
+Guardian runs at boot and continues running even when the desktop app is closed unless you switch to session-only mode in Settings.
 
 ## Packaging
 

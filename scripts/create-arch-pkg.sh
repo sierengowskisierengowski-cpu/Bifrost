@@ -55,6 +55,29 @@ install -Dm755 /dev/stdin "${PKG_STAGE}/usr/bin/bifrost-guardian" <<'EOF'
 #!/bin/bash
 export PYTHONPATH=/usr/lib/bifrost${PYTHONPATH:+:$PYTHONPATH}
 export HEIMDALL_CONFIG_PATH="${HEIMDALL_CONFIG_PATH:-/etc/heimdall/heimdall_config.json}"
+if [[ "${BIFROST_GUARDIAN_RUN_MODE:-app}" == "service" ]]; then
+  if ! python3 - "$HEIMDALL_CONFIG_PATH" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+mode = "persistent"
+if path.exists():
+    try:
+        mode = str(json.loads(path.read_text(encoding="utf-8")).get(
+            "guardian_persistence_mode",
+            "persistent",
+        )).strip().lower()
+    except Exception:
+        mode = "persistent"
+sys.exit(0 if mode != "session_only" else 1)
+PY
+  then
+    echo "[bifrost-guardian] session-only mode active; skipping service start." >&2
+    exit 0
+  fi
+fi
 exec python3 -m bifrost.guardian "$@"
 EOF
 
@@ -70,7 +93,7 @@ install -dm755 "${PKG_STAGE}/var/log/heimdall"
 install -Dm644 "${DESKTOP}" "${PKG_STAGE}/usr/share/applications/bifrost.desktop"
 install -Dm644 "${ICON}"    "${PKG_STAGE}/usr/share/icons/hicolor/256x256/apps/bifrost.png"
 
-# Systemd service (optional; NOT auto-enabled on install)
+# Systemd service (persistent by default; enabled on install)
 install -Dm644 "${SERVICE}" "${PKG_STAGE}/usr/lib/systemd/system/bifrost-guardian.service"
 
 # ─── .PKGINFO ─────────────────────────────────────────────────────────────────

@@ -284,6 +284,7 @@ export function generateGuardianState(): GuardianState {
     learningMode: false,
     dryRun: false,
     autonomous: true,
+    guardianPersistenceMode: "persistent",
     confidenceThreshold: 75,
     modelsLoaded: ["qwen2.5:1.5b-instruct", "qwen2.5:3b-instruct"],
     hardwareTier: "Guardian Edge",

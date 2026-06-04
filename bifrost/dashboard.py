@@ -148,6 +148,19 @@ def _normalize_config_patch(payload: Mapping[str, Any]) -> dict[str, Any]:
         value = _coerce_bool(payload.get("autonomous_actions_enabled"))
         if value is not None:
             normalized["autonomous_actions_enabled"] = value
+    if "guardian_persistence_mode" in payload:
+        value = str(payload.get("guardian_persistence_mode") or "").strip().lower()
+        aliases = {
+            "always_on": "persistent",
+            "background": "persistent",
+            "persistent": "persistent",
+            "session": "session_only",
+            "session-only": "session_only",
+            "session_only": "session_only",
+        }
+        resolved = aliases.get(value)
+        if resolved:
+            normalized["guardian_persistence_mode"] = resolved
     if "confidence_threshold" in payload:
         try:
             raw = float(payload.get("confidence_threshold"))  # type: ignore[arg-type]
@@ -622,6 +635,9 @@ def build_guardian_client_state(state: Mapping[str, Any]) -> dict[str, Any]:
             "learningMode": bool(settings.get("learning_mode", True)),
             "dryRun": bool(settings.get("dry_run", True)),
             "autonomous": bool(settings.get("autonomous_actions_enabled", False)),
+            "guardianPersistenceMode": str(
+                settings.get("guardian_persistence_mode") or "persistent"
+            ),
             "confidenceThreshold": float(settings.get("confidence_threshold") or 0.85),
             "modelsLoaded": [
                 m
@@ -694,6 +710,9 @@ def build_settings_snapshot(
         "dry_run": bool(config.get("dry_run", True)),
         "autonomous_actions_enabled": bool(
             config.get("autonomous_actions_enabled", False)
+        ),
+        "guardian_persistence_mode": str(
+            config.get("guardian_persistence_mode", "persistent")
         ),
         "confidence_threshold": config.get("confidence_threshold", 0.85),
         "tokens": {

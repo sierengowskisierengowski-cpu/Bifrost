@@ -15,6 +15,7 @@
   "learning_mode": true,
   "dry_run": true,
   "autonomous_actions_enabled": false,
+  "guardian_persistence_mode": "persistent",
   "dashboard_enabled": true,
   "dashboard_host": "127.0.0.1",
   "dashboard_port": 8766,

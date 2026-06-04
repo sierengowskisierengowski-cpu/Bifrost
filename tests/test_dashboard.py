@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from bifrost.dashboard import (
     DISCLAIMER_TEXT,
     API_SLICE_PATHS,
+    _normalize_config_patch,
     build_dashboard_state,
     build_guardian_client_state,
     extract_api_slice,
@@ -144,6 +145,15 @@ def test_parse_time_range_defaults():
     assert parse_time_range(None) == "24h"
     assert parse_time_range("7d") == "7d"
     assert parse_time_range("invalid") == "24h"
+
+
+def test_normalize_config_patch_accepts_guardian_persistence_aliases():
+    assert _normalize_config_patch(
+        {"guardian_persistence_mode": "session-only"}
+    ) == {"guardian_persistence_mode": "session_only"}
+    assert _normalize_config_patch(
+        {"guardian_persistence_mode": "always_on"}
+    ) == {"guardian_persistence_mode": "persistent"}
 
 
 def test_build_dashboard_state_exposes_test_mode_summary(tmp_path):
@@ -384,6 +394,7 @@ def test_build_guardian_client_state_maps_camel_case(tmp_path):
     assert client["attackers"][0]["flag"]
     assert len(client["liveEvents"]) >= 1
     assert client["liveEvents"][0]["attackerIp"] == "45.83.64.11"
+    assert client["config"]["guardianPersistenceMode"] == "persistent"
 
 
 def test_api_slice_endpoints_return_data(tmp_path):

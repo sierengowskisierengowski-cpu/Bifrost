@@ -11,9 +11,10 @@ post_install() {
     gtk-update-icon-cache -q -t /usr/share/icons/hicolor || true
   fi
 
-  # Make systemd aware of the new unit file (not auto-enabled)
+  # Make systemd aware of the new unit file and start the persistent guardian service
   if command -v systemctl &>/dev/null; then
     systemctl daemon-reload || true
+    systemctl enable --now bifrost-guardian.service || true
   fi
 
   if [ -t 1 ] && [ -z "${BIFROST_NO_BANNER:-}" ]; then
@@ -26,9 +27,10 @@ post_install() {
   echo "  Launch it from your app menu or by running: bifrost"
   echo ""
   echo "  Guardian status:"
-  echo "    By default, Guardian runs only while the desktop app is open."
-  echo "    To enable 24/7 background monitoring, run:"
-  echo "      sudo systemctl enable --now bifrost-guardian.service"
+  echo "    By default, Guardian runs as a persistent background service."
+  echo "    It starts now and will auto-start again on reboot."
+  echo "    To switch to session-only mode, use:"
+  echo "      Settings -> Guardian Behavior -> Session-only mode"
   echo ""
 }
 

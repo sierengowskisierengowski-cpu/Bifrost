@@ -11,9 +11,9 @@
 |------|---------|
 | Desktop icon | Appears in your app launcher (GNOME, KDE, XFCE, etc.) under *Utilities → Bifrost* |
 | Launch | Click the icon — no terminal required |
-| Guardian | Starts automatically when the app opens; stops when the app closes |
+| Guardian | Runs as a persistent background service by default |
 | Tray icon | Bifrost sits in the system tray; right-click → *Quit Bifrost* to exit cleanly |
-| 24/7 Guardian | **Optional** — enable `bifrost-guardian.service` (see below) |
+| Session-only mode | Optional — enable it in **Settings → Guardian Behavior** if you only want Guardian while the app is open |
 | Config | `/etc/heimdall/heimdall_config.json` (created on install, never overwritten on upgrade) |
 | Data / logs | `/var/lib/heimdall/` · `/var/log/heimdall/` |
 
@@ -40,7 +40,7 @@ pacman will:
 - place the desktop binary at `/usr/bin/bifrost`
 - register the desktop entry → icon appears in your app launcher
 - create default config at `/etc/heimdall/heimdall_config.json`
-- install the optional systemd service unit (not auto-started)
+- install and start `bifrost-guardian.service` for persistent monitoring
 
 ---
 
@@ -48,50 +48,54 @@ pacman will:
 
 Open your app launcher and click **Bifrost**, or run `bifrost` in a terminal.
 
-The Bifrost dashboard opens. Guardian starts in the background automatically.
+The Bifrost dashboard opens. Guardian is already running in the background and stays active after you close the app window.
 
 ---
 
 ## Guardian: when does it run?
 
-### Default behaviour (app-managed)
+### Default behaviour (persistent background service)
 
 ```
-Open app → Guardian starts
-Close app → Guardian stops
+Install Bifrost → Guardian service starts
+Reboot machine → Guardian service starts again
+Close app window → Guardian keeps running
 ```
 
 This is the default and requires no extra configuration.
 
-### Optional: 24/7 background monitoring
+### Optional: session-only mode
 
-If you want Guardian to monitor your system even when the desktop app is closed:
+If you only want Guardian while the desktop app is open, switch **Settings → Guardian Behavior → Session-only mode**.
 
-```bash
-sudo systemctl enable --now bifrost-guardian.service
+In session-only mode:
+
+```
+Open app → Guardian runs
+Close app → Guardian stops
+Reboot machine → Guardian stays off until you open the app
 ```
 
-To check its status:
+### Service status
 
 ```bash
 systemctl status bifrost-guardian.service
 ```
 
-To stop it:
+To start the persistent service manually:
 
 ```bash
-sudo systemctl stop bifrost-guardian.service
-sudo systemctl disable bifrost-guardian.service
+sudo systemctl enable --now bifrost-guardian.service
 ```
 
-> **Note:** The systemd service runs `bifrost-guardian` (the CLI wrapper at `/usr/bin/bifrost-guardian`), which uses the system Python installation and the bifrost source at `/usr/lib/bifrost/`. This is independent of the desktop app's embedded Guardian sidecar.
+> **Note:** The systemd service runs `bifrost-guardian` (the CLI wrapper at `/usr/bin/bifrost-guardian`), which uses the system Python installation and the bifrost source at `/usr/lib/bifrost/`. When session-only mode is enabled, the service stays enabled but exits immediately on boot so Guardian only runs with the desktop app.
 
 ---
 
 ## On reboot
 
 - **Desktop app**: not auto-started on reboot by default. Launch from your app launcher when you want it.
-- **Guardian service**: if enabled with `systemctl enable`, it starts at boot automatically.
+- **Guardian**: auto-starts on reboot by default through `bifrost-guardian.service`, unless you have enabled session-only mode.
 
 ---
 
