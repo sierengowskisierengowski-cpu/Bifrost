@@ -134,13 +134,13 @@ fn guardian_is_reachable() -> bool {
         .write_all(b"GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
         .is_err()
     {
-        return true;
+        return false;
     }
     let mut buf = [0_u8; 128];
     match stream.read(&mut buf) {
         Ok(read) if read > 0 => String::from_utf8_lossy(&buf[..read]).contains("200"),
-        Ok(_) => true,
-        Err(_) => true,
+        Ok(_) => false,
+        Err(_) => false,
     }
 }
 

@@ -36,7 +36,7 @@ CONFIG_DEFAULT="${ROOT_DIR}/packaging/heimdall_config.json.default"
 for f in "${BINARY}" "${ICON}" "${DESKTOP}" "${INSTALL_SCRIPT}" "${SERVICE}" "${CONFIG_DEFAULT}"; do
   [[ -f "${f}" ]] || { echo "[!] Missing: ${f}" >&2; exit 1; }
 done
-command -v zstd >/dev/null 2>&1 || { echo "[!] zstd not found. Install with: apt-get install zstd" >&2; exit 1; }
+command -v zstd >/dev/null 2>&1 || { echo "[!] zstd not found. Install it with your system package manager." >&2; exit 1; }
 
 # ─── Build staging directory ──────────────────────────────────────────────────
 PKG_STAGE="$(mktemp -d)"
