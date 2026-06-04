@@ -23,7 +23,7 @@ bifrost-desktop/
 └── src-tauri/              # the native Rust shell
     ├── Cargo.toml
     ├── build.rs
-    ├── tauri.conf.json     # window, bundle targets [appimage], withGlobalTauri
+    ├── tauri.conf.json     # window + bundle config + withGlobalTauri
     ├── capabilities/       # window + shell + notification permissions
     ├── icons/              # app icons
     └── src/
@@ -89,16 +89,16 @@ pnpm desktop:dev      # = tauri dev (starts Vite on :5173 + the native window)
 
 `pnpm dev` alone runs just the web frontend in a browser (mock-data mode).
 
-## Build the AppImage
+## Build desktop binary
 
 ```bash
 pnpm install
-pnpm tauri build --bundles appimage
+pnpm tauri build
 ```
 
-Artifact:
+Artifact (primary executable):
 
-- `src-tauri/target/release/bundle/appimage/*.AppImage`
+- `src-tauri/target/release/bifrost`
 
 ## Icons
 

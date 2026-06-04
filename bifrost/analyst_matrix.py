@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import json
+import logging
 import psutil
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 _ATTACKER_SESSION_MEMORY = {}
 _ANALYST_INFERENCE_CACHE = {}
+LOG = logging.getLogger("heimdall.analyst_matrix")
 
 def get_active_ollama_model():
     ollama_tags_url = "http://127.0.0.1:11434/api/tags"
@@ -37,7 +39,7 @@ def execute_gpu_analyst_inference(compacted_log_payload):
     compacted_log_payload["_resolved_model_tier"] = active_model
     source_ip = compacted_log_payload.get("attacker", compacted_log_payload.get("attacker_ip", "0.0.0.0"))
     classification = compacted_log_payload.get("classification", "Anomalous Activity Detection")
-    current_time = datetime.utcnow()
+    current_time = datetime.now(timezone.utc)
     cache_key = f"{source_ip}:{classification}"
     if cache_key in _ANALYST_INFERENCE_CACHE:
         cache_entry = _ANALYST_INFERENCE_CACHE[cache_key]
@@ -90,7 +92,7 @@ def execute_gpu_analyst_inference(compacted_log_payload):
             }
             return parsed_analysis
     except Exception as error:
-        print(f"[!] Analyst Matrix Connection Drop: {error}")
+        LOG.warning("Analyst Matrix inference request failed: %s", error)
         return {
             "severity": "HIGH",
             "mitre_mapping": ["TA0001 - Initial Access"],
@@ -100,7 +102,8 @@ def execute_gpu_analyst_inference(compacted_log_payload):
         }
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     ram_now = psutil.virtual_memory().available / (1024 ** 3)
     selected = get_active_ollama_model()
-    print(f"[+] Analyst Matrix initialized natively.")
-    print(f"[i] Available RAM: {ram_now:.2f} GB | Selected Model: {selected}")
+    LOG.info("Analyst Matrix initialized.")
+    LOG.info("Available RAM: %.2f GB | Selected Model: %s", ram_now, selected)

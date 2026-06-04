@@ -45,7 +45,7 @@
     ],
     "category": "Utility",
     "shortDescription": "Heimdall Never Sleeps.",
-    "longDescription": "Bifrost is a desktop security dashboard that watches over your guardian process. Heimdall Never Sleeps.",
+    "longDescription": "Bifrost is a local-first AI-powered endpoint detection and response desktop command center.",
     "resources": ["resources/**/*"]
   }
 }

@@ -131,7 +131,7 @@ install -m 755 "${BUILD_DIR}/log_agent_router" \
 install -m 755 "${BUILD_DIR}/executor" \
   "${AGENT_RES_DIR}/executor-${TARGET_TRIPLE}"
 
-log "Building Tauri AppImage..."
+log "Building Tauri desktop binary..."
 pushd "${ROOT_DIR}/app/bifrost-desktop" >/dev/null
 pnpm install
 if [[ -n "${RUSTFLAGS:-}" ]]; then
@@ -139,7 +139,7 @@ if [[ -n "${RUSTFLAGS:-}" ]]; then
 else
   export RUSTFLAGS="-C target-cpu=native"
 fi
-pnpm tauri build --bundles appimage
+pnpm tauri build
 popd >/dev/null
 
 log "Monolithic package build complete."

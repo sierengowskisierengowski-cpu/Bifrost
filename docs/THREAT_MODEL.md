@@ -75,7 +75,7 @@ It is not designed for distributed enterprise environments.
 
 ## Attack Vectors Bifrost Does NOT Detect
 
-### Out of Scope for v0.1
+### Out of Scope for v0.3.0
 - Kernel-level rootkits that subvert eBPF hooks
 - Hardware-level attacks (DMA, JTAG, etc)
 - Supply chain attacks on Bifrost dependencies
