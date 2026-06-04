@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, KeyRound, RotateCcw, Server, MonitorCog, Cpu } from "lucide-react";
-import { useGuardian, useSettings, saveSettings, guardian, saveGuardianConfig } from "@/lib/api";
+import { useGuardian, useSettings, saveSettings, guardian, saveGuardianConfig, saveGuardianBehavior } from "@/lib/api";
 import { PageHeader, Toggle } from "@/components/shared";
 import { setPassword, setSetupComplete, passwordStrength } from "@/lib/app-state";
 
@@ -23,6 +23,8 @@ const toThresholdValue = (value: number) => (value > 1 ? value / 100 : value);
 export default function Settings() {
   const { config } = useGuardian();
   const s = useSettings();
+  const [appSettings, setAppSettings] = useState(() => ({ ...s }));
+  const [appSaveState, setAppSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [pwMsg, setPwMsg] = useState("");
@@ -43,6 +45,28 @@ export default function Settings() {
     });
   }, [config.autonomous, config.confidenceThreshold, config.dryRun, config.learningMode]);
 
+  useEffect(() => {
+    setAppSettings({ ...s });
+  }, [
+    s.guardianHost,
+    s.dashboardPort,
+    s.ingestPort,
+    s.refreshIntervalMs,
+    s.screensaverMs,
+    s.fontScale,
+    s.sessionTimeoutMin,
+    s.desktopNotifications,
+  ]);
+
+  useEffect(() => {
+    saveGuardianBehavior({
+      learningMode: behavior.learningMode,
+      dryRun: behavior.dryRun,
+      autonomous: behavior.autonomous,
+      confidenceThreshold: toThresholdValue(behavior.confidenceThreshold),
+    });
+  }, [behavior.autonomous, behavior.confidenceThreshold, behavior.dryRun, behavior.learningMode]);
+
   const changePw = async () => {
     if (pw.length < 4 || pw !== pw2) {
       setPwMsg("Passwords must match and be at least 4 characters.");
@@ -61,6 +85,25 @@ export default function Settings() {
     behavior.dryRun !== config.dryRun ||
     behavior.autonomous !== config.autonomous ||
     behavior.confidenceThreshold !== currentThreshold;
+  const hasAppChanges =
+    appSettings.guardianHost !== s.guardianHost ||
+    appSettings.dashboardPort !== s.dashboardPort ||
+    appSettings.ingestPort !== s.ingestPort ||
+    appSettings.refreshIntervalMs !== s.refreshIntervalMs ||
+    appSettings.screensaverMs !== s.screensaverMs ||
+    appSettings.fontScale !== s.fontScale ||
+    appSettings.sessionTimeoutMin !== s.sessionTimeoutMin ||
+    appSettings.desktopNotifications !== s.desktopNotifications;
+
+  const saveAppSettings = () => {
+    setAppSaveState("saving");
+    try {
+      saveSettings(appSettings);
+      setAppSaveState("saved");
+    } catch {
+      setAppSaveState("error");
+    }
+  };
 
   const saveBehavior = async () => {
     setSaveState("saving");
@@ -80,7 +123,23 @@ export default function Settings() {
 
   return (
     <div>
-      <PageHeader title="Settings" desc="Tune the guardian and the dashboard" />
+      <PageHeader
+        title="Settings"
+        desc="Tune the guardian and the dashboard"
+        right={(
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveAppSettings}
+              disabled={!hasAppChanges || appSaveState === "saving"}
+              className="rounded-lg px-4 py-2 text-xs font-semibold rainbow-bg text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {appSaveState === "saving" ? "Saving..." : "Save settings"}
+            </button>
+            {appSaveState === "saved" && <span className="text-[11px] font-mono text-[#4ECDC4]">Saved.</span>}
+            {appSaveState === "error" && <span className="text-[11px] font-mono text-[#FF6B35]">Save failed.</span>}
+          </div>
+        )}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card icon={<ShieldCheck className="w-4 h-4" />} title="Guardian Behavior">
@@ -123,21 +182,40 @@ export default function Settings() {
           <div className="space-y-3">
             <div>
               <label className="text-xs text-muted-foreground">Host</label>
-              <input value={s.guardianHost} onChange={(e) => saveSettings({ guardianHost: e.target.value })} className={inputCls} />
+              <input
+                value={appSettings.guardianHost}
+                onChange={(e) => { setAppSettings((prev) => ({ ...prev, guardianHost: e.target.value })); setAppSaveState("idle"); }}
+                className={inputCls}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground">Dashboard port</label>
-                <input type="number" value={s.dashboardPort} onChange={(e) => saveSettings({ dashboardPort: Number(e.target.value) })} className={inputCls} />
+                <input
+                  type="number"
+                  value={appSettings.dashboardPort}
+                  onChange={(e) => { setAppSettings((prev) => ({ ...prev, dashboardPort: Number(e.target.value) })); setAppSaveState("idle"); }}
+                  className={inputCls}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Ingest port</label>
-                <input type="number" value={s.ingestPort} onChange={(e) => saveSettings({ ingestPort: Number(e.target.value) })} className={inputCls} />
+                <input
+                  type="number"
+                  value={appSettings.ingestPort}
+                  onChange={(e) => { setAppSettings((prev) => ({ ...prev, ingestPort: Number(e.target.value) })); setAppSaveState("idle"); }}
+                  className={inputCls}
+                />
               </div>
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Refresh interval (ms)</label>
-              <input type="number" value={s.refreshIntervalMs} onChange={(e) => saveSettings({ refreshIntervalMs: Number(e.target.value) })} className={inputCls} />
+              <input
+                type="number"
+                value={appSettings.refreshIntervalMs}
+                onChange={(e) => { setAppSettings((prev) => ({ ...prev, refreshIntervalMs: Number(e.target.value) })); setAppSaveState("idle"); }}
+                className={inputCls}
+              />
             </div>
           </div>
         </Card>
@@ -147,20 +225,38 @@ export default function Settings() {
             <div>
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-muted-foreground">Screensaver timeout (minutes)</span>
-                <span className="font-mono">{Math.round(s.screensaverMs / 60000)}</span>
+                <span className="font-mono">{Math.round(appSettings.screensaverMs / 60000)}</span>
               </div>
-              <input type="range" min={1} max={30} value={Math.round(s.screensaverMs / 60000)}
-                onChange={(e) => saveSettings({ screensaverMs: Number(e.target.value) * 60000 })} className="w-full accent-[#E040FB]" />
+              <input
+                type="range"
+                min={1}
+                max={30}
+                value={Math.round(appSettings.screensaverMs / 60000)}
+                onChange={(e) => { setAppSettings((prev) => ({ ...prev, screensaverMs: Number(e.target.value) * 60000 })); setAppSaveState("idle"); }}
+                className="w-full accent-[#E040FB]"
+              />
             </div>
             <div>
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="text-muted-foreground">Session timeout (minutes)</span>
-                <span className="font-mono">{s.sessionTimeoutMin}</span>
+                <span className="font-mono">{appSettings.sessionTimeoutMin}</span>
               </div>
-              <input type="range" min={5} max={120} step={5} value={s.sessionTimeoutMin}
-                onChange={(e) => saveSettings({ sessionTimeoutMin: Number(e.target.value) })} className="w-full accent-[#E040FB]" />
+              <input
+                type="range"
+                min={5}
+                max={120}
+                step={5}
+                value={appSettings.sessionTimeoutMin}
+                onChange={(e) => { setAppSettings((prev) => ({ ...prev, sessionTimeoutMin: Number(e.target.value) })); setAppSaveState("idle"); }}
+                className="w-full accent-[#E040FB]"
+              />
             </div>
-            <Toggle checked={s.desktopNotifications} onChange={(v) => saveSettings({ desktopNotifications: v })} label="Desktop notifications" accent="#4ECDC4" />
+            <Toggle
+              checked={appSettings.desktopNotifications}
+              onChange={(v) => { setAppSettings((prev) => ({ ...prev, desktopNotifications: v })); setAppSaveState("idle"); }}
+              label="Desktop notifications"
+              accent="#4ECDC4"
+            />
           </div>
         </Card>
 

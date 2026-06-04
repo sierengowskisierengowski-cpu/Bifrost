@@ -42,6 +42,14 @@ export const stopGuardian = () => invokeGuardian<boolean>("stop_guardian");
 export const guardianStatus = () => invokeGuardian<boolean>("guardian_status");
 export const getGuardianPort = () => invokeGuardian<number>("get_guardian_port");
 
+export interface SystemMetrics {
+  cpuPercent: number;
+  ramUsedGb: number;
+  ramTotalGb: number;
+}
+
+export const getSystemMetrics = () => invokeGuardian<SystemMetrics>("get_system_metrics");
+
 export async function openExternal(url: string): Promise<void> {
   const t = tauri();
   if (t?.shell?.open) {

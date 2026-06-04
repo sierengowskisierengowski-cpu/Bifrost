@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, ShieldAlert, Crosshair, Radio, Activity,
@@ -8,7 +9,7 @@ import {
 import { BifrostLogo } from "./BifrostLogo";
 import { useGuardian, useConnection } from "@/lib/api";
 import { fmtUptime } from "@/lib/format";
-import { isTauri, minimizeWindow, toggleMaximize, closeWindow } from "@/lib/tauri";
+import { isTauri, minimizeWindow, toggleMaximize, closeWindow, getSystemMetrics, type SystemMetrics } from "@/lib/tauri";
 
 const NAV = [
   { path: "/overview", label: "Overview", icon: LayoutDashboard },
@@ -51,15 +52,37 @@ function ConnectionStatus() {
 
 function StatusBar() {
   const { aiModel, hardware } = useGuardian();
+  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    let active = true;
+    const poll = async () => {
+      const data = await getSystemMetrics();
+      if (!active || !data) return;
+      setMetrics(data);
+    };
+    poll();
+    const timer = setInterval(poll, 4000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const ramUsed = metrics?.ramUsedGb ?? hardware.ramUsed;
+  const ramTotal = metrics?.ramTotalGb ?? hardware.ramTotal;
+  const cpuPercent = metrics?.cpuPercent ?? hardware.cpuPercent;
+  const formatRam = (value: number) => (value >= 10 ? value.toFixed(0) : value.toFixed(1));
   return (
     <div className="hidden lg:flex items-center gap-4 text-[11px] font-mono text-muted-foreground no-drag">
       <span className="text-foreground/80">{aiModel.model}</span>
       <span className="text-white/20">|</span>
       <span>{hardware.tier}</span>
       <span className="text-white/20">|</span>
-      <span>RAM {hardware.ramUsed.toFixed(1)}/{hardware.ramTotal}GB</span>
+      <span>RAM {formatRam(ramUsed)}/{formatRam(ramTotal)}GB</span>
       <span className="text-white/20">|</span>
-      <span>CPU {Math.round(hardware.cpuPercent)}%</span>
+      <span>CPU {Math.round(cpuPercent)}%</span>
       <span className="text-white/20">|</span>
       <span>up {fmtUptime(hardware.uptimeSec)}</span>
     </div>

@@ -5,7 +5,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
+use serde::Serialize;
 use sha2::{Digest, Sha256};
+use sysinfo::{CpuExt, System, SystemExt};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
@@ -22,6 +24,31 @@ const EXPECTED_REASONER_HASH: &str = "4e12f51188425c211974c835caf7387ced155f6298
 #[derive(Default)]
 pub struct GuardianState {
     child: Mutex<Option<Child>>,
+}
+
+pub struct SystemMetricsState {
+    system: Mutex<System>,
+}
+
+impl Default for SystemMetricsState {
+    fn default() -> Self {
+        let mut system = System::new();
+        system.refresh_memory();
+        system.refresh_cpu();
+        Self { system: Mutex::new(system) }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SystemMetrics {
+    cpu_percent: f32,
+    ram_used_gb: f32,
+    ram_total_gb: f32,
+}
+
+fn kib_to_gb(value: u64) -> f32 {
+    (value as f64 / 1024.0 / 1024.0) as f32
 }
 
 /// Resolve the python interpreter. Override with the BIFROST_PYTHON env var.
@@ -190,6 +217,18 @@ fn get_guardian_port() -> u16 {
     GUARDIAN_PORT
 }
 
+#[tauri::command]
+fn get_system_metrics(state: State<SystemMetricsState>) -> SystemMetrics {
+    let mut system = state.system.lock().unwrap();
+    system.refresh_cpu();
+    system.refresh_memory();
+    SystemMetrics {
+        cpu_percent: system.global_cpu_info().cpu_usage(),
+        ram_used_gb: kib_to_gb(system.used_memory()),
+        ram_total_gb: kib_to_gb(system.total_memory()),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     banner::print_startup_banner();
@@ -199,11 +238,13 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .manage(GuardianState::default())
+        .manage(SystemMetricsState::default())
         .invoke_handler(tauri::generate_handler![
             start_guardian,
             stop_guardian,
             guardian_status,
-            get_guardian_port
+            get_guardian_port,
+            get_system_metrics
         ])
         .setup(|app| {
             let entry = match guardian_entry(app.handle()) {

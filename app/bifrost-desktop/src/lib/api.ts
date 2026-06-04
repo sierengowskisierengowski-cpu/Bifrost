@@ -27,6 +27,14 @@ export interface AppSettings {
 }
 
 const SETTINGS_KEY = "bifrost.settings";
+const BEHAVIOR_KEY = "bifrost.guardian.behavior";
+
+export interface GuardianBehaviorSettings {
+  learningMode: boolean;
+  dryRun: boolean;
+  autonomous: boolean;
+  confidenceThreshold: number;
+}
 
 const DEFAULT_SETTINGS: AppSettings = {
   guardianHost: "127.0.0.1",
@@ -43,6 +51,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 // new object reference when the persisted value actually changes.
 let cachedRaw: string | null = null;
 let cachedSettings: AppSettings = { ...DEFAULT_SETTINGS };
+let cachedBehaviorRaw: string | null = null;
+let cachedBehavior: GuardianBehaviorSettings | null = null;
 
 export function getSettings(): AppSettings {
   let raw: string | null = null;
@@ -69,6 +79,49 @@ export function saveSettings(patch: Partial<AppSettings>) {
   cachedSettings = next;
   guardian.applySettings(next);
   settingsListeners.forEach((l) => l());
+}
+
+export function getGuardianBehavior(): GuardianBehaviorSettings | null {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(BEHAVIOR_KEY);
+  } catch {
+    return cachedBehavior;
+  }
+  if (raw === cachedBehaviorRaw) return cachedBehavior;
+  cachedBehaviorRaw = raw;
+  if (!raw) {
+    cachedBehavior = null;
+    return cachedBehavior;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<GuardianBehaviorSettings>;
+    const confidenceThreshold = Number(parsed.confidenceThreshold);
+    if (!Number.isFinite(confidenceThreshold)) {
+      cachedBehavior = null;
+    } else {
+      cachedBehavior = {
+        learningMode: !!parsed.learningMode,
+        dryRun: !!parsed.dryRun,
+        autonomous: !!parsed.autonomous,
+        confidenceThreshold,
+      };
+    }
+  } catch {
+    cachedBehavior = null;
+  }
+  return cachedBehavior;
+}
+
+export function saveGuardianBehavior(next: GuardianBehaviorSettings) {
+  try {
+    const raw = JSON.stringify(next);
+    localStorage.setItem(BEHAVIOR_KEY, raw);
+    cachedBehaviorRaw = raw;
+    cachedBehavior = next;
+  } catch {
+    /* ignore */
+  }
 }
 
 const settingsListeners = new Set<() => void>();
@@ -168,6 +221,13 @@ class GuardianClient {
   private heartbeatInFlight = false;
   private lastHeartbeatOk = Date.now();
   private started = false;
+
+  constructor() {
+    const saved = getGuardianBehavior();
+    if (saved) {
+      this.state = { ...this.state, config: { ...this.state.config, ...saved } };
+    }
+  }
 
   start() {
     if (this.started) return;
