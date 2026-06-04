@@ -37,3 +37,46 @@ export function passwordStrength(pw: string): { score: number; label: string } {
   const label = ["Very weak", "Weak", "Fair", "Strong", "Very strong"][score];
   return { score, label };
 }
+
+export interface PasswordChecks {
+  length: boolean;
+  upper: boolean;
+  lower: boolean;
+  number: boolean;
+  special: boolean;
+}
+
+export type PasswordLabel = "Weak" | "Fair" | "Strong" | "Very Strong";
+
+export interface PasswordEval {
+  checks: PasswordChecks;
+  /** Meter level 0..3 mapping to Weak / Fair / Strong / Very Strong. */
+  index: number;
+  label: PasswordLabel;
+  /** True only when Strong or Very Strong — required to proceed. */
+  acceptable: boolean;
+}
+
+/* Strong-password policy: min 12 chars and must include upper, lower, number,
+   and a special character. Only "Strong" / "Very Strong" are acceptable. */
+export function evaluatePassword(pw: string): PasswordEval {
+  const checks: PasswordChecks = {
+    length: pw.length >= 12,
+    upper: /[A-Z]/.test(pw),
+    lower: /[a-z]/.test(pw),
+    number: /\d/.test(pw),
+    special: /[^A-Za-z0-9]/.test(pw),
+  };
+  const allRequired =
+    checks.length && checks.upper && checks.lower && checks.number && checks.special;
+  const met = Object.values(checks).filter(Boolean).length;
+
+  let index: number;
+  if (!allRequired) {
+    index = met <= 2 ? 0 : 1; // Weak or Fair while requirements unmet
+  } else {
+    index = pw.length >= 16 ? 3 : 2; // Strong, or Very Strong for longer secrets
+  }
+  const label = (["Weak", "Fair", "Strong", "Very Strong"] as const)[index];
+  return { checks, index, label, acceptable: allRequired };
+}

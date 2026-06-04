@@ -42,6 +42,32 @@ export const stopGuardian = () => invokeGuardian<boolean>("stop_guardian");
 export const guardianStatus = () => invokeGuardian<boolean>("guardian_status");
 export const getGuardianPort = () => invokeGuardian<number>("get_guardian_port");
 
+/* ---------------- Linux biometric unlock bridge ----------------
+   These map to the Rust commands in src-tauri/src/lib.rs that drive
+   fprintd (fingerprint) and Howdy (face). In the browser preview the
+   underlying invoke returns null and the caller degrades gracefully. */
+
+export interface BiometricAvailability {
+  fingerprintAvailable: boolean;
+  faceAvailable: boolean;
+  howdyInstalled: boolean;
+}
+
+export interface CmdResult {
+  ok: boolean;
+  code: number;
+  stdout: string;
+  stderr: string;
+  message: string;
+}
+
+export const biometricAvailability = () =>
+  invokeGuardian<BiometricAvailability>("biometric_availability");
+export const fprintdEnroll = () => invokeGuardian<CmdResult>("fprintd_enroll");
+export const fprintdVerify = () => invokeGuardian<CmdResult>("fprintd_verify");
+export const howdyEnroll = () => invokeGuardian<CmdResult>("howdy_enroll");
+export const howdyVerify = () => invokeGuardian<CmdResult>("howdy_verify");
+
 export async function openExternal(url: string): Promise<void> {
   const t = tauri();
   if (t?.shell?.open) {

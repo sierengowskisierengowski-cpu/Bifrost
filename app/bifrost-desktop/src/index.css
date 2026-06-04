@@ -331,3 +331,73 @@
   0%, 100% { box-shadow: 0 0 18px -6px rgba(255, 45, 45, 0.45); }
   50% { box-shadow: 0 0 44px 2px rgba(255, 45, 45, 0.9); }
 }
+
+/* ---------------- Ops Center screensaver ---------------- */
+@keyframes ops-stream-down {
+  from { transform: translateY(-50%); }
+  to { transform: translateY(0%); }
+}
+@keyframes ops-stream-up {
+  from { transform: translateY(0%); }
+  to { transform: translateY(-50%); }
+}
+.ops-stream {
+  position: absolute;
+  top: 0;
+  white-space: pre;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  line-height: 1.45;
+  will-change: transform;
+}
+.ops-stream-inner { display: block; }
+.ops-stream.down .ops-stream-inner { animation: ops-stream-down var(--ops-speed, 22s) linear infinite; }
+.ops-stream.up .ops-stream-inner { animation: ops-stream-up var(--ops-speed, 22s) linear infinite; }
+
+@keyframes ops-marquee-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes ops-marquee-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+.ops-marquee { overflow: hidden; white-space: nowrap; }
+.ops-marquee-track { display: inline-block; white-space: nowrap; will-change: transform; }
+.ops-marquee.left .ops-marquee-track { animation: ops-marquee-left var(--ops-speed, 38s) linear infinite; }
+.ops-marquee.right .ops-marquee-track { animation: ops-marquee-right var(--ops-speed, 50s) linear infinite; }
+
+@keyframes ops-grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 60px 60px, 60px 60px; }
+}
+.ops-grid {
+  position: absolute;
+  inset: -60px;
+  background-image:
+    linear-gradient(rgba(157, 78, 221, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(157, 78, 221, 0.12) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px;
+  animation: ops-grid-drift 14s linear infinite;
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 85%);
+}
+
+@keyframes ops-pulse-ring {
+  0% { transform: scale(0.85); opacity: 0.85; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.ops-pulse-ring { animation: ops-pulse-ring 2.2s ease-out infinite; }
+
+@keyframes ops-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+.ops-scan { animation: ops-scan 7s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-stream.down .ops-stream-inner,
+  .ops-stream.up .ops-stream-inner,
+  .ops-marquee .ops-marquee-track,
+  .ops-grid, .ops-pulse-ring, .ops-scan { animation: none; }
+}

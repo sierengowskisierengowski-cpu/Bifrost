@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, ArrowRight, ArrowLeft, Wifi, WifiOff } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Wifi, WifiOff, Fingerprint, ScanFace, ShieldCheck } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
 import { LegalPanel } from "./Legal";
-import { setPassword, setLegalAccepted, setSetupComplete } from "@/lib/app-state";
+import { PasswordField, PasswordMeter } from "./shared";
+import { setPassword, setLegalAccepted, setSetupComplete, evaluatePassword } from "@/lib/app-state";
 import { getSettings, saveSettings, baseUrl } from "@/lib/api";
-import { passwordStrength } from "@/lib/app-state";
+import { getAvailability, enroll, isEnrolled, HOWDY_DOCS_URL, type Availability, type Modality } from "@/lib/biometric";
+import { openExternal } from "@/lib/tauri";
 
 function BridgeArt() {
   return (
@@ -32,7 +34,11 @@ function BridgeArt() {
   );
 }
 
-const STEPS = ["Welcome", "Legal", "Password", "Paths", "Connection", "Ready"];
+const STEPS = ["Welcome", "Legal", "Password", "Biometric", "Paths", "Connection", "Ready"];
+const S_PASSWORD = 2;
+const S_BIOMETRIC = 3;
+const S_CONNECTION = 5;
+const S_READY = 6;
 
 export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(0);
@@ -45,8 +51,42 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const [port, setPort] = useState(s0.dashboardPort);
   const [testState, setTestState] = useState<"idle" | "testing" | "ok" | "fail">("idle");
 
-  const strength = passwordStrength(pw);
-  const pwValid = pw.length >= 4 && pw === pw2;
+  // Biometric step state
+  const [avail, setAvail] = useState<Availability | null>(null);
+  const [bioBusy, setBioBusy] = useState<Modality | null>(null);
+  const [fpEnrolled, setFpEnrolled] = useState(() => isEnrolled("fingerprint"));
+  const [faceEnrolled, setFaceEnrolled] = useState(() => isEnrolled("face"));
+  const [bioMsg, setBioMsg] = useState("");
+
+  useEffect(() => {
+    let live = true;
+    getAvailability().then((a) => live && setAvail(a));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const pwEval = evaluatePassword(pw);
+  const pwMatch = pw === pw2 && pw2.length > 0;
+  const pwValid = pwEval.acceptable && pwMatch;
+
+  const enrollMod = async (m: Modality) => {
+    setBioMsg("");
+    setBioBusy(m);
+    const res = await enroll(m);
+    setBioBusy(null);
+    if (res.ok) {
+      if (m === "fingerprint") {
+        setFpEnrolled(true);
+        saveSettings({ fingerprintEnabled: true });
+      } else {
+        setFaceEnrolled(true);
+        saveSettings({ faceEnabled: true });
+      }
+    } else {
+      setBioMsg(res.error || "Could not enroll. You can set this up later in Settings.");
+    }
+  };
 
   const next = () => setStep((s) => Math.min(STEPS.length - 1, s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
@@ -122,43 +162,122 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
 
               {step === 1 && <LegalPanel onAccept={next} />}
 
-              {step === 2 && (
+              {step === S_PASSWORD && (
                 <div className="h-full flex flex-col justify-center max-w-md mx-auto w-full">
-                  <h2 className="text-xl font-bold mb-6">Set your dashboard password</h2>
+                  <h2 className="text-xl font-bold mb-1">Set a strong dashboard password</h2>
+                  <p className="text-[11px] text-muted-foreground mb-5">
+                    This guards your bridge. It must be Strong or Very Strong to continue.
+                  </p>
                   <label className="text-xs text-muted-foreground mb-1">Password</label>
-                  <input
-                    type="password"
-                    value={pw}
-                    onChange={(e) => setPw(e.target.value)}
-                    className="bg-black/40 border border-border rounded-lg px-3 py-2.5 text-sm font-mono outline-none focus:border-[#E040FB] mb-3"
-                  />
-                  <div className="flex gap-1 mb-1">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="h-1 flex-1 rounded-full"
-                        style={{
-                          background:
-                            i < strength.score
-                              ? ["#FF2D2D", "#FF6B35", "#FFD166", "#4ECDC4"][strength.score - 1]
-                              : "rgba(255,255,255,0.1)",
-                        }}
-                      />
-                    ))}
+                  <div className="mb-3">
+                    <PasswordField value={pw} onChange={setPw} testid="input-wizard-password" />
                   </div>
-                  <div className="text-[10px] text-muted-foreground mb-4 font-mono">{pw && strength.label}</div>
-                  <label className="text-xs text-muted-foreground mb-1">Confirm password</label>
-                  <input
-                    type="password"
-                    value={pw2}
-                    onChange={(e) => setPw2(e.target.value)}
-                    className="bg-black/40 border border-border rounded-lg px-3 py-2.5 text-sm font-mono outline-none focus:border-[#E040FB]"
-                  />
+                  <PasswordMeter pw={pw} />
+                  <label className="text-xs text-muted-foreground mb-1 mt-4">Confirm password</label>
+                  <PasswordField value={pw2} onChange={setPw2} testid="input-wizard-confirm" />
                   {pw2 && pw !== pw2 && <div className="text-[10px] text-[#FF2D2D] mt-1">Passwords do not match.</div>}
                 </div>
               )}
 
-              {step === 3 && (
+              {step === S_BIOMETRIC && (
+                <div className="h-full flex flex-col justify-center max-w-lg mx-auto w-full">
+                  <div className="text-center mb-5">
+                    <ShieldCheck className="w-9 h-9 mx-auto text-[#E040FB] mb-2" />
+                    <h2 className="text-xl font-bold mb-1">Set up biometric unlock</h2>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed">
+                      Optional. Unlock Bifrost with your fingerprint or face — your password{" "}
+                      <span className="text-foreground">always works as a fallback</span>. Enroll one,
+                      both, or skip.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Fingerprint card */}
+                    <div className="rounded-xl border border-white/10 bg-black/30 p-4 flex flex-col items-center text-center min-h-[150px] justify-center">
+                      <Fingerprint className="w-7 h-7 text-[#E040FB] mb-2" />
+                      <div className="text-sm font-semibold mb-1">Fingerprint</div>
+                      {avail === null ? (
+                        <div className="text-[11px] text-muted-foreground">Checking…</div>
+                      ) : fpEnrolled ? (
+                        <div className="text-[12px] text-[#4ECDC4] font-mono flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" /> Enrolled
+                        </div>
+                      ) : avail.fingerprint ? (
+                        <>
+                          <div className="text-[10px] text-[#4ECDC4] mb-2">Reader available</div>
+                          <button
+                            onClick={() => enrollMod("fingerprint")}
+                            disabled={bioBusy !== null}
+                            data-testid="button-enroll-fingerprint"
+                            className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[12px] font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 hover:bg-[#7B2FBE]/20 disabled:opacity-40"
+                          >
+                            {bioBusy === "fingerprint" ? (
+                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scan now…</>
+                            ) : (
+                              "Enroll fingerprint"
+                            )}
+                          </button>
+                        </>
+                      ) : (
+                        <div className="text-[11px] text-muted-foreground">
+                          {avail.tauri ? "No reader detected" : "Desktop app only"}
+                        </div>
+                      )}
+                    </div>
+                    {/* Face card */}
+                    <div className="rounded-xl border border-white/10 bg-black/30 p-4 flex flex-col items-center text-center min-h-[150px] justify-center">
+                      <ScanFace className="w-7 h-7 text-[#E040FB] mb-2" />
+                      <div className="text-sm font-semibold mb-1">Face Recognition</div>
+                      {avail === null ? (
+                        <div className="text-[11px] text-muted-foreground">Checking…</div>
+                      ) : faceEnrolled ? (
+                        <div className="text-[12px] text-[#4ECDC4] font-mono flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" /> Enrolled
+                        </div>
+                      ) : avail.face ? (
+                        <>
+                          <div className="text-[10px] text-[#4ECDC4] mb-2">Howdy detected</div>
+                          <button
+                            onClick={() => enrollMod("face")}
+                            disabled={bioBusy !== null}
+                            data-testid="button-enroll-face"
+                            className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[12px] font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 hover:bg-[#7B2FBE]/20 disabled:opacity-40"
+                          >
+                            {bioBusy === "face" ? (
+                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Look at camera…</>
+                            ) : (
+                              "Enroll face"
+                            )}
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1.5">
+                          <div className="text-[11px] text-muted-foreground">
+                            {avail.tauri ? "Howdy not installed" : "Desktop app only"}
+                          </div>
+                          {avail.tauri && (
+                            <button
+                              onClick={() => void openExternal(HOWDY_DOCS_URL)}
+                              data-testid="link-install-howdy"
+                              className="text-[11px] text-[#E040FB] hover:underline"
+                            >
+                              Install Howdy →
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {bioMsg && (
+                    <div className="text-[11px] font-mono text-[#FF6B35] mt-3 text-center">{bioMsg}</div>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/60 mt-4 text-center leading-relaxed">
+                    Fingerprint uses fprintd; face uses Howdy and may prompt for your system password.
+                    The credential never leaves this machine.
+                  </p>
+                </div>
+              )}
+
+              {step === 4 && (
                 <div className="h-full flex flex-col justify-center max-w-md mx-auto w-full">
                   <h2 className="text-xl font-bold mb-6">Configure paths</h2>
                   <label className="text-xs text-muted-foreground mb-1">Cowrie honeypot log</label>
@@ -179,7 +298,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                 </div>
               )}
 
-              {step === 4 && (
+              {step === S_CONNECTION && (
                 <div className="h-full flex flex-col justify-center max-w-md mx-auto w-full">
                   <h2 className="text-xl font-bold mb-6">Test guardian connection</h2>
                   <div className="flex gap-3 mb-4">
@@ -218,7 +337,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                 </div>
               )}
 
-              {step === 5 && (
+              {step === S_READY && (
                 <div className="h-full flex flex-col items-center justify-center text-center">
                   <BridgeArt />
                   <BifrostLogo className="w-16 h-16 -mt-6 float-soft" />
@@ -239,19 +358,26 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          {step === 5 ? (
+          {step === S_READY ? (
             <button onClick={finish} className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold rainbow-bg text-white">
               Launch Bifrost <ArrowRight className="w-4 h-4" />
             </button>
           ) : step === 1 ? (
             <div className="text-[10px] text-muted-foreground">Accept to continue</div>
+          ) : step === S_BIOMETRIC ? (
+            <button
+              onClick={next}
+              className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold rainbow-bg text-white"
+            >
+              {fpEnrolled || faceEnrolled ? "Continue" : "Skip"} <ArrowRight className="w-4 h-4" />
+            </button>
           ) : (
             <button
               onClick={next}
-              disabled={step === 2 && !pwValid}
+              disabled={step === S_PASSWORD && !pwValid}
               className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold rainbow-bg text-white disabled:opacity-40"
             >
-              {step === 4 && testState === "idle" ? "Skip / Continue" : "Continue"} <ArrowRight className="w-4 h-4" />
+              {step === S_CONNECTION && testState === "idle" ? "Skip / Continue" : "Continue"} <ArrowRight className="w-4 h-4" />
             </button>
           )}
         </div>

@@ -1,130 +1,111 @@
-// Biometric unlock for the login screen — fingerprint or face, whichever the
-// user's device has enrolled (Touch ID, Windows Hello, Android biometrics).
+// Linux biometric unlock for Bifrost — desktop (Tauri) only.
 //
-// This uses the WebAuthn platform authenticator, the same standard browsers and
-// password managers use. The OS owns the sensor and decides fingerprint vs face;
-// we only ask it to verify the user. Honest scope: this is a LOCAL unlock gate.
-// The credential lives in this browser/device only and is not verified by a
-// server — it sits alongside Bifrost's existing local password gate as a
-// convenience, not as cloud authentication.
+// Honest scope: this is a LOCAL unlock gate that sits alongside Bifrost's
+// password gate as a convenience, not as cloud authentication. It drives the
+// real Linux biometric stacks through small Tauri commands that shell out on
+// the desktop:
+//
+//   • Fingerprint — fprintd (`fprintd-enroll` to register, `fprintd-verify`
+//     to authenticate). Works with any fprintd-compatible reader.
+//   • Face        — Howdy (`howdy add` to register, `howdy recognize` to
+//     authenticate). Howdy needs root, so those run via pkexec/sudo.
+//
+// The old WebAuthn approach never worked inside Tauri on Linux because a web
+// page can't talk to fprintd or Howdy. In the browser preview none of this is
+// available, so every call degrades gracefully and the UI shows "desktop only".
 
-const CRED_KEY = "bifrost.biometric.credentialId";
+import {
+  isTauri,
+  biometricAvailability,
+  fprintdEnroll,
+  fprintdVerify,
+  howdyEnroll,
+  howdyVerify,
+  type CmdResult,
+} from "./tauri";
 
-function b64urlEncode(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let s = "";
-  for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+export type Modality = "fingerprint" | "face";
+
+export const HOWDY_DOCS_URL = "https://github.com/boltgolt/howdy";
+
+export interface Availability {
+  /** Running inside the desktop app (where biometrics are possible at all). */
+  tauri: boolean;
+  /** An fprintd-compatible fingerprint reader stack is present. */
+  fingerprint: boolean;
+  /** Howdy (face recognition) is installed. */
+  face: boolean;
+  howdyInstalled: boolean;
 }
 
-function b64urlDecode(str: string): ArrayBuffer {
-  const pad = str.length % 4 === 0 ? "" : "=".repeat(4 - (str.length % 4));
-  const s = atob(str.replace(/-/g, "+").replace(/_/g, "/") + pad);
-  const buf = new ArrayBuffer(s.length);
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
-  return buf;
-}
+const ENROLL_KEY = (m: Modality) => `bifrost.biometric.${m}.enrolled`;
 
-function errMsg(e: unknown): string {
-  if (e instanceof Error) {
-    if (e.name === "NotAllowedError") return "Cancelled or timed out.";
-    if (e.name === "InvalidStateError") return "This device is already enrolled.";
-    if (e.name === "SecurityError") return "Blocked — needs a secure (https) context.";
-    return e.message || e.name;
-  }
-  return String(e);
-}
-
-// Is the WebAuthn API present at all?
-export function biometricSupported(): boolean {
-  return typeof window !== "undefined" && typeof window.PublicKeyCredential === "function";
-}
-
-// Does THIS machine have a usable fingerprint/face sensor exposed to the browser?
-export async function platformAuthenticatorAvailable(): Promise<boolean> {
-  if (!biometricSupported()) return false;
+// Whether the user has registered this modality through Bifrost. Enrollment
+// itself lives in fprintd / Howdy; this local flag just drives the green
+// checkmark and the login-screen buttons.
+export function isEnrolled(m: Modality): boolean {
   try {
-    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    return localStorage.getItem(ENROLL_KEY(m)) === "1";
   } catch {
     return false;
   }
 }
 
-// Has the user already enrolled a biometric credential on this device?
-export function biometricEnrolled(): boolean {
+function setEnrolled(m: Modality, on: boolean): void {
   try {
-    return !!localStorage.getItem(CRED_KEY);
-  } catch {
-    return false;
-  }
-}
-
-// Enroll: prompts the OS biometric sheet and stores the resulting credential id.
-export async function enrollBiometric(): Promise<{ ok: boolean; error?: string }> {
-  if (!biometricSupported()) return { ok: false, error: "WebAuthn is not supported here." };
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const userId = crypto.getRandomValues(new Uint8Array(16));
-    const cred = (await navigator.credentials.create({
-      publicKey: {
-        challenge,
-        rp: { name: "Bifrost", id: window.location.hostname },
-        user: { id: userId, name: "heimdall", displayName: "Heimdall" },
-        pubKeyCredParams: [
-          { type: "public-key", alg: -7 },
-          { type: "public-key", alg: -257 },
-        ],
-        authenticatorSelection: {
-          authenticatorAttachment: "platform",
-          userVerification: "required",
-          residentKey: "preferred",
-        },
-        timeout: 60000,
-        attestation: "none",
-      },
-    })) as PublicKeyCredential | null;
-    if (!cred) return { ok: false, error: "No credential was created." };
-    localStorage.setItem(CRED_KEY, b64urlEncode(cred.rawId));
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: errMsg(e) };
-  }
-}
-
-// Unlock: prompts the OS biometric sheet and verifies the stored credential.
-export async function unlockWithBiometric(): Promise<{ ok: boolean; error?: string }> {
-  if (!biometricSupported()) return { ok: false, error: "WebAuthn is not supported here." };
-  const id = (() => {
-    try {
-      return localStorage.getItem(CRED_KEY);
-    } catch {
-      return null;
-    }
-  })();
-  if (!id) return { ok: false, error: "No biometric is enrolled on this device." };
-  try {
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const assertion = await navigator.credentials.get({
-      publicKey: {
-        challenge,
-        allowCredentials: [{ type: "public-key", id: b64urlDecode(id) }],
-        userVerification: "required",
-        rpId: window.location.hostname,
-        timeout: 60000,
-      },
-    });
-    return { ok: !!assertion };
-  } catch (e) {
-    return { ok: false, error: errMsg(e) };
-  }
-}
-
-// Forget the enrolled credential (turn the feature back off on this device).
-export function disableBiometric(): void {
-  try {
-    localStorage.removeItem(CRED_KEY);
+    if (on) localStorage.setItem(ENROLL_KEY(m), "1");
+    else localStorage.removeItem(ENROLL_KEY(m));
   } catch {
     /* ignore */
   }
+}
+
+// Forget a local enrollment flag (e.g. when the user clears it).
+export function forget(m: Modality): void {
+  setEnrolled(m, false);
+}
+
+// Which biometric backends are usable right now.
+export async function getAvailability(): Promise<Availability> {
+  if (!isTauri()) {
+    return { tauri: false, fingerprint: false, face: false, howdyInstalled: false };
+  }
+  const a = await biometricAvailability();
+  return {
+    tauri: true,
+    fingerprint: !!a?.fingerprintAvailable,
+    face: !!a?.faceAvailable,
+    howdyInstalled: !!a?.howdyInstalled,
+  };
+}
+
+// Turn a backend CmdResult into a short, human message.
+function resultError(res: CmdResult | null, fallback: string): string {
+  if (!res) return "Only available in the Bifrost desktop app.";
+  if (res.message) return res.message;
+  const detail = (res.stderr || res.stdout || "").trim().split("\n").pop() ?? "";
+  return detail || fallback;
+}
+
+// Enroll a modality. Prompts the OS sensor / camera on the desktop.
+export async function enroll(m: Modality): Promise<{ ok: boolean; error?: string }> {
+  if (!isTauri()) return { ok: false, error: "Enrollment is only available in the desktop app." };
+  const res = m === "fingerprint" ? await fprintdEnroll() : await howdyEnroll();
+  if (res?.ok) {
+    setEnrolled(m, true);
+    return { ok: true };
+  }
+  return { ok: false, error: resultError(res, "Enrollment failed.") };
+}
+
+// Verify a modality (used at the login screen).
+export async function verify(m: Modality): Promise<{ ok: boolean; error?: string }> {
+  if (!isTauri()) return { ok: false, error: "Biometric unlock is only available in the desktop app." };
+  if (!isEnrolled(m)) return { ok: false, error: `No ${m} is enrolled on this device.` };
+  const res = m === "fingerprint" ? await fprintdVerify() : await howdyVerify();
+  if (res?.ok) return { ok: true };
+  return {
+    ok: false,
+    error: resultError(res, m === "fingerprint" ? "Fingerprint did not match." : "Face was not recognised."),
+  };
 }

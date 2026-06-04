@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Send, Sparkles, BookOpen, ShieldCheck } from "lucide-react";
 import { useGuardian, useConnection } from "@/lib/api";
+import { useGreeting } from "@/lib/greeting";
 import { PageHeader, RangePills, GlassCard } from "@/components/shared";
 import {
   buildSaga,
@@ -55,12 +56,16 @@ export default function Heimdall() {
   }
 
   const badge = VERDICT_BADGE[verdict.verdict];
+  const greeting = useGreeting();
 
   return (
     <div>
       <PageHeader
         title="Heimdall Speaks"
-        desc="The watchman narrates your bridge in plain language — and answers. Reads only your own telemetry; nothing leaves this machine."
+        desc={
+          greeting ??
+          "The watchman narrates your bridge in plain language — and answers. Reads only your own telemetry; nothing leaves this machine."
+        }
         right={<RangePills value={range} onChange={setRange} />}
       />
 

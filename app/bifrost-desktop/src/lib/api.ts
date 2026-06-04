@@ -19,10 +19,15 @@ export interface AppSettings {
   ingestPort: number;
   refreshIntervalMs: number;
   screensaverMs: number;
+  screensaverStyle: "rainbow" | "ops";
   fontScale: number;
   sessionTimeoutMin: number;
   desktopNotifications: boolean;
   persistGuardianState: boolean;
+  greetingEnabled: boolean;
+  greetingName: string;
+  fingerprintEnabled: boolean;
+  faceEnabled: boolean;
 }
 
 const SETTINGS_KEY = "bifrost.settings";
@@ -33,11 +38,37 @@ const DEFAULT_SETTINGS: AppSettings = {
   ingestPort: 8765,
   refreshIntervalMs: 5000,
   screensaverMs: 5 * 60 * 1000,
+  screensaverStyle: "rainbow",
   fontScale: 1,
   sessionTimeoutMin: 30,
   desktopNotifications: true,
   persistGuardianState: true,
+  greetingEnabled: false,
+  greetingName: "",
+  fingerprintEnabled: false,
+  faceEnabled: false,
 };
+
+// Coerce a persisted/edited settings blob back to safe, well-typed values.
+// Any field whose type no longer matches the default (e.g. a string written
+// where a number is expected, or NaN) falls back to the default, so a malformed
+// value — including one entered via the hidden console — can't destabilise
+// timing-sensitive logic like the idle/screensaver timer.
+function normalizeSettings(raw: Partial<AppSettings>): AppSettings {
+  const merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
+  const out = { ...DEFAULT_SETTINGS } as Record<string, unknown>;
+  (Object.keys(DEFAULT_SETTINGS) as (keyof AppSettings)[]).forEach((k) => {
+    const def = DEFAULT_SETTINGS[k];
+    const val = merged[k];
+    const sameType = typeof val === typeof def;
+    const validNum = typeof def !== "number" || (typeof val === "number" && Number.isFinite(val));
+    if (sameType && validNum) out[k] = val;
+  });
+  if (out.screensaverStyle !== "rainbow" && out.screensaverStyle !== "ops") {
+    out.screensaverStyle = DEFAULT_SETTINGS.screensaverStyle;
+  }
+  return out as AppSettings;
+}
 
 // Cache a stable snapshot so useSyncExternalStore doesn't loop: only return a
 // new object reference when the persisted value actually changes.
@@ -54,7 +85,7 @@ export function getSettings(): AppSettings {
   if (raw === cachedRaw) return cachedSettings;
   cachedRaw = raw;
   try {
-    cachedSettings = raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    cachedSettings = raw ? normalizeSettings(JSON.parse(raw)) : { ...DEFAULT_SETTINGS };
   } catch {
     cachedSettings = { ...DEFAULT_SETTINGS };
   }
@@ -62,7 +93,7 @@ export function getSettings(): AppSettings {
 }
 
 export function saveSettings(patch: Partial<AppSettings>) {
-  const next = { ...getSettings(), ...patch };
+  const next = normalizeSettings({ ...getSettings(), ...patch });
   const raw = JSON.stringify(next);
   localStorage.setItem(SETTINGS_KEY, raw);
   cachedRaw = raw;

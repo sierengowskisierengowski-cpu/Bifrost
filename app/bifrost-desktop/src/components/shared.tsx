@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { X, Eye, EyeOff, Check } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import type { Severity, TimeRange } from "@/lib/types";
+import { evaluatePassword } from "@/lib/app-state";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function severityClass(s: Severity): string {
@@ -215,6 +216,91 @@ export function Toggle({
       </span>
       <span className="text-sm">{label}</span>
     </button>
+  );
+}
+
+const PW_COLORS = ["#FF2D2D", "#FF6B35", "#4ECDC4", "#9D4EDD"];
+
+/* Password input with a show/hide toggle. */
+export function PasswordField({
+  value,
+  onChange,
+  placeholder,
+  autoFocus,
+  testid,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+  testid?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={show ? "text" : "password"}
+        value={value}
+        autoFocus={autoFocus}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        data-testid={testid}
+        className="w-full bg-black/40 border border-border rounded-lg pl-3 pr-10 py-2.5 text-sm font-mono outline-none focus:border-[#E040FB]"
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        aria-label={show ? "Hide password" : "Show password"}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+      >
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
+
+/* Strength meter + live requirement checklist for the strong-password policy. */
+export function PasswordMeter({ pw }: { pw: string }) {
+  const ev = evaluatePassword(pw);
+  const reqs: { ok: boolean; text: string }[] = [
+    { ok: ev.checks.length, text: "At least 12 characters" },
+    { ok: ev.checks.upper, text: "Uppercase letter" },
+    { ok: ev.checks.lower, text: "Lowercase letter" },
+    { ok: ev.checks.number, text: "Number" },
+    { ok: ev.checks.special, text: "Special character" },
+  ];
+  return (
+    <div>
+      <div className="flex gap-1 mb-1.5">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-1 flex-1 rounded-full transition-colors"
+            style={{ background: pw && i <= ev.index ? PW_COLORS[ev.index] : "rgba(255,255,255,0.1)" }}
+          />
+        ))}
+      </div>
+      {pw && (
+        <div
+          className="text-[10px] font-mono mb-2"
+          style={{ color: ev.acceptable ? "#4ECDC4" : "#FF6B35" }}
+        >
+          {ev.label}
+        </div>
+      )}
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+        {reqs.map((r) => (
+          <li
+            key={r.text}
+            className="flex items-center gap-1.5 text-[11px]"
+            style={{ color: r.ok ? "#4ECDC4" : "rgba(255,255,255,0.45)" }}
+          >
+            {r.ok ? <Check className="w-3 h-3 shrink-0" /> : <X className="w-3 h-3 shrink-0" />}
+            {r.text}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

@@ -13,6 +13,8 @@ import { Splash } from "@/components/Splash";
 import { Login } from "@/components/Login";
 import { SetupWizard } from "@/components/SetupWizard";
 import { Screensaver } from "@/components/Screensaver";
+import { OpsCenter } from "@/components/OpsCenter";
+import { Terminal } from "@/components/Terminal";
 import { AppShell } from "@/components/AppShell";
 
 import Overview from "@/pages/Overview";
@@ -60,6 +62,7 @@ function Routes() {
 function App() {
   const [phase, setPhase] = useState<Phase>("splash");
   const [idle, setIdle] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
   const settings = useSettings();
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -86,7 +89,10 @@ function App() {
   }, [phase, settings.screensaverMs]);
 
   useEffect(() => {
-    if (phase !== "app") {
+    // While idle (screensaver active) or terminal open, detach activity
+    // listeners so the screensaver fully owns wake behaviour (e.g. Ops Center
+    // peeks on mouse move instead of dismissing).
+    if (phase !== "app" || idle || terminalOpen) {
       if (idleTimer.current) clearTimeout(idleTimer.current);
       return;
     }
@@ -97,7 +103,33 @@ function App() {
       events.forEach((e) => window.removeEventListener(e, resetIdle));
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
-  }, [phase, resetIdle]);
+  }, [phase, idle, terminalOpen, resetIdle]);
+
+  // Hidden console: typing the literal uppercase sequence "BIFROST" anywhere in
+  // the app (while not focused in a field) opens the ASCII terminal easter egg.
+  useEffect(() => {
+    if (phase !== "app") return;
+    const TARGET = "BIFROST";
+    let buf = "";
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
+      if (e.key.length !== 1) return;
+      // Require ALL CAPS: only accept exact uppercase letters.
+      if (e.key >= "A" && e.key <= "Z") {
+        buf = (buf + e.key).slice(-TARGET.length);
+        if (buf === TARGET) {
+          buf = "";
+          setTerminalOpen(true);
+        }
+      } else {
+        buf = "";
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase]);
 
   const wake = useCallback(() => {
     setIdle(false);
@@ -118,7 +150,17 @@ function App() {
           {phase === "wizard" && <SetupWizard onComplete={() => setPhase("login")} />}
           {phase === "login" && <Login onSuccess={() => setPhase("app")} />}
           {phase === "app" && <Routes />}
-          <AnimatePresence>{idle && phase === "app" && <Screensaver onWake={wake} />}</AnimatePresence>
+          <AnimatePresence>
+            {idle && phase === "app" && !terminalOpen &&
+              (settings.screensaverStyle === "ops" ? (
+                <OpsCenter onWake={wake} />
+              ) : (
+                <Screensaver onWake={wake} />
+              ))}
+          </AnimatePresence>
+          <AnimatePresence>
+            {terminalOpen && <Terminal onClose={() => setTerminalOpen(false)} />}
+          </AnimatePresence>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

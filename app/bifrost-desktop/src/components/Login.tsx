@@ -1,18 +1,25 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { LockKeyhole, ScanFace } from "lucide-react";
+import { LockKeyhole, Fingerprint, ScanFace } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
 import { verifyPassword, hasPassword } from "@/lib/app-state";
-import { biometricEnrolled, unlockWithBiometric } from "@/lib/biometric";
+import { isEnrolled, verify, type Modality } from "@/lib/biometric";
+import { useSettings } from "@/lib/api";
 
 export function Login({ onSuccess }: { onSuccess: () => void }) {
+  const settings = useSettings();
   const [pw, setPw] = useState("");
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [bioReady] = useState(() => biometricEnrolled());
-  const [bioBusy, setBioBusy] = useState(false);
+  const fpReady = settings.fingerprintEnabled && isEnrolled("fingerprint");
+  const faceReady = settings.faceEnabled && isEnrolled("face");
+  const anyBio = fpReady || faceReady;
+  const [bioBusy, setBioBusy] = useState<Modality | null>(null);
   const [bioErr, setBioErr] = useState("");
+  const [bioFails, setBioFails] = useState(0);
+  const MAX_BIO_FAILS = 3;
+  const bioLockedOut = bioFails >= MAX_BIO_FAILS;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,13 +33,23 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
     }
   };
 
-  const bioUnlock = async () => {
-    setBioBusy(true);
+  const bioUnlock = async (m: Modality) => {
+    if (bioLockedOut || bioBusy) return;
+    setBioBusy(m);
     setBioErr("");
-    const res = await unlockWithBiometric();
-    setBioBusy(false);
-    if (res.ok) onSuccess();
-    else setBioErr(res.error || "Biometric unlock failed.");
+    const res = await verify(m);
+    setBioBusy(null);
+    if (res.ok) {
+      onSuccess();
+      return;
+    }
+    const fails = bioFails + 1;
+    setBioFails(fails);
+    if (fails >= MAX_BIO_FAILS) {
+      setBioErr("Biometric failed 3 times — please use your password.");
+    } else {
+      setBioErr(`${res.error || "Biometric unlock failed."} (${MAX_BIO_FAILS - fails} left)`);
+    }
   };
 
   return (
@@ -89,22 +106,42 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
           </button>
         </form>
 
-        {bioReady && (
+        {anyBio && !bioLockedOut && (
           <div className="w-full mt-4">
             <div className="flex items-center gap-3 my-1 text-[10px] uppercase tracking-wider text-muted-foreground/60">
               <div className="h-px flex-1 bg-white/10" /> or <div className="h-px flex-1 bg-white/10" />
             </div>
-            <button
-              type="button"
-              onClick={bioUnlock}
-              disabled={bioBusy}
-              className="w-full mt-2 rounded-xl py-3 text-sm font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 text-foreground hover:bg-[#7B2FBE]/20 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
-            >
-              <ScanFace className="w-4 h-4 text-[#E040FB]" />
-              {bioBusy ? "Waiting for sensor…" : "Unlock with fingerprint / face"}
-            </button>
+            <div className="mt-2 flex flex-col gap-2">
+              {fpReady && (
+                <button
+                  type="button"
+                  onClick={() => bioUnlock("fingerprint")}
+                  disabled={!!bioBusy}
+                  data-testid="button-unlock-fingerprint"
+                  className="w-full rounded-xl py-3 text-sm font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 text-foreground hover:bg-[#7B2FBE]/20 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+                >
+                  <Fingerprint className="w-4 h-4 text-[#E040FB]" />
+                  {bioBusy === "fingerprint" ? "Scan your finger…" : "Unlock with fingerprint"}
+                </button>
+              )}
+              {faceReady && (
+                <button
+                  type="button"
+                  onClick={() => bioUnlock("face")}
+                  disabled={!!bioBusy}
+                  data-testid="button-unlock-face"
+                  className="w-full rounded-xl py-3 text-sm font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 text-foreground hover:bg-[#7B2FBE]/20 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+                >
+                  <ScanFace className="w-4 h-4 text-[#E040FB]" />
+                  {bioBusy === "face" ? "Look at the camera…" : "Unlock with face"}
+                </button>
+              )}
+            </div>
             {bioErr && <div className="text-xs text-[#FF6B35] font-mono mt-2 text-center">{bioErr}</div>}
           </div>
+        )}
+        {anyBio && bioLockedOut && (
+          <div className="text-xs text-[#FF6B35] font-mono mt-4 text-center">{bioErr}</div>
         )}
       </motion.div>
     </div>

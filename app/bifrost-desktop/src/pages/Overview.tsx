@@ -5,6 +5,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell } from "rechar
 import { useGuardian, filterByRange, computeOverview, buildBuckets } from "@/lib/api";
 import type { TimeRange, Incident } from "@/lib/types";
 import { StatCard, RangePills, PageHeader, SeverityBadge, Modal } from "@/components/shared";
+import { useGreeting } from "@/lib/greeting";
 import { fmtNum, fmtRelative } from "@/lib/format";
 
 type ModalKey = "events" | "incidents" | "blocked" | "attackers" | "lastHour" | "criticalHigh" | null;
@@ -21,6 +22,7 @@ export default function Overview() {
   );
   const buckets = useMemo(() => buildBuckets(filtered, range), [filtered, range]);
   const recent = filtered.slice(0, 100);
+  const greeting = useGreeting();
 
   return (
     <div>
@@ -29,6 +31,12 @@ export default function Overview() {
         desc="Heimdall's watch over the rainbow bridge"
         right={<RangePills value={range} onChange={setRange} />}
       />
+
+      {greeting && (
+        <div className="mb-5 -mt-2 text-sm font-medium rainbow-text" data-testid="text-overview-greeting">
+          {greeting}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         <StatCard label="Total Events" value={fmtNum(stats.totalEvents)} icon={<Activity className="w-4 h-4" />} accent="#9D4EDD" delay={0} onClick={() => setModal("events")} />
