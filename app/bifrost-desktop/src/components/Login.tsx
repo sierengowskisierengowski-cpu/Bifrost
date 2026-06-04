@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { LockKeyhole } from "lucide-react";
+import { LockKeyhole, ScanFace } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
 import { verifyPassword, hasPassword } from "@/lib/app-state";
+import { biometricEnrolled, unlockWithBiometric } from "@/lib/biometric";
 
 export function Login({ onSuccess }: { onSuccess: () => void }) {
   const [pw, setPw] = useState("");
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [bioReady] = useState(() => biometricEnrolled());
+  const [bioBusy, setBioBusy] = useState(false);
+  const [bioErr, setBioErr] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +24,15 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
       setError(true);
       setPw("");
     }
+  };
+
+  const bioUnlock = async () => {
+    setBioBusy(true);
+    setBioErr("");
+    const res = await unlockWithBiometric();
+    setBioBusy(false);
+    if (res.ok) onSuccess();
+    else setBioErr(res.error || "Biometric unlock failed.");
   };
 
   return (
@@ -75,6 +88,24 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
             {busy ? "Verifying…" : "Cross the Bridge"}
           </button>
         </form>
+
+        {bioReady && (
+          <div className="w-full mt-4">
+            <div className="flex items-center gap-3 my-1 text-[10px] uppercase tracking-wider text-muted-foreground/60">
+              <div className="h-px flex-1 bg-white/10" /> or <div className="h-px flex-1 bg-white/10" />
+            </div>
+            <button
+              type="button"
+              onClick={bioUnlock}
+              disabled={bioBusy}
+              className="w-full mt-2 rounded-xl py-3 text-sm font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 text-foreground hover:bg-[#7B2FBE]/20 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+            >
+              <ScanFace className="w-4 h-4 text-[#E040FB]" />
+              {bioBusy ? "Waiting for sensor…" : "Unlock with fingerprint / face"}
+            </button>
+            {bioErr && <div className="text-xs text-[#FF6B35] font-mono mt-2 text-center">{bioErr}</div>}
+          </div>
+        )}
       </motion.div>
     </div>
   );

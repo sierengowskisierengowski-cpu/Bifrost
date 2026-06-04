@@ -21,6 +21,10 @@ import Attackers from "@/pages/Attackers";
 import Live from "@/pages/Live";
 import Timeline from "@/pages/Timeline";
 import Mitre from "@/pages/Mitre";
+import Heimdall from "@/pages/Heimdall";
+import Gjallarhorn from "@/pages/Gjallarhorn";
+import Mjolnir from "@/pages/Mjolnir";
+import AnalystMatrix from "@/pages/AnalystMatrix";
 import Settings from "@/pages/Settings";
 import Legal from "@/pages/Legal";
 import NotFound from "@/pages/not-found";
@@ -40,6 +44,10 @@ function Routes() {
         <Route path="/live" component={Live} />
         <Route path="/timeline" component={Timeline} />
         <Route path="/mitre" component={Mitre} />
+        <Route path="/heimdall" component={Heimdall} />
+        <Route path="/gjallarhorn" component={Gjallarhorn} />
+        <Route path="/mjolnir" component={Mjolnir} />
+        <Route path="/analyst" component={AnalystMatrix} />
         <Route path="/settings" component={Settings} />
         <Route path="/legal" component={Legal} />
         <Route path="/not-found" component={NotFound} />
@@ -96,10 +104,16 @@ function App() {
     setPhase("login"); // re-authenticate after screensaver
   }, []);
 
+  // Router base: on Replit this is the artifact path (e.g. "/bifrost/"); in the
+  // standalone Tauri desktop build, vite's base is "./" which yields "." — treat
+  // that (and "") as the app root so navigation works in both environments.
+  const rawBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const routerBase = rawBase === "" || rawBase === "." || rawBase === ".." ? "" : rawBase;
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <WouterRouter base={routerBase}>
           {phase === "splash" && <Splash onDone={onSplashDone} />}
           {phase === "wizard" && <SetupWizard onComplete={() => setPhase("login")} />}
           {phase === "login" && <Login onSuccess={() => setPhase("app")} />}

@@ -21,6 +21,7 @@ export interface AppSettings {
   fontScale: number;
   sessionTimeoutMin: number;
   desktopNotifications: boolean;
+  persistGuardianState: boolean;
 }
 
 const SETTINGS_KEY = "bifrost.settings";
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   fontScale: 1,
   sessionTimeoutMin: 30,
   desktopNotifications: true,
+  persistGuardianState: true,
 };
 
 // Cache a stable snapshot so useSyncExternalStore doesn't loop: only return a
@@ -84,6 +86,38 @@ export function baseUrl(s: AppSettings = getSettings()) {
   return `http://${s.guardianHost}:${s.dashboardPort}`;
 }
 
+/* ---------------- guardian state persistence ---------------- */
+// When `persistGuardianState` is on, the simulated guardian's config (learning
+// mode, dry-run, autonomous, confidence, identity) is saved to localStorage and
+// restored on the next load, so the bridge "remembers" across restarts. When
+// off, the guardian starts clean each session.
+const GUARDIAN_CONFIG_KEY = "bifrost.guardian.config";
+
+function loadPersistedConfig(): Partial<GuardianState["config"]> | null {
+  try {
+    const raw = localStorage.getItem(GUARDIAN_CONFIG_KEY);
+    return raw ? (JSON.parse(raw) as Partial<GuardianState["config"]>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedConfig(config: GuardianState["config"]) {
+  try {
+    localStorage.setItem(GUARDIAN_CONFIG_KEY, JSON.stringify(config));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearPersistedConfig() {
+  try {
+    localStorage.removeItem(GUARDIAN_CONFIG_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ---------------- guardian client ---------------- */
 
 const MAX_LIVE = 200;
@@ -110,6 +144,10 @@ class GuardianClient {
   start() {
     if (this.started) return;
     this.started = true;
+    if (getSettings().persistGuardianState) {
+      const saved = loadPersistedConfig();
+      if (saved) this.state = { ...this.state, config: { ...this.state.config, ...saved } };
+    }
     this.poll();
     this.pollTimer = setInterval(() => this.poll(), getSettings().refreshIntervalMs);
     this.scheduleLive();
@@ -121,8 +159,10 @@ class GuardianClient {
     }, 1000);
   }
 
-  applySettings(_s: AppSettings) {
+  applySettings(s: AppSettings) {
     this.conn = { ...this.conn, baseUrl: baseUrl() };
+    if (s.persistGuardianState) savePersistedConfig(this.state.config);
+    else clearPersistedConfig();
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = setInterval(() => this.poll(), getSettings().refreshIntervalMs);
@@ -183,6 +223,7 @@ class GuardianClient {
   /* live mutations from UI (e.g. toggles) */
   patchConfig(patch: Partial<GuardianState["config"]>) {
     this.state = { ...this.state, config: { ...this.state.config, ...patch } };
+    if (getSettings().persistGuardianState) savePersistedConfig(this.state.config);
     this.emitState();
   }
 

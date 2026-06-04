@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Download, Search, ChevronDown } from "lucide-react";
 import { useGuardian, filterByRange } from "@/lib/api";
 import type { TimeRange, Severity, Incident } from "@/lib/types";
-import { RangePills, PageHeader, SeverityBadge } from "@/components/shared";
+import { RangePills, PageHeader, SeverityBadge, FilterSelect } from "@/components/shared";
 import { fmtDateTime } from "@/lib/format";
 
 const SEVS: Severity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
@@ -50,8 +50,6 @@ export default function Incidents() {
     URL.revokeObjectURL(url);
   };
 
-  const selectCls = "bg-black/40 border border-border rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#E040FB]";
-
   return (
     <div>
       <PageHeader
@@ -61,14 +59,18 @@ export default function Incidents() {
       />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <select value={sev} onChange={(e) => { setSev(e.target.value as Severity | "ALL"); setPage(0); }} className={selectCls}>
-          <option value="ALL">All severities</option>
-          {SEVS.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select value={tc} onChange={(e) => { setTc(e.target.value); setPage(0); }} className={selectCls}>
-          <option value="ALL">All threat classes</option>
-          {threatClasses.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        <FilterSelect
+          ariaLabel="Filter by severity"
+          value={sev}
+          onChange={(v) => { setSev(v as Severity | "ALL"); setPage(0); }}
+          options={[{ value: "ALL", label: "All severities" }, ...SEVS.map((s) => ({ value: s, label: s }))]}
+        />
+        <FilterSelect
+          ariaLabel="Filter by threat class"
+          value={tc}
+          onChange={(v) => { setTc(v); setPage(0); }}
+          options={[{ value: "ALL", label: "All threat classes" }, ...threatClasses.map((t) => ({ value: t, label: t }))]}
+        />
         <div className="flex items-center gap-2 bg-black/40 border border-border rounded-lg px-3">
           <Search className="w-3.5 h-3.5 text-muted-foreground" />
           <input

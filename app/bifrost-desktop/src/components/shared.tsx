@@ -1,6 +1,8 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Severity, TimeRange } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function severityClass(s: Severity): string {
   return {
@@ -45,6 +47,7 @@ export function StatCard({
   accent = "#E040FB",
   sub,
   delay = 0,
+  onClick,
 }: {
   label: string;
   value: string;
@@ -52,22 +55,94 @@ export function StatCard({
   accent?: string;
   sub?: string;
   delay?: number;
+  onClick?: () => void;
 }) {
+  const clickable = !!onClick;
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay, type: "spring", stiffness: 120, damping: 18 }}
-      className="glass-panel rounded-xl card-hover-tilt p-5 flex flex-col gap-3 relative overflow-hidden"
+      onClick={onClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } } : undefined}
+      className={`glass-panel rounded-xl card-hover-tilt p-5 flex flex-col gap-3 relative overflow-hidden ${
+        clickable ? "cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E040FB]/60" : ""
+      }`}
     >
-      <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-2xl opacity-25" style={{ background: accent }} />
+      <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-2xl opacity-25 transition-opacity group-hover:opacity-40" style={{ background: accent }} />
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
         <span style={{ color: accent }}>{icon}</span>
       </div>
       <div className="text-3xl font-bold font-mono tracking-tight rainbow-text">{value}</div>
       {sub && <div className="text-xs text-muted-foreground font-mono">{sub}</div>}
+      {clickable && (
+        <span className="absolute bottom-2 right-3 text-[9px] uppercase tracking-widest text-muted-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity">
+          details →
+        </span>
+      )}
     </motion.div>
+  );
+}
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  desc,
+  accent = "#E040FB",
+  icon,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  desc?: string;
+  accent?: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ type: "spring", stiffness: 240, damping: 24 }}
+              className="pointer-events-auto w-full max-w-lg max-h-[85vh] flex flex-col glass-panel rounded-2xl border border-border/60 overflow-hidden"
+              style={{ boxShadow: `0 0 60px -20px ${accent}` }}
+            >
+              <div className="h-1 w-full rainbow-bg shrink-0" />
+              <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-border/50">
+                <div className="flex items-center gap-3 min-w-0">
+                  {icon && <span style={{ color: accent }} className="shrink-0">{icon}</span>}
+                  <div className="min-w-0">
+                    <h3 className="font-bold tracking-tight truncate">{title}</h3>
+                    {desc && <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>}
+                  </div>
+                </div>
+                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0" aria-label="Close">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="overflow-auto scroll-thin px-6 py-5">{children}</div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -155,5 +230,37 @@ export function Bar({ value, max, color }: { value: number; max: number; color: 
 export function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center py-16 text-sm text-muted-foreground font-mono">{message}</div>
+  );
+}
+
+export function FilterSelect({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  ariaLabel?: string;
+  className?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className={`h-auto w-auto gap-2 rounded-lg border-border bg-black/40 px-3 py-2 text-xs font-mono text-foreground focus:ring-1 focus:ring-[#E040FB]/60 ${className}`}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="border-border bg-[hsl(var(--popover))] text-popover-foreground">
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value} className="text-xs font-mono focus:bg-white/10">
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

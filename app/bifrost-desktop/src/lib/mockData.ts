@@ -154,6 +154,14 @@ function isoAgo(ms: number) {
 const DAY = 86400000;
 const MONTH = 30 * DAY;
 
+const randHassh = () => Array.from({ length: 32 }, () => "0123456789abcdef"[rnd(16)]).join("");
+const randJa4 = () => `t13d${rnd(9)}${rnd(9)}07h2_${Array.from({ length: 12 }, () => "0123456789abcdef"[rnd(16)]).join("")}`;
+
+// A handful of "actors": shared SSH-client / TLS fingerprints that real botnets
+// reuse across many IPs. ~45% of attackers below adopt one of these, so the
+// Doppelgänger detector can reveal one operator wearing many IP masks.
+const ACTOR_FINGERPRINTS = Array.from({ length: 6 }, () => ({ hassh: randHassh(), ja4: randJa4() }));
+
 function makeAttacker(): Attacker {
   const c = weightedCountry();
   const ip = randomPublicIp(c.code);
@@ -191,8 +199,7 @@ function makeAttacker(): Attacker {
     ip, country: c.name, countryCode: c.code, flag: c.flag,
     firstSeen: isoAgo(firstMs), lastSeen: isoAgo(lastMs),
     totalHits, threatLevel, attackTypes,
-    hassh: Array.from({ length: 32 }, () => "0123456789abcdef"[rnd(16)]).join(""),
-    ja4: `t13d${rnd(9)}${rnd(9)}07h2_${Array.from({ length: 12 }, () => "0123456789abcdef"[rnd(16)]).join("")}`,
+    ...(rnd(100) < 45 ? pick(ACTOR_FINGERPRINTS) : { hassh: randHassh(), ja4: randJa4() }),
     events, credentials, sessions,
   };
 }

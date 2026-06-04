@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, X, Fingerprint, KeyRound, Terminal, Clock } from "lucide-react";
+import { Search, X, Fingerprint, KeyRound, Terminal, Clock, Users, ChevronDown } from "lucide-react";
 import { useGuardian } from "@/lib/api";
 import type { Attacker, ThreatLevel } from "@/lib/types";
-import { PageHeader, SeverityBadge } from "@/components/shared";
+import { PageHeader, SeverityBadge, FilterSelect } from "@/components/shared";
 import { fmtNum, fmtRelative, fmtDateTime, fmtDuration } from "@/lib/format";
+import { findDoppelgangers, maskedIpCount, type Doppelganger } from "@/lib/doppelganger";
 
 type Sort = "hits" | "recent";
 const LEVELS: ThreatLevel[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
@@ -29,14 +30,14 @@ export default function Attackers() {
     return r;
   }, [attackers, q, sort, level]);
 
+  const clusters = useMemo(() => findDoppelgangers(attackers), [attackers]);
+
   const v = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 64,
     overscan: 8,
   });
-
-  const selectCls = "bg-black/40 border border-border rounded-lg px-3 py-2 text-xs font-mono outline-none focus:border-[#E040FB]";
 
   return (
     <div>
@@ -45,14 +46,18 @@ export default function Attackers() {
         desc={`${rows.length} adversaries tracked`}
         right={
           <div className="flex items-center gap-3">
-            <select value={level} onChange={(e) => setLevel(e.target.value as ThreatLevel | "ALL")} className={selectCls}>
-              <option value="ALL">All threat levels</option>
-              {LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={selectCls}>
-              <option value="hits">Sort: Most hits</option>
-              <option value="recent">Sort: Most recent</option>
-            </select>
+            <FilterSelect
+              ariaLabel="Filter by threat level"
+              value={level}
+              onChange={(v) => setLevel(v as ThreatLevel | "ALL")}
+              options={[{ value: "ALL", label: "All threat levels" }, ...LEVELS.map((l) => ({ value: l, label: l }))]}
+            />
+            <FilterSelect
+              ariaLabel="Sort attackers"
+              value={sort}
+              onChange={(v) => setSort(v as Sort)}
+              options={[{ value: "hits", label: "Sort: Most hits" }, { value: "recent", label: "Sort: Most recent" }]}
+            />
             <div className="flex items-center gap-2 bg-black/40 border border-border rounded-lg px-3">
               <Search className="w-3.5 h-3.5 text-muted-foreground" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="IP or country" className="bg-transparent py-2 text-xs font-mono outline-none w-36" />
@@ -60,6 +65,8 @@ export default function Attackers() {
           </div>
         }
       />
+
+      {clusters.length > 0 && <DoppelgangerPanel clusters={clusters} onPick={setSel} />}
 
       <div className="glass-panel rounded-xl overflow-hidden">
         <div className="grid grid-cols-[40px_1fr_120px_110px_110px_110px] gap-3 px-4 py-3 border-b border-border/50 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -95,6 +102,68 @@ export default function Attackers() {
       <AnimatePresence>
         {sel && <AttackerDrawer attacker={sel} onClose={() => setSel(null)} />}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function DoppelgangerPanel({ clusters, onPick }: { clusters: Doppelganger[]; onPick: (a: Attacker) => void }) {
+  const [open, setOpen] = useState(true);
+  const masked = maskedIpCount(clusters);
+
+  return (
+    <div className="glass-panel rounded-xl mb-4 border border-[#7B2FBE]/30">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-[#E040FB]"><Users className="w-4 h-4" /></span>
+          <div>
+            <div className="text-sm font-semibold">Doppelgänger detection</div>
+            <div className="text-[11px] text-muted-foreground">
+              {clusters.length} actor{clusters.length === 1 ? "" : "s"} wearing {masked} IP masks — same fingerprint, different addresses
+            </div>
+          </div>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-3">
+          {clusters.map((c, i) => (
+            <div key={c.id} className="rounded-lg bg-black/30 border border-white/5 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#9D4EDD]">Actor #{i + 1}</span>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {c.members.length} IPs · {c.countries.length} countr{c.countries.length === 1 ? "y" : "ies"} · {fmtNum(c.totalHits)} hits
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {c.signals.map((s) => (
+                    <span key={s} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#7B2FBE]/20 text-[#E040FB] border border-[#7B2FBE]/30">
+                      {s} match
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {c.members.map((m) => (
+                  <button
+                    key={m.ip}
+                    onClick={() => onPick(m)}
+                    className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-1 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-colors"
+                    title={`${m.country} · ${fmtNum(m.totalHits)} hits`}
+                  >
+                    <span>{m.flag}</span>
+                    <span className="text-foreground/90">{m.ip}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
