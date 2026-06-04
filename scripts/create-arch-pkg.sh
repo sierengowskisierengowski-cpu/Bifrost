@@ -12,10 +12,18 @@ set -euo pipefail
 umask 022
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PKGNAME=bifrost
-PKGVER=0.3.0
-PKGREL=1
 ARCH=x86_64
+
+# Read version metadata from the canonical PKGBUILD to avoid drift
+PKGBUILD="${ROOT_DIR}/app/bifrost-desktop/PKGBUILD"
+if [[ -f "${PKGBUILD}" ]]; then
+  PKGNAME="$(grep -m1 '^pkgname=' "${PKGBUILD}" | cut -d= -f2)"
+  PKGVER="$(grep -m1 '^pkgver=' "${PKGBUILD}" | cut -d= -f2)"
+  PKGREL="$(grep -m1 '^pkgrel=' "${PKGBUILD}" | cut -d= -f2)"
+else
+  echo "[!] PKGBUILD not found at ${PKGBUILD}" >&2
+  exit 1
+fi
 
 BINARY="${ROOT_DIR}/app/bifrost-desktop/src-tauri/target/release/bifrost"
 ICON="${ROOT_DIR}/app/bifrost-desktop/src-tauri/icons/128x128@2x.png"

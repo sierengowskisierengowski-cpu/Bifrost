@@ -23,12 +23,13 @@ sha256sums=('SKIP')
 build() {
   cd "$srcdir/Bifrost"
 
-  # Install PyInstaller for the guardian sidecar build
-  python3 -m pip install --user --quiet pyinstaller
+  # Install PyInstaller into a build-local venv (avoids --user and ensures reproducibility)
+  python3 -m venv "${srcdir}/.venv"
+  "${srcdir}/.venv/bin/pip" install --quiet pyinstaller
 
   # Build the guardian PyInstaller binary (self-contained, no system Python needed at runtime)
   local pyi_dist="${srcdir}/guardian-dist"
-  python3 -m PyInstaller --clean --noconfirm --onefile --strip \
+  "${srcdir}/.venv/bin/python3" -m PyInstaller --clean --noconfirm --onefile --strip \
     --name guardian \
     --distpath "${pyi_dist}" \
     bifrost/guardian.py
@@ -81,6 +82,7 @@ EOF
   install -dm755 "$pkgdir/etc/heimdall"
   install -Dm644 "$root/packaging/heimdall_config.json.default" \
     "$pkgdir/etc/heimdall/heimdall_config.json"
+  # Guardian compares this checksum at startup to detect config tampering
   sha256sum "$pkgdir/etc/heimdall/heimdall_config.json" | awk '{print $1}' \
     > "$pkgdir/etc/heimdall/heimdall_config.sha256"
 

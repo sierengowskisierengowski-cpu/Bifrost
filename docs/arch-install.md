@@ -159,7 +159,7 @@ makepkg -si
 
 | Item | Status |
 |------|--------|
-| Pre-built binary compatibility | Built on Ubuntu (glibc 2.35+). Works on Arch Linux rolling release. If you hit library mismatches, build from source via PKGBUILD. |
+| Pre-built binary compatibility | Built on Ubuntu 22.04 (glibc 2.35). Tested on Arch Linux rolling release with compatible glibc (≥2.35). If you encounter library mismatches, build from source via PKGBUILD. |
 | AUR submission | Not yet submitted. Use the direct download from Releases. |
 | Autonomous response mode | Disabled by default (`dry_run: true`). Enable only in authorized environments. |
 | eBPF / kernel telemetry | Requires root or `CAP_BPF`. The systemd service runs without a dedicated user by default; see `bifrost-guardian.service` drop-in docs to restrict privileges. |
