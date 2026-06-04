@@ -7,10 +7,10 @@ import {
   Siren, Hammer, BrainCircuit, Eye,
 } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
-import { SplitFlap, useRollingNumber } from "./SplitFlap";
-import { useGuardian, useConnection } from "@/lib/api";
+import { useRollingNumber } from "./SplitFlap";
+import { useGuardian, useConnection, computeOverview } from "@/lib/api";
 import { useMood, MOOD_CLASS } from "@/lib/mood";
-import { fmtUptime } from "@/lib/format";
+import { fmtUptime, fmtNum } from "@/lib/format";
 import { isTauri, minimizeWindow, toggleMaximize, closeWindow } from "@/lib/tauri";
 
 const NAV = [
@@ -51,30 +51,42 @@ function ConnectionStatus() {
   );
 }
 
-function FlapMetric({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[9px] uppercase tracking-widest text-muted-foreground/70">{label}</span>
-      <span className="rounded bg-black/50 border border-white/10 px-1.5 py-0.5">
-        <SplitFlap value={value} className="text-[11px] font-semibold" color={color} />
-      </span>
-    </div>
-  );
-}
-
-function StatusBar() {
-  const { aiModel, hardware } = useGuardian();
+function StatusTicker() {
+  const { aiModel, hardware, counters, incidents, attackers } = useGuardian();
   const ram = useRollingNumber(hardware.ramUsed, { decimals: 1 });
   const cpu = useRollingNumber(hardware.cpuPercent, { decimals: 0 });
+  const blockedPct = computeOverview(incidents, attackers.length, counters.processedToday).blockedPct;
+
+  const items: { label: string; value: string }[] = [
+    { label: "Model", value: aiModel.model },
+    { label: "RAM", value: `${ram} / ${hardware.ramTotal}G` },
+    { label: "CPU", value: `${cpu}%` },
+    { label: "Uptime", value: fmtUptime(hardware.uptimeSec) },
+    { label: "Active Attackers", value: fmtNum(counters.activeAttackers) },
+    { label: "Events Today", value: fmtNum(counters.processedToday) },
+    { label: "Blocked", value: `${blockedPct}%` },
+  ];
+
+  const Group = () => (
+    <div className="inline-flex items-center" aria-hidden="true">
+      {items.map((it, i) => (
+        <span key={i} className="inline-flex items-center">
+          <span className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground/55 mr-2">
+            {it.label}
+          </span>
+          <span className="ticker-value text-[12px] font-semibold tracking-tight">{it.value}</span>
+          <span className="ticker-sep" />
+        </span>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="hidden lg:flex items-center gap-3 no-drag">
-      <FlapMetric label="Model" value={aiModel.model} color="#9D4EDD" />
-      <span className="w-px h-4 bg-white/10" />
-      <FlapMetric label="RAM" value={`${ram}/${hardware.ramTotal}G`} color="#4ECDC4" />
-      <span className="w-px h-4 bg-white/10" />
-      <FlapMetric label="CPU" value={`${cpu}%`} color="#E040FB" />
-      <span className="w-px h-4 bg-white/10" />
-      <FlapMetric label="Up" value={fmtUptime(hardware.uptimeSec)} color="#F48FB1" />
+    <div className="hidden lg:block no-drag w-[440px] xl:w-[600px] overflow-hidden ticker-mask">
+      <div className="ticker-track">
+        <Group />
+        <Group />
+      </div>
     </div>
   );
 }
@@ -119,7 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-sm font-bold tracking-wide rainbow-text">BIFROST</span>
           </div>
           <div className="flex items-center gap-4">
-            <StatusBar />
+            <StatusTicker />
             <ConnectionStatus />
             <WindowControls />
           </div>

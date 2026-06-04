@@ -174,6 +174,45 @@
   animation: rainbow-flow 4s linear infinite;
 }
 
+/* premium status ticker — smooth seamless marquee */
+.ticker-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-scroll 40s linear infinite;
+}
+.ticker-track:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-value {
+  background: linear-gradient(90deg, #9D4EDD, #7B2FBE, #E040FB, #E91E8C, #F48FB1, #4ECDC4, #9D4EDD);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbow-flow 9s linear infinite;
+}
+.ticker-sep {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin: 0 1.15rem;
+  transform: rotate(45deg);
+  border-radius: 1px;
+  background: linear-gradient(135deg, #9D4EDD, #E040FB);
+  opacity: 0.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+
 /* custom scrollbars */
 .scroll-thin { scrollbar-width: thin; scrollbar-color: rgba(157,78,221,0.5) transparent; }
 .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }

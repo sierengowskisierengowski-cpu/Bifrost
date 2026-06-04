@@ -87,6 +87,53 @@ export function baseUrl(s: AppSettings = getSettings()) {
   return `http://${s.guardianHost}:${s.dashboardPort}`;
 }
 
+/* ---------------- disclaimer / cookie handling ---------------- */
+// The Python guardian (dashboard.py) gates every endpoint behind a
+// `bifrost_disclaimer` cookie issued by POST /api/disclaimer/accept. Without it
+// every request returns { "error": "disclaimer_required" }.
+//
+// We never read or set the cookie by hand (the WebView forbids touching the
+// Set-Cookie / Cookie headers from JS). Instead every guardian request is sent
+// with `credentials: "include"`, so the WebView's own cookie jar stores the
+// cookie returned by /api/disclaimer/accept and replays it automatically on all
+// later calls. We accept the disclaimer once on first connect, and transparently
+// re-accept + retry whenever the guardian still reports it is required (e.g. the
+// cookie expired or hasn't been issued yet).
+
+// De-duplicates concurrent accepts: a single poll fires several requests at
+// once, and we only want one POST /api/disclaimer/accept in flight at a time.
+let disclaimerInFlight: Promise<void> | null = null;
+
+function acceptDisclaimer(root: string): Promise<void> {
+  if (disclaimerInFlight) return disclaimerInFlight;
+  const p = (async () => {
+    try {
+      await fetch(`${root}/api/disclaimer/accept`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+    } catch {
+      // Swallow: the follow-up request will surface the real connection error
+      // (and flip us to the simulated fallback) if the guardian is unreachable.
+    }
+  })();
+  disclaimerInFlight = p;
+  void p.finally(() => {
+    if (disclaimerInFlight === p) disclaimerInFlight = null;
+  });
+  return p;
+}
+
+function isDisclaimerRequired(body: unknown): boolean {
+  return (
+    !!body &&
+    typeof body === "object" &&
+    (body as Record<string, unknown>).error === "disclaimer_required"
+  );
+}
+
 /* ---------------- guardian state persistence ---------------- */
 // When `persistGuardianState` is on, the simulated guardian's config (learning
 // mode, dry-run, autonomous, confidence, identity) is saved to localStorage and
@@ -156,6 +203,7 @@ class GuardianClient {
   private retryTimer: ReturnType<typeof setInterval> | null = null;
   private backoff = 1;
   private started = false;
+  private disclaimerBootstrapped = false;
 
   start() {
     if (this.started) return;
@@ -187,13 +235,45 @@ class GuardianClient {
   }
 
   // Throws on timeout / network error / non-2xx. Used for the /api/state probe.
-  private async fetchJson(url: string, timeoutMs = 2500): Promise<unknown> {
+  // Sends the disclaimer cookie (credentials: "include") and, if the guardian
+  // still reports `disclaimer_required` (200 envelope or 401/403), accepts the
+  // disclaimer and retries the request exactly once.
+  private async fetchJson(url: string, timeoutMs = 2500, retried = false): Promise<unknown> {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { signal: ctrl.signal });
+      const res = await fetch(url, { signal: ctrl.signal, credentials: "include" });
+
+      // Read the body once; some guardians gate with a 200 + error envelope,
+      // others with 401/403 — we need the body to tell the cases apart.
+      const text = await res.text();
+      let body: unknown = null;
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+      }
+
+      const gated =
+        isDisclaimerRequired(body) || res.status === 401 || res.status === 403;
+      if (gated && !retried) {
+        // Accept against the same origin we just failed against (not a fresh
+        // baseUrl() lookup) so a mid-request host/port change can't misfire.
+        let root = baseUrl();
+        try {
+          root = new URL(url).origin;
+        } catch {
+          /* keep baseUrl() fallback */
+        }
+        await acceptDisclaimer(root);
+        return this.fetchJson(url, timeoutMs, true);
+      }
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      if (isDisclaimerRequired(body)) throw new Error("disclaimer_required");
+      return body;
     } finally {
       clearTimeout(t);
     }
@@ -212,6 +292,14 @@ class GuardianClient {
 
   private async poll() {
     const root = baseUrl();
+
+    // On the very first connection attempt, proactively accept the disclaimer so
+    // the cookie is in the jar before the first /api/state call. Reactive
+    // re-accept in fetchJson covers cookie expiry on later polls.
+    if (!this.disclaimerBootstrapped) {
+      this.disclaimerBootstrapped = true;
+      await acceptDisclaimer(root);
+    }
 
     // /api/state is BOTH the connection probe and the primary snapshot. The
     // Python guardian (dashboard.py) serves it; if it's unreachable we are
