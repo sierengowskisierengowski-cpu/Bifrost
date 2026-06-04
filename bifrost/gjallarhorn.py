@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 import os
 import json
+import base64
+import logging
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 
 _ALERT_DEDUPLICATION_CACHE = {}
 _GLOBAL_WINDOW_TRACKER = {"start_time": datetime.now(timezone.utc), "alert_count": 0}
+LOG = logging.getLogger("heimdall.gjallarhorn")
 
 def generate_ascii_forensic_chart(count):
     bars = min(count, 15)
@@ -22,22 +25,20 @@ def dispatch_sms_via_twilio(body_text):
     if not all([sid, token, to_num, from_num]):
         return False # Silently skip fallback if keys are unconfigured
 
-    twilio_url = f"https://twilio.com{sid}/Messages.json"
+    twilio_url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
     raw_payload = {"To": to_num, "From": from_num, "Body": body_text}
     encoded_data = urllib.parse.urlencode(raw_payload).encode("utf-8")
     
     try:
         req = urllib.request.Request(twilio_url, data=encoded_data, method="POST")
-        # Direct basic HTTP authentication string compilation
         auth_string = f"{sid}:{token}"
-        import base64
         encoded_auth = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
         req.add_header("Authorization", f"Basic {encoded_auth}")
         
         with urllib.request.urlopen(req) as res:
             return res.status == 201
     except Exception as err:
-        print(f"[!] Twilio SMS Fallback Gateway Failed: {err}")
+        LOG.warning("Twilio SMS fallback failed: %s", err)
         return False
 
 def dispatch_discord_alert(telemetry, analysis=None):
@@ -48,7 +49,7 @@ def dispatch_discord_alert(telemetry, analysis=None):
 
     # FEATURE 1: SEVERITY GATING - Silently log and ignore LOW/INFO/MEDIUM tiers
     if severity not in ["HIGH", "CRITICAL"]:
-        print(f"[*] Gjallarhorn Filter: Suppressing low-risk warning footprint ({severity}).")
+        LOG.debug("Gjallarhorn suppressing low-risk alert: severity=%s", severity)
         return True
 
     webhook_url = os.getenv("GJALLARHORN_WEBHOOK_URL")
@@ -58,7 +59,7 @@ def dispatch_discord_alert(telemetry, analysis=None):
     time_delta = (current_time - _GLOBAL_WINDOW_TRACKER["start_time"]).total_seconds()
     if time_delta < 60:
         if _GLOBAL_WINDOW_TRACKER["alert_count"] >= 10: # Max 10 system alerts per minute total
-            print("[!] Gjallarhorn Security Breaker: Absolute global notification threshold breached. Stifling alerts.")
+            LOG.warning("Gjallarhorn global alert cap exceeded; suppressing notification.")
             return True
         _GLOBAL_WINDOW_TRACKER["alert_count"] += 1
     else:
@@ -113,7 +114,7 @@ def dispatch_discord_alert(telemetry, analysis=None):
     dispatch_sms_via_twilio(sms_summary)
 
     if not webhook_url:
-        print(f"[*] Headless Log Only: {sms_summary}")
+        LOG.info("Gjallarhorn webhook not configured; alert logged only.")
         return True
 
     try:
@@ -124,8 +125,9 @@ def dispatch_discord_alert(telemetry, analysis=None):
         with urllib.request.urlopen(req) as response:
             return response.status == 204
     except Exception as error:
-        print(f"[!] Gjallarhorn Dispatch Error: {error}")
+        LOG.warning("Gjallarhorn dispatch error: %s", error)
         return False
 
 if __name__ == "__main__":
-    print("[+] Gjallarhorn State-of-the-Art Notification Suite initialized natively.")
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    LOG.info("Gjallarhorn module initialized.")

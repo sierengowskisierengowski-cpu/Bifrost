@@ -354,6 +354,7 @@ def generate_config(tier, analyst_model, extractor_model, ollama_ok, paths):
         "dashboard_enabled": True,
         "dashboard_port": 8766,
         "dashboard_host": "127.0.0.1",
+        "central_orchestration_enabled": False,
         "config_profile": "default",
         "vm_test_profile": {
             "local_url": "http://127.0.0.1:11434/v1",

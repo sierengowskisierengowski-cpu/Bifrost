@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Heimdall Guardian v0.1.1
+Heimdall Guardian v0.3.0
 Bifrost Security Platform
 
 Hardened version. Addresses critical issues:
@@ -1780,6 +1780,18 @@ class EventRouter(threading.Thread):
                     details={"execution_result": execution_result},
                 )
                 self.live_monitor.record_event(event, decision)
+                if self.config.get("central_orchestration_enabled", False):
+                    orchestration_payload = dict(event)
+                    orchestration_payload.update({
+                        "event_id": event_id,
+                        "severity": severity,
+                        "classification": decision.get("threat_class", "unknown"),
+                        "confidence_score": confidence,
+                    })
+                    try:
+                        execute_central_orchestration_pipeline(orchestration_payload)
+                    except Exception as exc:
+                        self.log.warning("Central orchestration hook failed: %s", exc)
 
                 tier = decision.get("gjallarhorn_tier", 1)
                 self.log.info(f"Gjallarhorn Tier {tier} alert queued.")
@@ -2084,18 +2096,29 @@ def execute_central_orchestration_pipeline(telemetry_payload):
     from bifrost.gjallarhorn import dispatch_discord_alert
     from bifrost.mjolnir import deploy_active_deception_traps
 
-    print(f"\n[*] Central Processing Unit: Intercepted raw threat packet from {telemetry_payload.get('attacker', '0.0.0.0')}")
+    orchestration_log = logging.getLogger("heimdall.orchestration")
+    orchestration_log.info(
+        "Central orchestration received telemetry from %s",
+        telemetry_payload.get("attacker", "0.0.0.0"),
+    )
 
     # 1. Pipeline Segment 1: Stream data straight to the local 32B GPU Brain
     ai_analysis = execute_gpu_analyst_inference(telemetry_payload)
     confidence = ai_analysis.get("confidence_score", 0.0)
     calculated_severity = ai_analysis.get("severity", "MEDIUM").upper()
 
-    print(f"[+] 32B Matrix Result -> Severity: {calculated_severity} | Attribution: {ai_analysis.get('threat_actor_attribution')} | Confidence: {confidence*100:.1f}%")
+    orchestration_log.info(
+        "Analyst Matrix result severity=%s confidence=%.1f%%",
+        calculated_severity,
+        confidence * 100,
+    )
 
     # CONFIDENCE THRESHOLD GATE: Drop escalation routing if AI confidence metrics fall flat
     if confidence < 0.50:
-        print(f"[!] Gating Warning: AI inference confidence threshold too low ({confidence:.2f}). Dropping offensive escalation loops.")
+        orchestration_log.warning(
+            "Orchestration skipped escalation due to low confidence: %.2f",
+            confidence,
+        )
         return True
 
     # Overwrite payload parameters with core analytical decisions
