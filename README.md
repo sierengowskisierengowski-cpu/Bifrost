@@ -1,185 +1,306 @@
 <div align="center">
 
-# Bifrost — AI-Powered Endpoint Detection & Response
+# Bifrost — AI-Powered Linux Endpoint Detection & Response
 
-**Version 0.3.0 | GowskiNet Security Lab | Joey Sierengowski**
-
-[![Version](https://img.shields.io/badge/version-v0.3.0-purple)]()
-[![License](https://img.shields.io/badge/license-MIT-blue)]()
+**Version 0.3.0 | Open Source | Arch Linux Native**
 
 *Heimdall Never Sleeps.*
 
 </div>
 
-## What is Bifrost?
+## What Bifrost is right now
 
-Bifrost is an open-source, locally run endpoint detection and response platform focused on Linux security labs and authorized defense environments. It ingests host, honeypot, and network telemetry, applies local AI-assisted analysis, and presents findings through a desktop command center backed by Guardian.
+Bifrost is an open-source AI-powered Endpoint Detection and Response system built for Linux. It monitors your network in real time, classifies threats using local AI inference, and can take autonomous defensive action when you explicitly configure it to do so.
 
-## Purpose
+This is a **local-first** stack:
 
-Bifrost is built for operators who want local-first security telemetry and response logic without shipping data to cloud services.
+- **No cloud dependency for analysis**
+- **No account required**
+- **No external SaaS needed to classify events**
+- **Built and tested against real attackers, not simulated traffic**
 
-## How It's Built
+Bifrost combines a Python Guardian backend, a native Tauri desktop application, local Ollama inference, deception traps, incident tracking, attacker fingerprinting, and multi-channel alerting into one Linux-native defensive platform.
 
-- **Guardian (Python):** ingestion, detection, policy gating, and local APIs
-- **Desktop App (Tauri v2 + React + TypeScript):** Norse rainbow bridge themed dashboard
-- **AI Inference (Ollama):** local model execution and MITRE ATT&CK mapping
-- **Storage:** local SQLite event database
+## Real-world validation
 
-## Core Modules
+- **23,000+ events** captured from live attackers
+- **64+ unique adversary IPs** tracked
+- **Doppelgänger detection** identified **6 actors** using **30+ IP masks**
+- Real malware captured: **Redtail cryptominer**, **mdrfckr SSH backdoor botnet**, and **DNS tunneling C2**
+- **Top attacker:** Iran — `91.40.62.224` with **3,964+ hits**
 
-- **Guardian:** main watchdog process and orchestration layer
-- **Gjallarhorn (`bifrost/gjallarhorn.py`):** alert dispatch integration (webhook/SMS fallback paths)
-- **Mjolnir (`bifrost/mjolnir.py`):** active deception asset deployment helpers
-- **Analyst Matrix (`bifrost/analyst_matrix.py`):** model tier selection by RAM + structured AI analysis
+## Core architecture
 
-> Note: Gjallarhorn, Mjolnir, and Analyst Matrix are implemented backend modules and are referenced from the Guardian orchestration layer. Current UI surfaces their outputs through incident/live monitoring workflows.
+### Guardian
 
-## Operating Modes
+Guardian is the Python backend and operational core of Bifrost.
 
-- **Learning Mode:** observe and log only
-- **Active Mode:** observe + alerting
-- **Autonomous Mode:** observe + alert + defensive action when policy allows
+It ingests telemetry from:
 
-## Production Validation Stats
+- **Cowrie honeypot**
+- **auditd**
+- **process watcher**
 
-- v0.3.0 validation assets and screenshots are being finalized before public release.
-- Repository documentation reflects the audited pre-release desktop/guardian packaging flow.
-- Screenshot refresh remains pending Joey's validated capture set.
+It classifies every event using **Ollama** with the local model:
 
-## Key Features
+- `qwen2.5:1.5b-instruct`
 
-- Norse rainbow bridge dashboard (Tauri desktop app)
-- Three operating modes: Learning, Active, Autonomous
-- Local Ollama inference
-- Guardian agent supervision (CLI and desktop)
-- MITRE ATT&CK mapping in analysis pipeline
-- Live monitoring and incident tracking
-- Gjallarhorn / Mjolnir / Analyst Matrix module support
+Guardian runs as a **systemd service** and exposes the data consumed by the desktop app.
 
-## Tech Stack
+### Desktop App
 
-- Python 3.11+
-- Tauri v2, React 19, TypeScript, Vite
-- Rust + Cargo
-- Go sidecars
-- SQLite
-- Ollama
+The desktop client is built with:
+
+- **Tauri v2**
+- **React**
+- **TypeScript**
+- **Vite**
+
+It is currently documented and packaged as an **Arch Linux native** application.
+
+Install path priority for users:
+
+1. **AUR package:** `bifrost-bin`
+2. **Build from source**
+
+## What the app currently includes
+
+### Overview
+
+The overview page provides:
+
+- total events
+- incidents
+- blocked percentage
+- unique attackers
+- activity timeline
+- recent incidents
+
+### Heimdall Speaks
+
+A natural-language AI posture summary layer that:
+
+- narrates security posture in plain English
+- supports time ranges: **1H / 24H / 7D / 30D / ALL**
+- includes an **Ask Heimdall** panel for natural-language security Q&A
+
+### Incidents
+
+A full incident log with:
+
+- severity
+- MITRE technique
+- attacker IP
+- action taken
+
+### Attackers
+
+Tracks **64+ adversaries** and includes **Doppelgänger detection** using:
+
+- **HASSH**
+- **JA4**
+
+This is used to identify the same actor rotating across multiple IP addresses.
+
+### Live Monitor
+
+A real-time stream of security events.
+
+### Timeline
+
+A time-based view of observed attack activity.
+
+### MITRE ATT&CK
+
+A full framework-oriented detection view with:
+
+- mapped techniques
+- plain-English explanations
+
+### Gjallarhorn
+
+The Nine Realms multi-channel broadcaster for critical alerts:
+
+- **Asgard** — journald
+- **Midgard** — desktop notifications
+- **Vanaheim** — Discord / Slack webhook
+- **Muspelheim** — Twilio SMS
+- **Helheim** — custom HTTP endpoint
+
+### Mjolnir
+
+The deception trap system for high-signal detection:
+
+- fake AWS credentials
+- fake database config
+- decoy SSH keys
+- canary documents
+
+Any access to these assets triggers a high-severity alert.
+
+### Analyst Matrix
+
+A local AI inference panel that shows:
+
+- active model
+- response time
+- success rate
+- MITRE tags from recent analysis
+
+It also supports on-demand analysis triggering.
+
+### Settings
+
+Settings currently document support for:
+
+- Guardian behavior: **learning / dry run / autonomous**
+- confidence threshold
+- dashboard preferences
+- security controls including strong password and biometric support through **fprintd / Howdy**
+- personalization including operator name and casual greeting style
+- Guardian Status card
+
+### Screensaver
+
+Two documented modes:
+
+- **Rainbow Bridge** — animated mode
+- **Ops Center** — full-screen live attack data display with multiple scrolling streams, real-time stats, top adversary, and attack type ticker
+
+### Marquee ticker
+
+A smooth-scrolling top bar showing:
+
+- Model
+- RAM
+- CPU
+- Uptime
+- Active Attackers
+- Events Today
+- Blocked %
+
+### Personalized greeting
+
+Optional casual greeting with time-of-day and threat-level awareness.
+
+Example:
+
+> What's good [name], bridge held overnight.
+
+### Hidden BIFROST terminal
+
+Typing `BIFROST` in the terminal unlocks the hidden ASCII power-user console for:
+
+- advanced configuration
+- raw log viewing
+- IP ban / unban
+- mode switching
 
 ## Requirements
 
-- Linux environment
-- Python 3.11+
-- Node.js 18+ and pnpm
-- Rust + Cargo
-- Go 1.21+
-- Ollama with at least one model installed
+- **Arch Linux**
+- **Python 3.11+**
+- **pnpm**
+- **Rust / Cargo**
+- **Ollama**
+- Ollama model: **`qwen2.5:1.5b-instruct`**
 
-## Installation
+## Install
 
-### Arch Linux — One-Download Install (Recommended)
-
-Download the pre-built Arch package from [GitHub Releases](https://github.com/sierengowskisierengowski-cpu/Bifrost/releases/latest):
+### AUR (recommended)
 
 ```bash
-# Download the latest .pkg.tar.zst from the Releases page, then:
-sudo pacman -U bifrost-0.3.0-1-x86_64.pkg.tar.zst
+yay -S bifrost-bin
 ```
 
-After install:
-- **Bifrost appears in your app launcher** (no terminal needed for normal use)
-- Click the **Bifrost** icon to open the dashboard
-- **Guardian runs as a persistent background service by default**
-- **Guardian auto-starts on boot** unless you switch to session-only mode in Settings
-
-> See [docs/arch-install.md](docs/arch-install.md) for the complete installation guide, Guardian persistence details, and upgrade instructions.
-
-### Option 2: Build from source (Arch)
+Update later with:
 
 ```bash
-git clone https://github.com/sierengowskisierengowski-cpu/Bifrost.git
+yay -Syu
+```
+
+### Build from source
+
+```bash
+git clone https://github.com/sierengowskisierengowski-cpu/Bifrost
 cd Bifrost/app/bifrost-desktop
-makepkg -si
-```
-
-### Option 3: Build the desktop app manually
-
-```bash
-git clone https://github.com/sierengowskisierengowski-cpu/Bifrost.git
-cd Bifrost
-python3 -m pip install -r requirements.txt
-cd app/bifrost-desktop
 pnpm install
 pnpm tauri build
 ```
 
-## Guardian Lifecycle
+## How it runs right now
 
-**Default desktop behavior:** Guardian runs as a persistent background service, so monitoring stays active even when the app window is closed.
+### Guardian runtime
 
-**Session-only mode:** In **Settings → Guardian Behavior**, enable **Session-only mode** to stop Guardian when the app closes and skip persistent background startup on reboot.
-
-**Standalone mode (terminal):**
-
-```bash
-python3 -m bifrost.guardian --dashboard --dashboard-port 8766
-```
-
-Or if installed via pacman:
-
-```bash
-bifrost-guardian --dashboard --dashboard-port 8766
-```
-
-**Persistent background service (default):**
+Guardian is intended to run as a background **systemd** service:
 
 ```bash
 sudo systemctl enable --now bifrost-guardian.service
 ```
 
-Guardian runs at boot and continues running even when the desktop app is closed unless you switch to session-only mode in Settings.
-
-## Packaging
-
-### Arch Linux package (CI-produced)
-
-The release workflow automatically builds `bifrost-<ver>-<rel>-x86_64.pkg.tar.zst` using `scripts/create-arch-pkg.sh`. This package is uploaded to GitHub Releases on every push to `main`.
-
-### Manual monolithic build (produces sidecar binaries + Tauri binary)
+The current service entry launches:
 
 ```bash
-./package_monolithic.sh
+/usr/bin/bifrost-guardian --dashboard --dashboard-host 127.0.0.1 --dashboard-port 8766
 ```
 
-### Create Arch package from local build
+### Desktop runtime
+
+The desktop app is a **Tauri v2** shell over the React frontend.
+
+Current build/runtime characteristics:
+
+- `vite.config.ts` uses `base: "./"` so assets load correctly in the Tauri runtime
+- `tauri.conf.json` is wired to `pnpm dev` for development and `pnpm build` before desktop bundling
+- the desktop package scripts currently include:
+  - `pnpm dev`
+  - `pnpm build`
+  - `pnpm desktop:dev`
+  - `pnpm desktop:build`
+  - `pnpm tauri`
+- frontend dev server port is **5173**
+- Guardian dashboard/API port is **8766**
+
+### Desktop build notes
 
 ```bash
-./package_monolithic.sh          # build everything first
-scripts/create-arch-pkg.sh       # then package for Arch
+cd app/bifrost-desktop
+pnpm install
+pnpm tauri build
 ```
+
+Important notes for the current build:
+
+- **`vite.config.ts` already uses the correct `base: "./"` fix** for Tauri asset loading
+- If your environment prompts for native build script trust, run **`pnpm approve-builds`** before building
+- This repository should be documented as **Arch Linux native first**
 
 ## Screenshots
 
-Repository screenshots are placeholders and need refresh for v0.3.0.
+Screenshots live in `docs/screenshots/`.
 
-- **TODO (release media):** replace dashboard screenshots after app validation.
-- **Owner note:** Joey will provide updated screenshots after validation.
+Current repository screenshots should be treated as **pre-release captures for verification**, not generic placeholders. Refresh them before public launch if any UI changed after those captures were taken.
 
-## Configuration
+## Security and safe defaults
 
-Bifrost reads config from `/etc/heimdall/heimdall_config.json` or `~/.config/bifrost/config.json`.
+Bifrost should be operated in authorized defensive environments only.
 
-Important safety settings:
+Recommended posture before enabling autonomous actions:
 
-- `learning_mode` (default `true`)
-- `dry_run` (default `true`)
-- `autonomous_actions_enabled` (default `false`)
-- `confidence_threshold` (default `0.85`)
+- validate your telemetry sources
+- verify your confidence threshold
+- review alert routing destinations
+- verify deception assets are placed intentionally
+- test response actions in dry-run mode first
 
-## Legal Disclaimer
+## Roadmap — v0.4.0
 
-Bifrost is for authorized defensive use only. You are responsible for lawful deployment and for reviewing autonomous-response behavior before enabling enforcement modes.
+- **Hofund AI companion** — separate sarcastic Norse AI that monitors and alerts in its own voice
+- **WireGuard remote access integration**
+- **GNI T-800 skull hardware integration**
+- **Flathub submission**
+- **Auto-updater via AUR**
 
 ## License
 
-MIT License — see `LICENSE`.
+MIT License. See `LICENSE`.
