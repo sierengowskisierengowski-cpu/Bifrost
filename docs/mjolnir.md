@@ -1,21 +1,21 @@
-# Mjolnir Module (v0.3.0)
+# Mjolnir
 
 ## Purpose
 
-Mjolnir provides active deception helper routines for controlled trap deployment.
+Mjolnir is Bifrost’s deception trap system. It deploys controlled decoys used to test detections and pressure attacker workflows in authorized environments.
 
-## Current Implementation
+## Implementation
 
 - Module path: `bifrost/mjolnir.py`
 - Primary entrypoint: `deploy_active_deception_traps(honeypot_root=...)`
-- Creates decoy files and directories under a supplied honeypot root
+- Creates decoy files and directories under a supplied trap root
 
 ## Security Posture
 
-- Uses clearly marked decoy placeholder values
+- Uses clearly marked decoy values
 - Restricts generated private-key decoy file permissions to `0600`
 
 ## Notes
 
-- Integrated via Guardian orchestration helper.
-- Intended for authorized lab/honeypot environments only.
+- Integrated through the Guardian backend pipeline.
+- Intended for authorized security validation environments.

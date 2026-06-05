@@ -3,12 +3,12 @@ pkgname=bifrost-bin
 _appname=bifrost
 pkgver=0.3.0
 pkgrel=1
-pkgdesc="Norse rainbow-bridge security dashboard (pre-built binary)"
+pkgdesc="Open-source AI-powered Linux EDR desktop app (pre-built binary)"
 arch=('x86_64')
 url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
 license=('custom')
 depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
-optdepends=('python: run the local Bifrost guardian agent'
+optdepends=('python: run the local Bifrost Guardian backend'
             'fprintd: fingerprint unlock support')
 provides=('bifrost')
 conflicts=('bifrost')

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Bifrost Security Platform — Installer
-# Installs Heimdall Guardian and Go Agent as systemd services
+# Bifrost legacy installer helper (internal/advanced use)
+# Primary user install path is: yay -S bifrost-bin
+# This script preserves the older source-based service wiring flow.
 # Usage: sudo bash install.sh
 
 set -e
@@ -10,8 +11,8 @@ SERVICE_DIR="/etc/systemd/system"
 USER="${SUDO_USER:-nyx}"
 
 echo "╔══════════════════════════════════════════╗"
-echo "║        BIFROST INSTALLER v0.1.0          ║"
-echo "║        Heimdall Never Sleeps.            ║"
+echo "║     BIFROST LEGACY INSTALLER HELPER      ║"
+echo "║   Prefer: yay -S bifrost-bin             ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
@@ -25,11 +26,11 @@ echo "[*] Installing Python dependencies..."
 pip install --break-system-packages --quiet \
     psutil openai requests paho-mqtt anthropic fastapi uvicorn pydantic
 
-echo "[*] Building Go agent..."
+echo "[*] Building legacy Go collector..."
 cd "$BIFROST_DIR/agent"
 if command -v go &> /dev/null; then
     go build -o bifrost-agent .
-    echo "[+] Go agent built."
+    echo "[+] Legacy Go collector built."
 else
     echo "[!] Go not found. Install Go first: sudo pacman -S go"
     exit 1
@@ -88,7 +89,7 @@ echo "║    sudo systemctl start bifrost-agent    ║"
 echo "║                                          ║"
 echo "║  Check status:                           ║"
 echo "║    sudo systemctl status bifrost-guardian║"
-echo "║    journalctl -u heimdall-guardian -f    ║"
+echo "║    journalctl -u bifrost-guardian -f     ║"
 echo "║                                          ║"
 echo "║  Heimdall Never Sleeps.                  ║"
 echo "╚══════════════════════════════════════════╝"

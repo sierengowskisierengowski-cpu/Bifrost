@@ -1,5 +1,5 @@
 [Unit]
-Description=Bifrost Go Agent (collector + executor)
+Description=Bifrost legacy Go collector service (optional/internal)
 After=network.target
 Wants=network-online.target
 

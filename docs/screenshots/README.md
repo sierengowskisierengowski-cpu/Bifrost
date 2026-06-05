@@ -1,6 +1,6 @@
-# Screenshot Refresh Notes (v0.3.0)
+# Screenshot Verification Notes
 
-Current repository screenshots are placeholders from earlier iterations.
+Current repository screenshots are **pre-release captures**.
 
-- Replace all screenshots with validated v0.3.0 captures before public release.
-- Joey will provide updated screenshots after app validation.
+- Verify each image against the current desktop UI before public launch.
+- Refresh any screenshot that no longer matches shipped behavior or layout.

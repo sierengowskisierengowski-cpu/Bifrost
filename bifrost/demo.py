@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bifrost Demo v0.1.0 — dry-run replay demo."""
+"""Bifrost Demo v0.3.0 — dry-run replay demo."""
 
 from __future__ import annotations
 

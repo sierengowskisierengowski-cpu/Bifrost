@@ -1,10 +1,10 @@
-# Gjallarhorn Module (v0.3.0)
+# Gjallarhorn
 
 ## Purpose
 
-Gjallarhorn handles alert dispatch from Guardian decisions.
+Gjallarhorn is Bifrost’s alert broadcasting system. It distributes Guardian decisions to configured channels so operators can respond quickly.
 
-## Current Implementation
+## Implementation
 
 - Module path: `bifrost/gjallarhorn.py`
 - Primary entrypoint: `dispatch_discord_alert(telemetry, analysis=None)`
@@ -21,5 +21,5 @@ Gjallarhorn handles alert dispatch from Guardian decisions.
 
 ## Notes
 
-- Integrated via Guardian orchestration helper.
-- UI does not currently expose a dedicated Gjallarhorn page; alerts are reflected through incident/live views.
+- Integrated through the Guardian backend pipeline.
+- Alerts are reflected in incident/live desktop views while external channels are notified.

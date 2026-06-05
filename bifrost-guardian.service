@@ -1,5 +1,5 @@
 [Unit]
-Description=Bifrost Heimdall Guardian (background monitoring pipeline)
+Description=Bifrost Guardian Python backend (Linux EDR monitoring pipeline)
 Documentation=https://github.com/sierengowskisierengowski-cpu/Bifrost
 After=network.target
 Wants=network-online.target

@@ -1,10 +1,10 @@
-# Analyst Matrix Module (v0.3.0)
+# Analyst Matrix
 
 ## Purpose
 
-Analyst Matrix provides local AI inference helpers with RAM-aware model selection.
+Analyst Matrix is Bifrost’s local AI analysis panel. It powers incident reasoning in the Linux EDR desktop experience using local Ollama inference by default.
 
-## Current Implementation
+## Implementation
 
 - Module path: `bifrost/analyst_matrix.py`
 - Model resolver: `get_active_ollama_model()`
@@ -13,7 +13,7 @@ Analyst Matrix provides local AI inference helpers with RAM-aware model selectio
 
 ## Model Selection Behavior
 
-Default selection by available RAM:
+Default model selection by available RAM:
 
 - `< 6 GB`: `qwen2.5:1.5b-instruct`
 - `6–10 GB`: `qwen2.5:7b-instruct`
@@ -21,5 +21,6 @@ Default selection by available RAM:
 
 ## Notes
 
-- Integrated via Guardian orchestration helper.
-- UI currently surfaces Analyst Matrix outcomes through incident/live analysis fields.
+- Integrated through the Guardian backend pipeline.
+- Local AI defaults to Ollama with `qwen2.5:1.5b-instruct` for CPU-safe operation.
+- Results are surfaced in desktop incident and live-monitor analysis views.

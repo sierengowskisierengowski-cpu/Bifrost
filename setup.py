@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Heimdall Setup Engine v0.3.0
-Bifrost Security Platform
+Bifrost Open-Source AI-Powered Linux EDR
 
-One command deployment. Zero configuration required.
-Audits hardware, pulls correct models, generates config.
+Arch Linux setup helper for local Guardian configuration.
+Audits hardware, pulls Ollama models, and generates config.
 
 Usage: python setup.py
 """
@@ -113,7 +113,7 @@ def banner():
     print("""
 ╔══════════════════════════════════════════╗
 ║        HEIMDALL SETUP ENGINE             ║
-║        Bifrost Security Platform         ║
+║   Bifrost Linux EDR (Arch native)        ║
 ║        Heimdall Never Sleeps.            ║
 ╚══════════════════════════════════════════╝
 """)

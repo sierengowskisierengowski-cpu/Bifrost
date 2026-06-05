@@ -9,7 +9,7 @@ WorkingDirectory=/usr/share/bifrost
 
 ProtectSystem=strict
 ProtectHome=tmpfs
-ReadWritePaths=/var/lib/heimdall/ /var/log/heimdall/ /home/cosmic/Projects/honeypot/logs/
+ReadWritePaths=/var/lib/heimdall/ /var/log/heimdall/ /var/log/bifrost/
 PrivateTmp=true
 ProtectKernelTunables=true
 ProtectKernelModules=true

@@ -56,5 +56,5 @@ Then:
 - The runtime deps (`webkit2gtk-4.1`, `gtk3`, `libayatana-appindicator`) match a
   standard Tauri 2 app with the tray-icon feature. If a future Tauri upgrade
   changes the WebKit version, update `depends` in the PKGBUILD.
-- The Python guardian agent (`bifrost-agent/`) is separate and is listed as an
-  optional dependency only; it is not bundled in this package.
+- The Python Guardian backend is separate and can be installed alongside this
+  desktop package; it is not bundled in this package.
