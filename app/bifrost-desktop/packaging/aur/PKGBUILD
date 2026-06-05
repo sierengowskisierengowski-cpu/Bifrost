@@ -1,0 +1,24 @@
+# Maintainer: sierengowski <sierengowskisierengowski-cpu@users.noreply.github.com>
+pkgname=bifrost-bin
+_appname=bifrost
+pkgver=0.3.0
+pkgrel=1
+pkgdesc="Norse rainbow-bridge security dashboard (pre-built binary)"
+arch=('x86_64')
+url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
+license=('custom')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator')
+optdepends=('python: run the local Bifrost guardian agent'
+            'fprintd: fingerprint unlock support')
+provides=('bifrost')
+conflicts=('bifrost')
+options=('!strip' '!debug')
+source=("${pkgname}-${pkgver}.tar.gz::${url}/releases/download/v${pkgver}/bifrost-${pkgver}-x86_64.tar.gz")
+# Replaced automatically by packaging/package-release.sh on each release.
+sha256sums=('SKIP')
+
+package() {
+	install -Dm755 "${srcdir}/bifrost" "${pkgdir}/usr/bin/bifrost"
+	install -Dm644 "${srcdir}/bifrost-bin.desktop" "${pkgdir}/usr/share/applications/bifrost-bin.desktop"
+	install -Dm644 "${srcdir}/bifrost.png" "${pkgdir}/usr/share/pixmaps/bifrost.png"
+}

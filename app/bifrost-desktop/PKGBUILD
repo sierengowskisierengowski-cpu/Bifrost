@@ -1,0 +1,129 @@
+pkgname=bifrost
+pkgver=0.3.0
+pkgrel=2
+pkgdesc="Bifrost AI-powered EDR — Heimdall Never Sleeps."
+arch=('x86_64')
+url="https://github.com/sierengowskisierengowski-cpu/Bifrost"
+license=('custom')
+install=bifrost.install
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'libayatana-appindicator'
+  'python'
+  'python-pydantic'
+  'python-openai'
+  'python-requests'
+  'python-psutil'
+  'python-aiohttp'
+  'ollama'
+  'sqlite'
+  'nftables'
+)
+makedepends=('git' 'go' 'nodejs' 'pnpm' 'rust' 'python-pip')
+source=("git+https://github.com/sierengowskisierengowski-cpu/Bifrost.git")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/Bifrost"
+
+  # Install PyInstaller into a build-local venv (avoids --user and ensures reproducibility)
+  python3 -m venv "${srcdir}/.venv"
+  "${srcdir}/.venv/bin/pip" install --quiet pyinstaller
+
+  # Build the guardian PyInstaller binary (self-contained, no system Python needed at runtime)
+  local pyi_dist="${srcdir}/guardian-dist"
+  "${srcdir}/.venv/bin/python3" -m PyInstaller --clean --noconfirm --onefile --strip \
+    --name guardian \
+    --distpath "${pyi_dist}" \
+    bifrost/guardian.py
+
+  # Detect the target triple for Tauri sidecar naming
+  local triple
+  triple="$(rustc -vV | awk -F': ' '/host:/ {print $2; exit}')"
+
+  # Place the sidecar binary and resources where pnpm tauri build expects them
+  mkdir -p app/bifrost-desktop/src-tauri/binaries
+  install -m755 "${pyi_dist}/guardian" \
+    "app/bifrost-desktop/src-tauri/binaries/guardian-${triple}"
+
+  mkdir -p app/bifrost-desktop/src-tauri/resources/guardian
+  install -m755 "${pyi_dist}/guardian" \
+    "app/bifrost-desktop/src-tauri/resources/guardian/guardian"
+  install -m644 bifrost/security.py \
+    "app/bifrost-desktop/src-tauri/resources/guardian/security.py"
+  install -m644 bifrost/reasoner.py \
+    "app/bifrost-desktop/src-tauri/resources/guardian/reasoner.py"
+
+  # Build the Tauri desktop application
+  cd app/bifrost-desktop
+  pnpm install --frozen-lockfile
+  pnpm tauri build
+}
+
+package() {
+  local root="$srcdir/Bifrost"
+  local pyroot="$pkgdir/usr/lib/bifrost"
+
+  # Desktop binary (Tauri, self-contained with embedded guardian sidecar)
+  install -Dm755 "$root/app/bifrost-desktop/src-tauri/target/release/bifrost" \
+    "$pkgdir/usr/bin/bifrost"
+
+  # Python source for the system bifrost-guardian CLI tool
+  install -dm755 "$pyroot"
+  cp -r "$root/bifrost" "$pyroot/bifrost"
+  cp -r "$root/heimdall" "$pyroot/heimdall"
+
+  # bifrost-guardian: standalone CLI wrapper that uses system Python
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/bifrost-guardian" <<'EOF'
+#!/bin/bash
+export PYTHONPATH=/usr/lib/bifrost${PYTHONPATH:+:$PYTHONPATH}
+export HEIMDALL_CONFIG_PATH="${HEIMDALL_CONFIG_PATH:-/etc/heimdall/heimdall_config.json}"
+if [[ "${BIFROST_GUARDIAN_RUN_MODE:-app}" == "service" ]]; then
+  if ! python3 - "$HEIMDALL_CONFIG_PATH" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+mode = "persistent"
+if path.exists():
+    try:
+        mode = str(json.loads(path.read_text(encoding="utf-8")).get(
+            "guardian_persistence_mode",
+            "persistent",
+        )).strip().lower()
+    except Exception:
+        mode = "persistent"
+sys.exit(0 if mode != "session_only" else 1)
+PY
+  then
+    echo "[bifrost-guardian] session-only mode active; skipping service start." >&2
+    exit 0
+  fi
+fi
+exec python3 -m bifrost.guardian "$@"
+EOF
+
+  # Default Heimdall config + environment templates (installed in package payload)
+  install -dm755 "$pkgdir/etc/heimdall"
+  install -Dm644 "$root/packaging/heimdall_config.json.default" \
+    "$pkgdir/etc/heimdall/heimdall_config.json"
+  # Placeholder checksum file; real checksum is generated in post-install from target machine file.
+  printf '%s\n' 'PENDING_POST_INSTALL_CHECKSUM' > "$pkgdir/etc/heimdall/heimdall_config.sha256"
+  install -Dm644 "$root/packaging/bifrost_tokens.env" \
+    "$pkgdir/etc/heimdall/bifrost.env"
+
+  # Runtime data / log directories
+  install -dm755 "$pkgdir/var/lib/heimdall" "$pkgdir/var/log/heimdall" "$pkgdir/var/log/bifrost"
+
+  # Desktop integration
+  install -Dm644 "$root/app/bifrost-desktop/bifrost.desktop" \
+    "$pkgdir/usr/share/applications/bifrost.desktop"
+  install -Dm644 "$root/app/bifrost-desktop/src-tauri/icons/128x128@2x.png" \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/bifrost.png"
+
+  # Systemd service for persistent Guardian monitoring (enabled in post-install)
+  install -Dm644 "$root/bifrost-guardian.service" \
+    "$pkgdir/usr/lib/systemd/system/bifrost-guardian.service"
+}

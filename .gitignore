@@ -1,0 +1,64 @@
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Config and secrets (generated at runtime)
+heimdall_config.json
+heimdall_config.sha256
+bifrost_tokens.env
+/etc/heimdall/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Log and audit files
+*.log
+*.jsonl
+!examples/replay/*.jsonl
+logs/
+db/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Temporary / editor files
+PYEOF~
+*.orig
+*.bak
+*.swp
+*~
+
+# Go build output
+agent/bifrost-agent
+
+# Node / misc
+node_modules/
+.env
+.venv/
+
+# Test attack framework (local lab only)
+tests/attack_framework/
+
+# Build validation facility artifacts (build-scoped, not committed)
+lab/.build_lock
+lab/reports/
+# PyInstaller build outputs
+build/
+dist/
+*.spec
+app/bifrost-desktop/src-tauri/binaries/guardian-*
+
+# Arch Linux binary package (built locally by scripts/create-arch-pkg.sh)
+*.pkg.tar.zst
+
+# Local configuration files
+config.json
+config.sha256

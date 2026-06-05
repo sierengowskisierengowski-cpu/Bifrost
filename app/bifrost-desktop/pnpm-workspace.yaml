@@ -1,0 +1,11 @@
+# Standalone project root.
+#
+# This file marks bifrost-desktop as its own pnpm workspace root so that, even
+# when this folder is extracted *inside* the Replit monorepo, `pnpm install`
+# resolves ONLY this project's package.json. Without it, pnpm walks up, finds
+# the monorepo's pnpm-workspace.yaml, and tries to install the whole workspace —
+# which pulls in Replit-only `catalog:` / `@replit/vite-plugin-*` dependencies
+# and fails with ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC.
+packages: []
+allowBuilds:
+  esbuild: false

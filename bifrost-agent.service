@@ -1,0 +1,20 @@
+[Unit]
+Description=Bifrost Go Agent (collector + executor)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nyx
+Group=nyx
+WorkingDirectory=/home/nyx/Projects/bifrost/agent
+Environment=HEIMDALL_ENV=production
+EnvironmentFile=-/etc/heimdall/bifrost_tokens.env
+ExecStart=/home/nyx/Projects/bifrost/agent/bifrost-agent
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+{"event_id": "mdr-001", "type": "port_scan", "severity": 0.7, "dest_ip": "192.168.0.172", "pid": null, "process_name": "cowrie", "evidence_count": 1, "is_system_process": false, "note": "Initial SSH probe from 87.251.64.176"}
+{"event_id": "mdr-002", "type": "port_scan", "severity": 0.75, "dest_ip": "192.168.0.172", "pid": null, "process_name": "cowrie", "evidence_count": 2, "is_system_process": false, "note": "Credential spray root/admin"}
+{"event_id": "mdr-003", "type": "suspicious_spawn", "severity": 0.88, "dest_ip": "185.220.101.45", "pid": 4521, "process_name": "wget", "evidence_count": 2, "is_system_process": false, "note": "wget payload from C2"}
+{"event_id": "mdr-004", "type": "suspicious_spawn", "severity": 0.95, "dest_ip": "185.220.101.45", "pid": 4522, "process_name": "mdrfckr", "evidence_count": 3, "is_system_process": false, "note": "mdrfckr dropper executes"}
+{"event_id": "mdr-005", "type": "suspicious_spawn", "severity": 0.99, "dest_ip": "185.220.101.45", "pid": 4523, "process_name": "xmrig", "evidence_count": 4, "is_system_process": false, "note": "XMRig cryptominer deployed"}

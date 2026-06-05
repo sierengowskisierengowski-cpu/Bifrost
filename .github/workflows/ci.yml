@@ -1,0 +1,94 @@
+name: Bifrost CI
+
+on:
+  push:
+    branches: ["main", "copilot/**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ── Python tests ────────────────────────────────────────────────────────────
+  python-tests:
+    name: Python Tests (3.11)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov psutil pydantic
+
+      - name: Run tests
+        run: python3 -m pytest tests/ -v --tb=short
+
+  # ── Python lint ─────────────────────────────────────────────────────────────
+  python-lint:
+    name: Python Lint (flake8)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run flake8
+        # E501 = line too long (relaxed for this project); W503 = common style choice
+        run: |
+          flake8 bifrost/ heimdall/ gjallarhorn/ tests/ \
+            --max-line-length=100 \
+            --extend-ignore=E501,W503 \
+            --count --statistics
+
+  # ── Go build ────────────────────────────────────────────────────────────────
+  go-build:
+    name: Go Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - name: Build Go agent
+        working-directory: agent
+        run: go build -v ./...
+
+      - name: Run Go vet
+        working-directory: agent
+        run: go vet ./...
+
+  # ── Shell script lint ───────────────────────────────────────────────────────
+  shell-lint:
+    name: Shell Lint (shellcheck)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck
+        run: |
+          shellcheck install.sh
+          shellcheck kernel/tetragon/setup.sh
