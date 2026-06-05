@@ -1,83 +1,87 @@
 # Security Policy
 
-## Supported Versions
+## Supported version
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅ Active  |
+| 0.3.x   | ✅ Current pre-release |
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-If you discover a security vulnerability in Bifrost, **please do not open a
-public GitHub issue.** Public disclosure before a fix is available could expose
-operators to risk.
+If you discover a security vulnerability in Bifrost, **do not open a public GitHub issue**.
 
-### Responsible Disclosure Steps
+Instead:
 
-1. **Email** the maintainer at the address listed in [AUTHORS](AUTHORS) (subject:
-   `[BIFROST SECURITY] <one-line summary>`).  
-   If no email is available, open a **private** GitHub Security Advisory via:  
-   `GitHub repo → Security tab → "Report a vulnerability"`.
+1. Email the maintainer using the address listed in `AUTHORS` with the subject:
+   - `[BIFROST SECURITY] <brief summary>`
+2. If no email is available there, use GitHub's private vulnerability reporting flow from the repository Security tab.
+3. Include:
+   - affected component
+   - reproduction steps or proof of concept
+   - impact assessment
+   - suggested fix if you have one
 
-2. Include in your report:
-   - Affected component (file, function, module)
-   - Attack scenario / proof of concept
-   - Severity assessment (Critical / High / Medium / Low)
-   - Suggested fix (if known)
+### Response targets
 
-3. Expect an initial acknowledgement within **72 hours** and a status update
-   within **7 days**.
+- initial acknowledgement: **within 72 hours**
+- follow-up status update: **within 7 days**
 
-4. We will credit researchers in the release notes (unless you prefer
-   anonymity).
+## What Bifrost does
 
-### Coordinated Disclosure Timeline
+Bifrost is a Linux endpoint detection and response system that:
 
-| Day | Action |
-|-----|--------|
-| 0   | Report received; acknowledgement sent |
-| 1-7 | Triage and initial assessment |
-| 7-30| Fix developed and tested |
-| 30  | Fix released; CVE filed if warranted |
-| 30+ | Public disclosure (coordinated with reporter) |
+- monitors local security telemetry
+- ingests data from sources such as Cowrie honeypot, auditd, and process watchers
+- classifies events using local AI inference through Ollama
+- maps detections to MITRE ATT&CK context
+- can broadcast alerts through multiple local or remote channels
+- can take autonomous defensive action **only when the operator explicitly enables it**
+
+## What Bifrost does not do
+
+Bifrost does **not**:
+
+- guarantee prevention of every attack
+- replace responsible system hardening, patching, network segmentation, backups, or human review
+- make cloud calls mandatory for core local analysis
+- grant safe authorization for use on systems you do not own or control
+- eliminate the need to test autonomous actions before enabling them
+
+## Safe-operation guidance
+
+Before enabling more aggressive behavior, verify:
+
+- telemetry sources are correct
+- confidence thresholds are tuned for your environment
+- notification endpoints are under your control
+- deception assets are deployed intentionally
+- dry-run behavior has been validated
+
+## Responsible use and legal notice
+
+Bifrost is a **defensive security tool** intended only for systems you own or are explicitly authorized to monitor and protect.
+
+Running Bifrost against systems, users, networks, or environments without permission may violate law, policy, contracts, or acceptable-use terms.
+
+You are solely responsible for:
+
+- lawful deployment
+- validating monitoring scope
+- reviewing autonomous response behavior before enabling it
+- ensuring deception assets and alerts are used appropriately in your jurisdiction and environment
 
 ## Scope
 
-The following are **in scope**:
+In scope for responsible disclosure:
 
-- All code in this repository (`bifrost/`, `agent/`, `heimdall/`, `gjallarhorn/`,
-  `kernel/`)
-- Install and setup scripts (`install.sh`, `setup.py`, `kernel/tetragon/setup.sh`)
-- Service unit files
-- Default configuration values
-- Authentication and token handling
+- code in this repository
+- install and packaging scripts
+- service units
+- default local configuration behavior
+- authentication and local security controls
 
-The following are **out of scope**:
+Out of scope:
 
-- Attacks that require physical access to the machine
-- Vulnerabilities in upstream dependencies (report to the upstream project
-  directly; we will update our dependency once they release a fix)
-- Attacks against AI model providers (Groq, Anthropic, Ollama)
-
-## Security Defaults
-
-Bifrost ships in **safe-defaults mode**:
-
-- `learning_mode: true` — observe only, no enforcement
-- `dry_run: true` — all destructive actions are logged but not executed
-- `autonomous_actions_enabled: false` — requires explicit human opt-in
-
-Operators must explicitly disable all three safeguards before autonomous
-enforcement becomes active. See `README.md → Security and Safe Defaults` for
-details.
-
-## Authorized Use
-
-Bifrost is a **defensive security tool** intended for use only on systems you
-own or have explicit written authorization to monitor and protect.
-
-Deploying Bifrost on systems you do not own or have authorization to monitor
-may violate computer fraud and abuse laws in your jurisdiction.
-
-See [docs/lab-attack-simulation.md](docs/lab-attack-simulation.md) for
-guidance on authorized lab testing.
+- vulnerabilities in upstream dependencies that have not yet been fixed upstream
+- attacks requiring physical compromise of the host first
+- misuse of Bifrost outside authorized defensive environments
