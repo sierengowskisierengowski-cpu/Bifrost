@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { LockKeyhole, Fingerprint, ScanFace } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
 import { verifyPassword, hasPassword } from "@/lib/app-state";
-import { isEnrolled, verify, type Modality } from "@/lib/biometric";
-import { useSettings } from "@/lib/api";
+import { isEnrolled, verify, refreshFingerprintEnrollment, type Modality } from "@/lib/biometric";
+import { useSettings, saveSettings } from "@/lib/api";
 
 export function Login({ onSuccess }: { onSuccess: () => void }) {
   const settings = useSettings();
@@ -12,7 +12,25 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const fpReady = settings.fingerprintEnabled && isEnrolled("fingerprint");
+  const [fpEnrolled, setFpEnrolled] = useState(() => isEnrolled("fingerprint"));
+
+  // Ask fprintd (read-only) whether a fingerprint is enrolled. If the user
+  // enrolled one in a terminal, this makes the fingerprint button appear
+  // automatically — no in-app enrollment ever runs.
+  useEffect(() => {
+    let live = true;
+    refreshFingerprintEnrollment().then((r) => {
+      if (!live) return;
+      setFpEnrolled(r.enrolled);
+      if (r.enrolled && !settings.fingerprintEnabled) saveSettings({ fingerprintEnabled: true });
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fpReady = settings.fingerprintEnabled && fpEnrolled;
   const faceReady = settings.faceEnabled && isEnrolled("face");
   const anyBio = fpReady || faceReady;
   const [bioBusy, setBioBusy] = useState<Modality | null>(null);

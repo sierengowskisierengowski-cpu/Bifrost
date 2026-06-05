@@ -118,18 +118,44 @@ export function baseUrl(s: AppSettings = getSettings()) {
   return `http://${s.guardianHost}:${s.dashboardPort}`;
 }
 
-/* ---------------- disclaimer / cookie handling ---------------- */
-// The Python guardian (dashboard.py) gates every endpoint behind a
-// `bifrost_disclaimer` cookie issued by POST /api/disclaimer/accept. Without it
-// every request returns { "error": "disclaimer_required" }.
+/* ---------------- disclaimer / session handling ---------------- */
+// The Python guardian (guardian.py) can gate behind a disclaimer acceptance.
+// In a browser this used a cookie, but Tauri's WebView does not share cookies
+// the way a browser does, and a credentialed cross-origin request to a
+// 127.0.0.1 origin fails CORS — which is what previously left the desktop app
+// stuck on "Disconnected".
 //
-// We never read or set the cookie by hand (the WebView forbids touching the
-// Set-Cookie / Cookie headers from JS). Instead every guardian request is sent
-// with `credentials: "include"`, so the WebView's own cookie jar stores the
-// cookie returned by /api/disclaimer/accept and replays it automatically on all
-// later calls. We accept the disclaimer once on first connect, and transparently
-// re-accept + retry whenever the guardian still reports it is required (e.g. the
-// cookie expired or hasn't been issued yet).
+// Instead we use a header, never a cookie. POST /api/disclaimer/accept returns
+// a session token; we persist it in localStorage and replay it as the
+// `X-Bifrost-Session` header on every request. We accept once on first connect
+// and transparently re-accept + retry whenever the guardian still reports it is
+// required.
+
+const SESSION_KEY = "bifrost.session";
+
+function getSession(): string | null {
+  try {
+    return localStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setSession(token: string | null) {
+  try {
+    if (token) localStorage.setItem(SESSION_KEY, token);
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+// Header(s) attached to every guardian request: the session token when we have
+// one, so the guardian accepts the request without a cookie.
+function authHeaders(): Record<string, string> {
+  const token = getSession();
+  return token ? { "X-Bifrost-Session": token } : {};
+}
 
 // De-duplicates concurrent accepts: a single poll fires several requests at
 // once, and we only want one POST /api/disclaimer/accept in flight at a time.
@@ -139,12 +165,23 @@ function acceptDisclaimer(root: string): Promise<void> {
   if (disclaimerInFlight) return disclaimerInFlight;
   const p = (async () => {
     try {
-      await fetch(`${root}/api/disclaimer/accept`, {
+      const res = await fetch(`${root}/api/disclaimer/accept`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: "{}",
       });
+      const text = await res.text();
+      let body: unknown = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = null;
+      }
+      if (body && typeof body === "object") {
+        const rec = body as Record<string, unknown>;
+        const token = rec.session ?? rec.token ?? rec.sessionId;
+        if (typeof token === "string" && token) setSession(token);
+      }
     } catch {
       // Swallow: the follow-up request will surface the real connection error
       // (and flip us to the simulated fallback) if the guardian is unreachable.
@@ -266,14 +303,14 @@ class GuardianClient {
   }
 
   // Throws on timeout / network error / non-2xx. Used for the /api/state probe.
-  // Sends the disclaimer cookie (credentials: "include") and, if the guardian
+  // Sends the session token (`X-Bifrost-Session` header) and, if the guardian
   // still reports `disclaimer_required` (200 envelope or 401/403), accepts the
   // disclaimer and retries the request exactly once.
   private async fetchJson(url: string, timeoutMs = 2500, retried = false): Promise<unknown> {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { signal: ctrl.signal, credentials: "include" });
+      const res = await fetch(url, { signal: ctrl.signal, headers: authHeaders() });
 
       // Read the body once; some guardians gate with a 200 + error envelope,
       // others with 401/403 — we need the body to tell the cases apart.
@@ -325,15 +362,15 @@ class GuardianClient {
     const root = baseUrl();
 
     // On the very first connection attempt, proactively accept the disclaimer so
-    // the cookie is in the jar before the first /api/state call. Reactive
-    // re-accept in fetchJson covers cookie expiry on later polls.
+    // the session token is stored before the first /api/state call. Reactive
+    // re-accept in fetchJson covers token expiry on later polls.
     if (!this.disclaimerBootstrapped) {
       this.disclaimerBootstrapped = true;
       await acceptDisclaimer(root);
     }
 
     // /api/state is BOTH the connection probe and the primary snapshot. The
-    // Python guardian (dashboard.py) serves it; if it's unreachable we are
+    // Python guardian (guardian.py) serves it; if it's unreachable we are
     // disconnected and fall back to the rich local simulated model.
     let core: unknown;
     try {

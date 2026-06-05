@@ -3,12 +3,19 @@
 // Honest scope: this is a LOCAL unlock gate that sits alongside Bifrost's
 // password gate as a convenience, not as cloud authentication. It drives the
 // real Linux biometric stacks through small Tauri commands that shell out on
-// the desktop:
+// the desktop.
 //
-//   • Fingerprint — fprintd (`fprintd-enroll` to register, `fprintd-verify`
-//     to authenticate). Works with any fprintd-compatible reader.
-//   • Face        — Howdy (`howdy add` to register, `howdy recognize` to
-//     authenticate). Howdy needs root, so those run via pkexec/sudo.
+// CRITICAL: the app NEVER enrolls a biometric itself. Enrollment commands can
+// trigger a polkit/PAM prompt, and spawning that from the Tauri window tears
+// the window down (it freezes and disappears — only the tray icon remains).
+// So enrollment for BOTH modalities happens in a terminal, and the app only
+// ever runs read-only / verify commands:
+//
+//   • Fingerprint — the user runs `fprintd-enroll` in a terminal. The app
+//     detects the result with `fprintd-list <user>` (read-only) and unlocks
+//     with `fprintd-verify`.
+//   • Face        — the user runs `sudo howdy add` in a terminal. The app
+//     records that locally and unlocks with `howdy recognize`.
 //
 // The old WebAuthn approach never worked inside Tauri on Linux because a web
 // page can't talk to fprintd or Howdy. In the browser preview none of this is
@@ -17,9 +24,8 @@
 import {
   isTauri,
   biometricAvailability,
-  fprintdEnroll,
+  fprintdList,
   fprintdVerify,
-  howdyEnroll,
   howdyVerify,
   type CmdResult,
 } from "./tauri";
@@ -27,6 +33,16 @@ import {
 export type Modality = "fingerprint" | "face";
 
 export const HOWDY_DOCS_URL = "https://github.com/boltgolt/howdy";
+
+// The terminal command the user runs to enroll their face. Howdy needs root,
+// and running it from inside the app via pkexec/sudo crashes the window, so we
+// surface this command (with a copy button) instead of executing it.
+export const FACE_SETUP_COMMAND = "sudo howdy add";
+
+// The terminal command the user runs to enroll a fingerprint. Running this from
+// inside the app can trigger a polkit prompt that crashes the window, so we
+// surface it (with a copy button) and detect the result instead of executing it.
+export const FINGERPRINT_SETUP_COMMAND = "fprintd-enroll";
 
 export interface Availability {
   /** Running inside the desktop app (where biometrics are possible at all). */
@@ -65,6 +81,12 @@ export function forget(m: Modality): void {
   setEnrolled(m, false);
 }
 
+// Mark a modality as enrolled. Used for face, where enrollment happens in a
+// terminal (`sudo howdy add`) and the user confirms they've completed it.
+export function markEnrolled(m: Modality): void {
+  setEnrolled(m, true);
+}
+
 // Which biometric backends are usable right now.
 export async function getAvailability(): Promise<Availability> {
   if (!isTauri()) {
@@ -87,15 +109,33 @@ function resultError(res: CmdResult | null, fallback: string): string {
   return detail || fallback;
 }
 
-// Enroll a modality. Prompts the OS sensor / camera on the desktop.
-export async function enroll(m: Modality): Promise<{ ok: boolean; error?: string }> {
-  if (!isTauri()) return { ok: false, error: "Enrollment is only available in the desktop app." };
-  const res = m === "fingerprint" ? await fprintdEnroll() : await howdyEnroll();
-  if (res?.ok) {
-    setEnrolled(m, true);
-    return { ok: true };
+// Detect whether a fingerprint is already enrolled in fprintd, by running the
+// READ-ONLY `fprintd-list <user>`. The app never enrolls itself (that can crash
+// the window) — the user runs `fprintd-enroll` in a terminal and this picks up
+// the result. The local enrolled flag is synced to whatever fprintd reports so
+// the login screen can show the fingerprint button automatically.
+export async function refreshFingerprintEnrollment(): Promise<{
+  enrolled: boolean;
+  checked: boolean;
+  error?: string;
+}> {
+  if (!isTauri()) {
+    return { enrolled: false, checked: false, error: "Only available in the desktop app." };
   }
-  return { ok: false, error: resultError(res, "Enrollment failed.") };
+  const res = await fprintdList();
+  // `ok` here means the command spawned (binary present). A falsy/!ok result
+  // means fprintd isn't installed or the user couldn't be resolved.
+  if (!res || !res.ok) {
+    return { enrolled: isEnrolled("fingerprint"), checked: false, error: resultError(res, "Could not check enrollment status.") };
+  }
+  const out = `${res.stdout}\n${res.stderr}`;
+  // fprintd-list prints one "- #N: <finger>" line per enrolled finger, under a
+  // "Fingerprints for user X" header. When nothing is enrolled it prints a
+  // "has no fingerprints" line instead.
+  const enrolled =
+    /-\s*#\d+:/.test(out) || (/Fingerprints for user/i.test(out) && !/no fingerprints/i.test(out));
+  setEnrolled("fingerprint", enrolled);
+  return { enrolled, checked: true };
 }
 
 // Verify a modality (used at the login screen).

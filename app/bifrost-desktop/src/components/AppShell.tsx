@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, ShieldAlert, Crosshair, Radio, Activity,
   Grid3x3, Settings as SettingsIcon, ScrollText, Minus, Square, X,
-  Siren, Hammer, BrainCircuit, Eye,
+  Hammer, BrainCircuit, Eye,
 } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
 import { useRollingNumber } from "./SplitFlap";
@@ -21,7 +21,6 @@ const NAV = [
   { path: "/live", label: "Live Monitor", icon: Radio },
   { path: "/timeline", label: "Timeline", icon: Activity },
   { path: "/mitre", label: "MITRE ATT&CK", icon: Grid3x3 },
-  { path: "/gjallarhorn", label: "Gjallarhorn", icon: Siren },
   { path: "/mjolnir", label: "Mjolnir", icon: Hammer },
   { path: "/analyst", label: "Analyst Matrix", icon: BrainCircuit },
   { path: "/settings", label: "Settings", icon: SettingsIcon },

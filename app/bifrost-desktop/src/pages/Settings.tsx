@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { ShieldCheck, KeyRound, RotateCcw, RotateCw, Server, MonitorCog, Cpu, Siren, Fingerprint, ScanFace, Sparkles, Power, Activity, Loader2 } from "lucide-react";
+import { ShieldCheck, KeyRound, RotateCcw, RotateCw, Server, MonitorCog, Cpu, Fingerprint, ScanFace, Sparkles, Power, Activity, Loader2, Terminal, Copy, Check } from "lucide-react";
 import { useGuardian, useSettings, saveSettings, guardian, useConnection } from "@/lib/api";
 import { PageHeader, Toggle, PasswordField, PasswordMeter } from "@/components/shared";
-import { IntegrationCard, PLATFORM_FIELDS } from "@/components/IntegrationCard";
-import { useIntegrations } from "@/lib/integrations";
 import { setPassword, setSetupComplete, verifyPassword, evaluatePassword } from "@/lib/app-state";
 import { isTauri, guardianStatus, startGuardian, stopGuardian, openExternal } from "@/lib/tauri";
 import {
   getAvailability,
-  enroll,
+  refreshFingerprintEnrollment,
   isEnrolled,
+  markEnrolled,
   HOWDY_DOCS_URL,
+  FACE_SETUP_COMMAND,
+  FINGERPRINT_SETUP_COMMAND,
   type Availability,
   type Modality,
 } from "@/lib/biometric";
@@ -32,7 +33,6 @@ const inputCls = "bg-black/40 border border-border rounded-lg px-3 py-2 text-sm 
 export default function Settings() {
   const { config } = useGuardian();
   const s = useSettings();
-  const ints = useIntegrations();
   const [cur, setCur] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
@@ -250,24 +250,6 @@ export default function Settings() {
           </div>
         </Card>
 
-        <div className="lg:col-span-2">
-          <div className="glass-panel rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[#E040FB]"><Siren className="w-4 h-4" /></span>
-              <h3 className="font-semibold">Gjallarhorn — Light & Alert Integrations</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-              Connect smart lights and webhooks so a critical threat can flash your room red. Enter
-              credentials and send a test alert. Pick one as the active route to arm alerting.
-            </p>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {PLATFORM_FIELDS.map((p) => (
-                <IntegrationCard key={p.key} platform={p.key} fields={p.fields} ints={ints} />
-              ))}
-            </div>
-          </div>
-        </div>
-
         <GuardianStatusCard />
       </div>
     </div>
@@ -392,6 +374,32 @@ function GuardianStatusCard() {
   );
 }
 
+function CopyCommand({ command, testid }: { command: string; testid: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — the command is still selectable */
+    }
+  };
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-white/10 bg-black/40 px-2 py-1.5">
+      <Terminal className="w-3 h-3 text-[#4ECDC4] shrink-0" />
+      <code className="flex-1 text-[11px] font-mono text-[#4ECDC4] select-all truncate">{command}</code>
+      <button
+        onClick={copy}
+        data-testid={`button-copy-${testid}`}
+        className="flex items-center gap-1 text-[10px] text-[#E040FB] hover:text-[#ff66ff] shrink-0"
+      >
+        {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+      </button>
+    </div>
+  );
+}
+
 function BioRow({
   icon,
   title,
@@ -404,6 +412,10 @@ function BioRow({
   onToggle,
   testid,
   extra,
+  manualCommand,
+  manualNote,
+  onMarkEnrolled,
+  onCheck,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -412,10 +424,14 @@ function BioRow({
   enrolled: boolean;
   enabled: boolean;
   busy: boolean;
-  onEnroll: () => void;
+  onEnroll?: () => void;
   onToggle: (v: boolean) => void;
   testid: string;
   extra?: React.ReactNode;
+  manualCommand?: string;
+  manualNote?: string;
+  onMarkEnrolled?: () => void;
+  onCheck?: () => void;
 }) {
   return (
     <div className="rounded-lg border border-white/10 bg-black/20 p-3">
@@ -444,18 +460,50 @@ function BioRow({
             label={enabled ? "Enabled" : "Disabled"}
             accent="#E040FB"
           />
-          <button
-            onClick={onEnroll}
-            disabled={busy}
-            data-testid={`button-enroll-${testid}`}
-            className="mt-2 flex items-center gap-2 text-[11px] text-[#E040FB] hover:text-[#ff66ff] disabled:opacity-40"
-          >
-            {busy ? (
-              <><Loader2 className="w-3 h-3 animate-spin" /> Follow the prompt…</>
-            ) : (
-              <><RotateCw className="w-3 h-3" /> {enrolled ? "Re-enroll" : "Enroll"}</>
-            )}
-          </button>
+          {manualCommand ? (
+            <div className="mt-2 space-y-2">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {manualNote ??
+                  "This needs admin rights, so it can't run from inside the app. Open a terminal and run:"}
+              </p>
+              <CopyCommand command={manualCommand} testid={testid} />
+              {onCheck ? (
+                <button
+                  onClick={onCheck}
+                  disabled={busy}
+                  data-testid={`button-check-${testid}`}
+                  className="flex items-center gap-2 text-[11px] text-[#E040FB] hover:text-[#ff66ff] disabled:opacity-40"
+                >
+                  {busy ? (
+                    <><Loader2 className="w-3 h-3 animate-spin" /> Checking…</>
+                  ) : (
+                    <><RotateCw className="w-3 h-3" /> Check enrollment status</>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={onMarkEnrolled}
+                  data-testid={`button-mark-enrolled-${testid}`}
+                  className="flex items-center gap-2 text-[11px] text-[#E040FB] hover:text-[#ff66ff]"
+                >
+                  <Check className="w-3 h-3" /> {enrolled ? "Mark as set up again" : "I've run it — mark as set up"}
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onEnroll}
+              disabled={busy}
+              data-testid={`button-enroll-${testid}`}
+              className="mt-2 flex items-center gap-2 text-[11px] text-[#E040FB] hover:text-[#ff66ff] disabled:opacity-40"
+            >
+              {busy ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Follow the prompt…</>
+              ) : (
+                <><RotateCw className="w-3 h-3" /> {enrolled ? "Re-enroll" : "Enroll"}</>
+              )}
+            </button>
+          )}
         </>
       )}
     </div>
@@ -481,25 +529,24 @@ function BiometricSetting() {
     };
   }, []);
 
-  const doEnroll = async (m: Modality) => {
+  // Fingerprint enrollment happens in a terminal (`fprintd-enroll`). This only
+  // CHECKS the result via read-only `fprintd-list` — the app never enrolls.
+  const checkFingerprint = async () => {
     setMsg("");
     setMsgErr(false);
-    setBusy(m);
-    const res = await enroll(m);
+    setBusy("fingerprint");
+    const r = await refreshFingerprintEnrollment();
     setBusy(null);
-    if (res.ok) {
-      if (m === "fingerprint") {
-        setFpEnrolled(true);
-        saveSettings({ fingerprintEnabled: true });
-        setMsg("Fingerprint enrolled.");
-      } else {
-        setFaceEnrolled(true);
-        saveSettings({ faceEnabled: true });
-        setMsg("Face enrolled.");
-      }
+    if (r.enrolled) {
+      setFpEnrolled(true);
+      saveSettings({ fingerprintEnabled: true });
+      setMsg("Fingerprint detected and enabled.");
     } else {
       setMsgErr(true);
-      setMsg(res.error || "Could not enroll.");
+      setMsg(
+        r.error ||
+          "No fingerprint enrolled yet. Run fprintd-enroll in a terminal, then check again.",
+      );
     }
   };
 
@@ -508,6 +555,16 @@ function BiometricSetting() {
     setMsgErr(false);
     if (m === "fingerprint") saveSettings({ fingerprintEnabled: on });
     else saveSettings({ faceEnabled: on });
+  };
+
+  // Face enrollment happens in a terminal (`sudo howdy add`); once the user has
+  // run it, this records it locally and turns face unlock on.
+  const markFace = () => {
+    setMsgErr(false);
+    markEnrolled("face");
+    setFaceEnrolled(true);
+    saveSettings({ faceEnabled: true });
+    setMsg("Face marked as set up. Make sure you ran the command in a terminal first.");
   };
 
   return (
@@ -533,9 +590,11 @@ function BiometricSetting() {
             enrolled={fpEnrolled}
             enabled={s.fingerprintEnabled}
             busy={busy === "fingerprint"}
-            onEnroll={() => void doEnroll("fingerprint")}
             onToggle={(v) => toggle("fingerprint", v)}
             testid="fingerprint"
+            manualCommand={FINGERPRINT_SETUP_COMMAND}
+            manualNote="Enroll in a terminal (no admin needed), then restart Bifrost or check the status below:"
+            onCheck={() => void checkFingerprint()}
           />
           <BioRow
             icon={<ScanFace className="w-3.5 h-3.5 text-[#E040FB]" />}
@@ -545,9 +604,12 @@ function BiometricSetting() {
             enrolled={faceEnrolled}
             enabled={s.faceEnabled}
             busy={busy === "face"}
-            onEnroll={() => void doEnroll("face")}
+            onEnroll={() => {}}
             onToggle={(v) => toggle("face", v)}
             testid="face"
+            manualCommand={FACE_SETUP_COMMAND}
+            manualNote="Howdy needs admin rights, so face setup can't run from inside the app. Open a terminal and run:"
+            onMarkEnrolled={markFace}
             extra={
               !avail.face ? (
                 <button
@@ -565,7 +627,8 @@ function BiometricSetting() {
           )}
           <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
             A local convenience gate stored only on this device — your password still works as a
-            fallback. Face setup uses Howdy and may prompt for your system password.
+            fallback. Both enroll once in a terminal (fprintd for fingerprint, Howdy for face);
+            Bifrost only detects and verifies them, never enrolls, so it can't crash.
           </p>
         </>
       )}

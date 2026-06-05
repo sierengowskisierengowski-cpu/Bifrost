@@ -24,7 +24,6 @@ import Live from "@/pages/Live";
 import Timeline from "@/pages/Timeline";
 import Mitre from "@/pages/Mitre";
 import Heimdall from "@/pages/Heimdall";
-import Gjallarhorn from "@/pages/Gjallarhorn";
 import Mjolnir from "@/pages/Mjolnir";
 import AnalystMatrix from "@/pages/AnalystMatrix";
 import Settings from "@/pages/Settings";
@@ -47,7 +46,6 @@ function Routes() {
         <Route path="/timeline" component={Timeline} />
         <Route path="/mitre" component={Mitre} />
         <Route path="/heimdall" component={Heimdall} />
-        <Route path="/gjallarhorn" component={Gjallarhorn} />
         <Route path="/mjolnir" component={Mjolnir} />
         <Route path="/analyst" component={AnalystMatrix} />
         <Route path="/settings" component={Settings} />

@@ -1,13 +1,39 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, ArrowLeft, Wifi, WifiOff, Fingerprint, ScanFace, ShieldCheck } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Wifi, WifiOff, Fingerprint, ScanFace, ShieldCheck, Terminal, Copy, Check } from "lucide-react";
 import { BifrostLogo } from "./BifrostLogo";
 import { LegalPanel } from "./Legal";
 import { PasswordField, PasswordMeter } from "./shared";
 import { setPassword, setLegalAccepted, setSetupComplete, evaluatePassword } from "@/lib/app-state";
 import { getSettings, saveSettings, baseUrl } from "@/lib/api";
-import { getAvailability, enroll, isEnrolled, HOWDY_DOCS_URL, type Availability, type Modality } from "@/lib/biometric";
+import { getAvailability, refreshFingerprintEnrollment, isEnrolled, markEnrolled, HOWDY_DOCS_URL, FACE_SETUP_COMMAND, FINGERPRINT_SETUP_COMMAND, type Availability, type Modality } from "@/lib/biometric";
 import { openExternal } from "@/lib/tauri";
+
+function CopyCommand({ command, testid }: { command: string; testid: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — the command is still selectable */
+    }
+  };
+  return (
+    <div className="flex items-center gap-1.5 rounded-md border border-white/10 bg-black/40 px-2 py-1.5">
+      <Terminal className="w-3 h-3 text-[#4ECDC4] shrink-0" />
+      <code className="flex-1 text-[11px] font-mono text-[#4ECDC4] select-all truncate text-left">{command}</code>
+      <button
+        onClick={copy}
+        data-testid={`button-copy-${testid}`}
+        className="flex items-center gap-1 text-[10px] text-[#E040FB] hover:text-[#ff66ff] shrink-0"
+      >
+        {copied ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+      </button>
+    </div>
+  );
+}
 
 function BridgeArt() {
   return (
@@ -70,22 +96,31 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
   const pwMatch = pw === pw2 && pw2.length > 0;
   const pwValid = pwEval.acceptable && pwMatch;
 
-  const enrollMod = async (m: Modality) => {
+  // Fingerprint is enrolled by the user in a terminal (`fprintd-enroll`). This
+  // only CHECKS the result (read-only) — it never runs enrollment itself.
+  const checkFingerprint = async () => {
     setBioMsg("");
-    setBioBusy(m);
-    const res = await enroll(m);
+    setBioBusy("fingerprint");
+    const r = await refreshFingerprintEnrollment();
     setBioBusy(null);
-    if (res.ok) {
-      if (m === "fingerprint") {
-        setFpEnrolled(true);
-        saveSettings({ fingerprintEnabled: true });
-      } else {
-        setFaceEnrolled(true);
-        saveSettings({ faceEnabled: true });
-      }
+    if (r.enrolled) {
+      setFpEnrolled(true);
+      saveSettings({ fingerprintEnabled: true });
     } else {
-      setBioMsg(res.error || "Could not enroll. You can set this up later in Settings.");
+      setBioMsg(
+        r.error ||
+          "No fingerprint enrolled yet. Run fprintd-enroll in a terminal, then check again.",
+      );
     }
+  };
+
+  // Face enrollment runs in a terminal (`sudo howdy add`). Once the user has
+  // done it, record it locally and enable face unlock.
+  const markFace = () => {
+    setBioMsg("");
+    markEnrolled("face");
+    setFaceEnrolled(true);
+    saveSettings({ faceEnabled: true });
   };
 
   const next = () => setStep((s) => Math.min(STEPS.length - 1, s + 1));
@@ -202,21 +237,24 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                           <ShieldCheck className="w-3.5 h-3.5" /> Enrolled
                         </div>
                       ) : avail.fingerprint ? (
-                        <>
-                          <div className="text-[10px] text-[#4ECDC4] mb-2">Reader available</div>
+                        <div className="w-full space-y-2">
+                          <div className="text-[10px] text-[#4ECDC4] leading-snug">
+                            Enroll in a terminal (no admin needed), then restart Bifrost or check:
+                          </div>
+                          <CopyCommand command={FINGERPRINT_SETUP_COMMAND} testid="fingerprint" />
                           <button
-                            onClick={() => enrollMod("fingerprint")}
+                            onClick={checkFingerprint}
                             disabled={bioBusy !== null}
-                            data-testid="button-enroll-fingerprint"
-                            className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[12px] font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 hover:bg-[#7B2FBE]/20 disabled:opacity-40"
+                            data-testid="button-check-fingerprint"
+                            className="flex items-center justify-center gap-1.5 w-full rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 hover:bg-[#7B2FBE]/20 disabled:opacity-40"
                           >
                             {bioBusy === "fingerprint" ? (
-                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scan now…</>
+                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking…</>
                             ) : (
-                              "Enroll fingerprint"
+                              <><Check className="w-3.5 h-3.5" /> Check enrollment status</>
                             )}
                           </button>
-                        </>
+                        </div>
                       ) : (
                         <div className="text-[11px] text-muted-foreground">
                           {avail.tauri ? "No reader detected" : "Desktop app only"}
@@ -234,21 +272,19 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                           <ShieldCheck className="w-3.5 h-3.5" /> Enrolled
                         </div>
                       ) : avail.face ? (
-                        <>
-                          <div className="text-[10px] text-[#4ECDC4] mb-2">Howdy detected</div>
+                        <div className="w-full space-y-2">
+                          <div className="text-[10px] text-[#4ECDC4]">
+                            Howdy needs admin rights — run this in a terminal:
+                          </div>
+                          <CopyCommand command={FACE_SETUP_COMMAND} testid="face" />
                           <button
-                            onClick={() => enrollMod("face")}
-                            disabled={bioBusy !== null}
-                            data-testid="button-enroll-face"
-                            className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-[12px] font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 hover:bg-[#7B2FBE]/20 disabled:opacity-40"
+                            onClick={markFace}
+                            data-testid="button-mark-enrolled-face"
+                            className="flex items-center justify-center gap-1.5 w-full rounded-lg px-3 py-1.5 text-[11px] font-semibold border border-[#7B2FBE]/50 bg-[#7B2FBE]/10 hover:bg-[#7B2FBE]/20"
                           >
-                            {bioBusy === "face" ? (
-                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Look at camera…</>
-                            ) : (
-                              "Enroll face"
-                            )}
+                            <Check className="w-3.5 h-3.5" /> I've run it
                           </button>
-                        </>
+                        </div>
                       ) : (
                         <div className="flex flex-col items-center gap-1.5">
                           <div className="text-[11px] text-muted-foreground">
@@ -271,8 +307,8 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                     <div className="text-[11px] font-mono text-[#FF6B35] mt-3 text-center">{bioMsg}</div>
                   )}
                   <p className="text-[10px] text-muted-foreground/60 mt-4 text-center leading-relaxed">
-                    Fingerprint uses fprintd; face uses Howdy and may prompt for your system password.
-                    The credential never leaves this machine.
+                    Both enroll once in a terminal — fprintd for fingerprint, Howdy for face — then
+                    Bifrost detects them. The credential never leaves this machine.
                   </p>
                 </div>
               )}

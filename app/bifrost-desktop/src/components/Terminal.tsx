@@ -27,7 +27,7 @@ const BOOT = [
   { text: "» linking to Bifrost guardian core ...", cls: "text-muted-foreground" },
   { text: "» mounting rune-tables ............. ok", cls: "text-[#4ECDC4]" },
   { text: "» decrypting watch-keys ............ ok", cls: "text-[#4ECDC4]" },
-  { text: "» Gjallarhorn link ................. ok", cls: "text-[#4ECDC4]" },
+  { text: "» arming bridge sentinels .......... ok", cls: "text-[#4ECDC4]" },
   { text: "", cls: "" },
   { text: "Type 'help' for commands. ESC or 'exit' to close.", cls: "text-[#F48FB1]" },
   { text: "", cls: "" },
