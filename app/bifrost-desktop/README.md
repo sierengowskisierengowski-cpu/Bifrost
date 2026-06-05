@@ -2,125 +2,116 @@
 
 > Heimdall Never Sleeps.
 
-A native desktop wrapper for the **Bifrost** security dashboard, built with
-[Tauri v2](https://tauri.app). By default it connects to the persistent
-systemd-managed **Python guardian** service; session-only mode falls back to an
-app-managed guardian that stops when the app closes. The React frontend polls the
-guardian's HTTP API at `http://127.0.0.1:8766` and falls back to mock data when
-the guardian is unavailable.
+Bifrost Desktop is the native Linux desktop command center for the Bifrost security stack.
 
----
+It is built with:
 
-## What's inside
+- **Tauri v2**
+- **React**
+- **TypeScript**
+- **Vite**
 
-```
-bifrost-desktop/
-├── index.html              # Vite entry
-├── package.json            # frontend + Tauri CLI scripts
-├── vite.config.ts          # base "./" so assets load over the tauri:// protocol
-├── tsconfig.json
-├── public/favicon.svg
-├── src/                    # the full React + TypeScript frontend
-└── src-tauri/              # the native Rust shell
-    ├── Cargo.toml
-    ├── build.rs
-    ├── tauri.conf.json     # window + bundle config + withGlobalTauri
-    ├── capabilities/       # window + shell + notification permissions
-    ├── icons/              # app icons
-    └── src/
-        ├── main.rs         # thin entry → bifrost_lib::run()
-        └── lib.rs          # guardian process supervision + tray + commands
-```
+It connects to the local Guardian backend and presents the current Bifrost experience: overview metrics, incidents, attackers, live monitoring, MITRE mapping, Heimdall Speaks, settings, and full-screen display modes.
 
-### Guardian lifecycle (Rust → Python)
+## Current runtime model
 
-`src-tauri/src/lib.rs` manages guardian lifecycle hints for the desktop shell:
+The desktop app is a native shell around the frontend and works with the local Guardian service.
 
-- **default**: leave Guardian running when the app closes, so the systemd service stays persistent.
-- **session-only mode**: stop the app-managed guardian on window close, tray "Quit", and app exit.
-- Exposes five commands the frontend calls over `window.__TAURI__`:
-  - `start_guardian` → `bool`
-  - `stop_guardian` → `bool`
-  - `guardian_status` → `bool` (true while the process is alive)
-  - `get_guardian_port` → `number` (8766)
-  - `set_guardian_session_only` → `bool`
+Current known runtime details from this repository:
 
-**Where the guardian entry is found** (first match wins):
+- frontend dev server runs on **port 5173**
+- Guardian dashboard/API runs on **port 8766**
+- `tauri.conf.json` uses:
+  - `beforeDevCommand: pnpm dev`
+  - `devUrl: http://localhost:5173`
+  - `beforeBuildCommand: pnpm build`
+  - `frontendDist: ../dist`
+- `vite.config.ts` already includes the important Tauri asset fix:
+  - `base: "./"`
 
-1. `BIFROST_GUARDIAN` environment variable — absolute path to a script or binary.
-2. Bundled resource: `<resources>/guardian/guardian` (preferred) or `guardian.py`.
-3. Next to the executable: `<exe dir>/guardian/guardian` (preferred) or `guardian.py`.
+## Build requirements
 
-The interpreter defaults to `python3` (override with `BIFROST_PYTHON`) for `.py`
-entries. Binary guardians are launched directly with `--port 8766`.
+- Arch Linux
+- pnpm
+- Rust / Cargo
+- Python 3.11+
+- Ollama with `qwen2.5:1.5b-instruct`
 
-> Bring your own guardian: drop your Python program at one of the paths above,
-> or point `BIFROST_GUARDIAN` at it before launching.
-
----
-
-## Prerequisites (Linux)
-
-Install the Tauri system dependencies (Arch Linux):
+If your environment prompts for native dependency approval, run:
 
 ```bash
-sudo ./scripts/setup-linux-build-env.sh
+pnpm approve-builds
 ```
 
-This installs WebKit/GTK and other native libraries required by Tauri on Arch.
+before building.
 
-Then install the toolchains:
-
-- **Rust** (stable): https://rustup.rs
-  ```bash
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-  ```
-- **Node.js 18+** and **pnpm 11**:
-  ```bash
-  npm install -g pnpm@11
-  ```
-
----
-
-## Develop
+## Install dependencies
 
 ```bash
 pnpm install
-pnpm desktop:dev      # = tauri dev (starts Vite on :5173 + the native window)
 ```
 
-`pnpm dev` alone runs just the web frontend in a browser (mock-data mode).
-
-## Build desktop binary
+## Development
 
 ```bash
-pnpm install
+pnpm desktop:dev
+```
+
+This starts the Vite frontend and opens the Tauri shell.
+
+For frontend-only development:
+
+```bash
+pnpm dev
+```
+
+## Production build
+
+```bash
 pnpm tauri build
 ```
 
-Artifact (primary executable):
-
-- `src-tauri/target/release/bifrost`
-
-## Icons
-
-The repo ships a generated icon set in `src-tauri/icons/`. The master vector
-source is `src-tauri/icons/icon.svg`. To regenerate the raster/icon bundle:
+You can also use:
 
 ```bash
-pnpm tauri icon src-tauri/icons/icon.svg
+pnpm desktop:build
 ```
 
-This will refresh the platform assets (including `icon.ico` and `icon.icns`)
-that Tauri bundles into the desktop installers.
+## Important prerelease note
 
----
+The current `package.json` defines both:
+
+- `desktop:build`: `tauri build`
+- `tauri`: `tauri`
+
+That means `pnpm tauri build` and `pnpm desktop:build` are both valid with the current repo state.
+
+## Arch-first install path
+
+The user-facing recommended install path for the desktop app is:
+
+```bash
+yay -S bifrost-bin
+```
+
+Update with:
+
+```bash
+yay -Syu
+```
+
+## What not to document here
+
+This desktop README should stay aligned with the current prerelease packaging direction:
+
+- no Windows instructions
+- no macOS instructions
+- no Docker install path for the desktop app
+- no AppImage guidance
+- no `.deb` guidance
 
 ## Notes
 
-- The window is **frameless** (`decorations: false`); the in-app title bar
-  provides minimize / maximize / close via Tauri window commands.
-- `withGlobalTauri` is enabled, so the frontend talks to the runtime through
-  `window.__TAURI__` with no extra npm SDK dependency.
-- In a plain browser (no Tauri runtime) every native call no-ops safely and the
-  dashboard runs on mock data — handy for frontend-only iteration.
+- The app is currently documented as **Arch Linux native first**
+- `vite.config.ts` is already fixed for proper Tauri asset loading
+- Any older docs implying different packaging targets should be treated as stale unless updated elsewhere in the repository
