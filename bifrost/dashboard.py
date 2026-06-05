@@ -1120,6 +1120,10 @@ def _parse_cookie_value(header: str, key: str) -> str | None:
 
 
 def _disclaimer_accepted(handler: BaseHTTPRequestHandler) -> bool:
+    # Auto-accept for localhost (Tauri desktop app)
+    client_host = handler.client_address[0]
+    if client_host in ('127.0.0.1', '::1', 'localhost'):
+        return True
     sid = _parse_cookie_value(handler.headers.get("Cookie", ""), _DISCLAIMER_COOKIE)
     return bool(sid and sid in _DISCLAIMER_SESSIONS)
 
@@ -1235,7 +1239,7 @@ def _build_handler(server: "DashboardServer"):
                 for morsel in cookie.values():
                     self.send_header("Set-Cookie", morsel.OutputString())
                 self.end_headers()
-                self.wfile.write(b'{"status":"accepted"}')
+                self.wfile.write(b'{"status":"accepted","session":"localhost-session","token":"localhost-session"}')
                 return
             self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 
@@ -1247,6 +1251,9 @@ def _build_handler(server: "DashboardServer"):
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(encoded)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Bifrost-Session")
             self.end_headers()
             self.wfile.write(encoded)
 
